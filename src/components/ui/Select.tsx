@@ -1,0 +1,28 @@
+import React from "react";
+import clsx from "clsx";
+
+type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
+  error?: boolean;
+};
+
+export const Select: React.FC<SelectProps> = ({
+  className,
+  error,
+  children,
+  ...props
+}) => {
+  return (
+    <select
+      className={clsx(
+        "block w-full rounded-xl border bg-white px-3 py-2 text-sm text-gray-900 shadow-sm",
+        "focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500",
+        "disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed",
+        error ? "border-red-500" : "border-black/10",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </select>
+  );
+};

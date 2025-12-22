@@ -1,0 +1,745 @@
+// src/components/auth/SignupModal.tsx
+import React, { useEffect, useState } from "react";
+import { Modal } from "../ui/Modal";
+import { supabase } from "../../lib/supabase";
+
+type SignupModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSignedUp?: () => void;
+  onSwitchToLogin?: () => void;
+};
+
+type Child = {
+  name: string;
+  age: string;
+  interests: string[];
+};
+
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
+
+const ALL_INTERESTS = [
+  "Sports",
+  "STEM",
+  "Music",
+  "Dance",
+  "Day camps",
+  "Arts",
+  "Outdoors",
+  "Cooking",
+  "Drama",
+  "Overnight camps",
+];
+
+export const SignupModal: React.FC<SignupModalProps> = ({
+  isOpen,
+  onClose,
+  onSignedUp,
+  onSwitchToLogin,
+}) => {
+  const [step, setStep] = useState<Step>(1);
+
+  // account
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+
+  // verify code
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
+
+  // parent details
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [location, setLocation] = useState("");
+
+  // children
+  const [children, setChildren] = useState<Child[]>([]);
+  const [currentChildName, setCurrentChildName] = useState("");
+  const [currentChildAge, setCurrentChildAge] = useState("");
+  const [currentInterests, setCurrentInterests] = useState<string[]>([]);
+
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+
+  // Reset wizard whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      setEmail("");
+      setFullName("");
+      setPassword("");
+      setCode(["", "", "", "", "", ""]);
+      setFirstName("");
+      setLastName("");
+      setLocation("");
+      setChildren([]);
+      setCurrentChildName("");
+      setCurrentChildAge("");
+      setCurrentInterests([]);
+      setStatus("");
+      setError("");
+    }
+  }, [isOpen]);
+
+  const handleSignInClick = () => {
+    onClose();
+    onSwitchToLogin?.();
+  };
+
+  // Small helper: upsert into profiles
+  const upsertProfile = async (payload: {
+    id: string;
+    email?: string | null;
+    legal_name?: string | null;
+    preferred_first_name?: string | null;
+    city?: string | null;
+  }) => {
+    const base = {
+      updated_at: new Date().toISOString(),
+      ...payload,
+    };
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert(base, { onConflict: "id" });
+
+    if (profileError) {
+      console.error("Error upserting profile:", profileError);
+    }
+  };
+
+  // STEP 1: create account in Supabase auth + initial profile
+  const handleAccountSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setStatus("Creating your account…");
+
+    if (!email || !password) {
+      setError("Please enter your email and password.");
+      setStatus("");
+      return;
+    }
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          full_name: fullName.trim() || null,
+        },
+      },
+    });
+
+    if (signUpError) {
+      console.error("signUp error:", signUpError);
+      setError(signUpError.message || "Unable to create your account.");
+      setStatus("");
+      return;
+    }
+
+    const user = data.user;
+    if (user) {
+      // Create a basic profile row if it doesn't exist yet
+      await upsertProfile({
+        id: user.id,
+        email: user.email,
+        legal_name: fullName.trim() || null,
+      });
+    }
+
+    // Optional: you can still leave a note like "Check your email to confirm your account"
+    // but we don't block the user on a 6-digit code step.
+    setStatus("");
+    setStep(3); // jump straight to the "Tell us a little more" step
+  };
+
+  // STEP 2: code entry (UI / validation placeholder)
+  const handleCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    const joined = code.join("").trim();
+    if (!joined || joined.length < 4) {
+      setError("Please enter the code we sent to your email.");
+      return;
+    }
+    // In a real flow, you'd verify this against a backend.
+    setStatus("");
+    setStep(3);
+  };
+
+  const updateCodeDigit = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(-1);
+    const next = [...code];
+    next[index] = value.replace(/[^0-9]/g, "");
+    setCode(next);
+  };
+
+  // STEP 3: parent details → auth metadata + profiles table
+  const handleParentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("Please provide at least your first and last name.");
+      return;
+    }
+
+    setStatus("Saving your profile…");
+
+    try {
+      const { data: userResult, error: userError } =
+        await supabase.auth.getUser();
+
+      if (userError || !userResult.user) {
+        console.error("Error getting user:", userError);
+        setStatus("");
+        setStep(4);
+        return;
+      }
+
+      const user = userResult.user;
+
+      // Update auth metadata
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          location: location.trim() || null,
+        },
+      });
+
+      if (updateError) {
+        console.error("Error updating user metadata:", updateError);
+      }
+
+      // Update profiles row with richer info
+      const legalName = `${firstName.trim()} ${lastName.trim()}`.trim();
+
+      await upsertProfile({
+        id: user.id,
+        email: user.email,
+        legal_name: legalName || null,
+        preferred_first_name: firstName.trim() || null,
+        city: location.trim() || null,
+      });
+    } catch (err) {
+      console.error("Unexpected error updating profile:", err);
+    }
+
+    setStatus("");
+    setStep(4);
+  };
+
+  // STEP 4: child details
+  const toggleInterest = (interest: string) => {
+    setCurrentInterests((prev) =>
+      prev.includes(interest)
+        ? prev.filter((i) => i !== interest)
+        : [...prev, interest]
+    );
+  };
+
+  const handleChildContinue = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!currentChildName.trim() || !currentChildAge.trim()) {
+      setError("Please add your child’s name and age, or choose Skip.");
+      return;
+    }
+
+    const newChild: Child = {
+      name: currentChildName.trim(),
+      age: currentChildAge.trim(),
+      interests: currentInterests,
+    };
+
+    setChildren((prev) => [...prev, newChild]);
+    setCurrentChildName("");
+    setCurrentChildAge("");
+    setCurrentInterests([]);
+    setStep(5);
+  };
+
+  const handleSkipChildren = () => {
+    setChildren([]);
+    setStep(6);
+  };
+
+  // STEP 5: summary → insert children rows in Supabase
+  const handleAddAnotherChild = () => {
+    setCurrentChildName("");
+    setCurrentChildAge("");
+    setCurrentInterests([]);
+    setStep(4);
+  };
+
+  const handleSaveChildren = async () => {
+    setError("");
+    setStatus("Saving your child’s details…");
+
+    try {
+      const { data: userResult, error: userError } =
+        await supabase.auth.getUser();
+
+      if (userError || !userResult.user) {
+        console.error("No user found when saving children:", userError);
+        setStatus("");
+        setStep(6);
+        return;
+      }
+
+      const parentId = userResult.user.id;
+
+      if (children.length > 0) {
+        const rows = children.map((child) => {
+          const parsedAge = parseInt(child.age, 10);
+          const ageYears = Number.isNaN(parsedAge) ? null : parsedAge;
+
+          return {
+            parent_id: parentId,
+            legal_name: child.name,
+            preferred_name: null,
+            birthdate: null,
+            allergies: null,
+            immunization_notes: null,
+            medications: null,
+            avatar_emoji: null,
+            age_years: ageYears,
+            interests: child.interests,
+          };
+        });
+
+        const { error: insertError } = await supabase
+          .from("children")
+          .insert(rows);
+
+        if (insertError) {
+          console.error("Error inserting children:", insertError);
+          setError(
+            "We saved your account, but couldn’t save child details. You can add them later."
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error inserting children:", err);
+      setError(
+        "We saved your account, but couldn’t save child details. You can add them later."
+      );
+    }
+
+    setStatus("");
+    setStep(6);
+  };
+
+  // STEP 6: success
+  const handleStartBrowsing = () => {
+    onSignedUp?.();
+    onClose();
+  };
+
+  // ------- RENDER PER STEP -------
+
+  let title = "Create your Wowzie account";
+  if (step === 2) title = "Enter code";
+  if (step === 3) title = "Tell us a little more";
+  if (step === 4) title = "Who are you booking for?";
+  if (step === 5) title = "Here’s what we have so far";
+  if (step === 6) title = "Registration created";
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+      {/* STEP 1 – create account */}
+      {step === 1 && (
+        <>
+          <p className="mb-4 text-sm text-gray-600">
+            Sign up to browse and book camps and classes.
+          </p>
+
+          <form onSubmit={handleAccountSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="signup-email"
+                className="block text-sm font-medium text-gray-800"
+              >
+                Email address
+              </label>
+              <input
+                id="signup-email"
+                type="email"
+                autoComplete="email"
+                required
+                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                placeholder="you@youremail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="signup-fullname"
+                className="block text-sm font-medium text-gray-800"
+              >
+                Full name
+              </label>
+              <input
+                id="signup-fullname"
+                type="text"
+                autoComplete="name"
+                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                placeholder="Billy James"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="signup-password"
+                className="block text-sm font-medium text-gray-800"
+              >
+                Password
+              </label>
+              <input
+                id="signup-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Sign up
+            </button>
+
+            <button
+              type="button"
+              className="w-full inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-200"
+              disabled
+            >
+              Sign up with Google (coming soon)
+            </button>
+          </form>
+
+          <div className="mt-3 text-center text-xs text-gray-600">
+            Already have an account?{" "}
+            <button
+              type="button"
+              className="font-medium text-violet-600 hover:text-violet-700"
+              onClick={handleSignInClick}
+            >
+              Sign in
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* STEP 2 – enter code */}
+      {step === 2 && (
+        <>
+          <p className="mb-4 text-sm text-gray-600">
+            Verify your email {email && <strong>{email}</strong>}. This helps us
+            keep your account secure by verifying that it’s really you.
+          </p>
+          <form onSubmit={handleCodeSubmit} className="space-y-4">
+            <div className="flex justify-between gap-2">
+              {code.map((digit, idx) => (
+                <input
+                  key={idx}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  className="w-10 h-10 rounded-lg border border-gray-300 text-center text-lg"
+                  value={digit}
+                  onChange={(e) => updateCodeDigit(idx, e.target.value)}
+                />
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black"
+            >
+              Submit
+            </button>
+
+            <button
+              type="button"
+              className="w-full inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-200"
+            >
+              Resend code
+            </button>
+          </form>
+        </>
+      )}
+
+      {/* STEP 3 – parent details */}
+      {step === 3 && (
+        <>
+          <p className="mb-4 text-sm text-gray-600">
+            Tell us a little more so we can personalize nearby activities.
+          </p>
+          <form onSubmit={handleParentSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="parent-first-name"
+                  className="block text-sm font-medium text-gray-800"
+                >
+                  First name
+                </label>
+                <input
+                  id="parent-first-name"
+                  type="text"
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="parent-last-name"
+                  className="block text-sm font-medium text-gray-800"
+                >
+                  Last name
+                </label>
+                <input
+                  id="parent-last-name"
+                  type="text"
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="parent-location"
+                className="block text-sm font-medium text-gray-800"
+              >
+                Location
+              </label>
+              <input
+                id="parent-location"
+                type="text"
+                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                placeholder="Neighborhood or city"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">
+                This helps us personalize nearby activities.
+              </p>
+            </div>
+
+            <p className="text-[11px] text-gray-500">
+              By clicking the “Sign up” button, you are agreeing to our{" "}
+              <a href="/terms" className="underline">
+                Terms of Use
+              </a>
+              , opening an account with Wowzie, and acknowledging you have read
+              our{" "}
+              <a href="/privacy" className="underline">
+                Privacy Notice
+              </a>
+              .
+            </p>
+
+            <button
+              type="submit"
+              className="w-full inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black"
+            >
+              Sign up
+            </button>
+          </form>
+        </>
+      )}
+
+      {/* STEP 4 – child details */}
+      {step === 4 && (
+        <>
+          <p className="mb-4 text-sm text-gray-600">
+            Add your child’s info to help us show age-appropriate options.
+          </p>
+          <form onSubmit={handleChildContinue} className="space-y-4">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="child-name"
+                className="block text-sm font-medium text-gray-800"
+              >
+                What’s your child’s name?
+              </label>
+              <input
+                id="child-name"
+                type="text"
+                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                value={currentChildName}
+                onChange={(e) => setCurrentChildName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="child-age"
+                className="block text-sm font-medium text-gray-800"
+              >
+                How old are they?
+              </label>
+              <input
+                id="child-age"
+                type="text"
+                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                value={currentChildAge}
+                onChange={(e) => setCurrentChildAge(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-800">
+                What are their interests?
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {ALL_INTERESTS.map((interest) => {
+                  const selected = currentInterests.includes(interest);
+                  return (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => toggleInterest(interest)}
+                      className={
+                        "flex items-center justify-between rounded-lg border px-3 py-2 " +
+                        (selected
+                          ? "border-violet-600 bg-violet-50"
+                          : "border-gray-300 bg-white")
+                      }
+                    >
+                      <span>{interest}</span>
+                      <span
+                        className={
+                          "h-4 w-4 rounded border " +
+                          (selected
+                            ? "border-violet-600 bg-violet-600"
+                            : "border-gray-300 bg-white")
+                        }
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleSkipChildren}
+                className="flex-1 inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-200"
+              >
+                Skip
+              </button>
+              <button
+                type="submit"
+                className="flex-1 inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black"
+              >
+                Continue
+              </button>
+            </div>
+          </form>
+        </>
+      )}
+
+      {/* STEP 5 – summary */}
+      {step === 5 && (
+        <>
+          {children.length > 0 ? (
+            <div className="mb-4 space-y-3 text-sm text-gray-800">
+              {children.map((child, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
+                >
+                  <div className="font-medium">{child.name}</div>
+                  <div className="text-xs text-gray-600">Age {child.age}</div>
+                  {child.interests.length > 0 && (
+                    <div className="mt-1 text-xs text-gray-700">
+                      Interests: {child.interests.join(", ")}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mb-4 text-sm text-gray-600">
+              You haven’t added any children yet. You can always add them later.
+            </p>
+          )}
+
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={handleAddAnotherChild}
+              className="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-200"
+            >
+              Add another child
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveChildren}
+              className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black"
+            >
+              Save
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* STEP 6 – success */}
+      {step === 6 && (
+        <div className="flex flex-col items-center space-y-4 py-4 text-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-xl text-emerald-600">
+            ✓
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-800">
+              Registration created
+            </p>
+            <p className="max-w-xs text-sm text-gray-600">
+              You’ve successfully set up your registration. You can track details
+              and manage updates on your summary page.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleStartBrowsing}
+            className="mt-2 inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black"
+          >
+            Start browsing
+          </button>
+        </div>
+      )}
+
+      {/* Shared status + error row at bottom */}
+      {(status || error) && (
+        <div className="mt-4 space-y-1">
+          {status && (
+            <p className="min-h-[1.25rem] text-xs text-gray-500">{status}</p>
+          )}
+          {error && (
+            <p className="min-h-[1.25rem] text-xs text-rose-600">{error}</p>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+};
+
+export default SignupModal;
