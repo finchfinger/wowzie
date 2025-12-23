@@ -24,8 +24,7 @@ const FALLBACK_LISTINGS: HostListing[] = [
   {
     id: "fallback-1",
     name: "Lakeview Coding Camp",
-    description:
-      "Week-long intro to Scratch, Roblox, and creative coding for curious kids.",
+    description: "Week-long intro to Scratch, Roblox, and creative coding for curious kids.",
     hero_image_url: "https://placehold.co/200x200?text=Coding",
     start_time: "2025-07-08T09:00:00Z",
     is_active: true,
@@ -34,8 +33,7 @@ const FALLBACK_LISTINGS: HostListing[] = [
   {
     id: "fallback-2",
     name: "Lincoln Park Soccer Clinic",
-    description:
-      "Fun skills and small-sided games in the park. Bring cleats if you have them.",
+    description: "Fun skills and small-sided games in the park. Bring cleats if you have them.",
     hero_image_url: "https://placehold.co/200x200?text=Soccer",
     start_time: "2025-06-15T10:30:00Z",
     is_active: true,
@@ -44,8 +42,7 @@ const FALLBACK_LISTINGS: HostListing[] = [
   {
     id: "fallback-3",
     name: "Northside Art & Clay Studio",
-    description:
-      "Hands-on pottery, collage, and drawing in a cozy neighborhood studio.",
+    description: "Hands-on pottery, collage, and drawing in a cozy neighborhood studio.",
     hero_image_url: "https://placehold.co/200x200?text=Art",
     start_time: "2025-06-20T13:00:00Z",
     is_active: true,
@@ -62,10 +59,7 @@ function formatTimeLabel(dateStr?: string | null) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function getStatusBadge(listing: HostListing): {
-  label: string;
-  tone: "neutral" | "destructive";
-} | null {
+function getStatusBadge(listing: HostListing): { label: string; tone: "neutral" | "destructive" } | null {
   if (listing.status === "action_required" || listing.status === "needs_review") {
     return { label: "Action required", tone: "destructive" };
   }
@@ -94,17 +88,13 @@ export const HostDashboardPage: React.FC = () => {
 
         if (error) {
           console.error("Error loading camps from Supabase:", error);
-          setStatusMessage(
-            "We couldn’t load your listings from Supabase. Showing sample data instead.",
-          );
+          setStatusMessage("We couldn’t load your listings from Supabase. Showing sample data instead.");
           setListings(FALLBACK_LISTINGS);
           return;
         }
 
         if (!data || data.length === 0) {
-          setStatusMessage(
-            "No listings found in Supabase yet. Showing sample data instead.",
-          );
+          setStatusMessage("No listings found in Supabase yet. Showing sample data instead.");
           setListings(FALLBACK_LISTINGS);
           return;
         }
@@ -113,9 +103,7 @@ export const HostDashboardPage: React.FC = () => {
         setListings(data as HostListing[]);
       } catch (err) {
         console.error("Unexpected error loading listings:", err);
-        setStatusMessage(
-          "Something went wrong while loading your dashboard. Showing sample data instead.",
-        );
+        setStatusMessage("Something went wrong while loading your dashboard. Showing sample data instead.");
         setListings(FALLBACK_LISTINGS);
       }
     };
@@ -144,13 +132,6 @@ export const HostDashboardPage: React.FC = () => {
   }, [listings, sort]);
 
   const hasListings = sortedListings.length > 0;
-
-  const handleToggleActive = (id: string, next: boolean) => {
-    // For now just update local state; later wire to Supabase
-    setListings((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, is_active: next } : item)),
-    );
-  };
 
   const handleOpenMenu = (id: string) => {
     console.log("Open menu for listing:", id);
@@ -281,10 +262,6 @@ export const HostDashboardPage: React.FC = () => {
                           placeholderLabel={listing.meta?.category_label}
                           statusLabel={badge?.label}
                           statusTone={badge?.tone ?? "neutral"}
-                          isActive={!!listing.is_active}
-                          onToggleActive={(next: boolean) =>
-                            handleToggleActive(listing.id, next)
-                          }
                           onOpenMenu={() => handleOpenMenu(listing.id)}
                         />
                       );
@@ -309,39 +286,30 @@ export const HostDashboardPage: React.FC = () => {
                 <div className="mt-6 divide-y divide-black/5 rounded-2xl border border-black/5 bg-white text-sm">
                   <div className="flex items-center justify-between px-4 py-3">
                     <div>
-                      <p className="font-medium text-gray-900">
-                        Turn Instant Book on or off
+                      <p className="font-medium text-gray-900">Tip</p>
+                      <p className="text-xs text-gray-600">
+                        Add a hero image to increase bookings.
                       </p>
-                      <p className="text-xs text-gray-600">Choose how guests will book</p>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        Pick your policy for cancellations
-                      </p>
-                      <p className="text-xs text-gray-600">Choose how guests will book</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        Pick your policy for cancellations
-                      </p>
-                      <p className="text-xs text-gray-600">Choose how guests will book</p>
-                    </div>
+                    <Link
+                      to="/host/activities/new"
+                      className="text-xs font-medium text-gray-900 hover:underline"
+                    >
+                      Create another
+                    </Link>
                   </div>
                 </div>
               </section>
             )}
 
-            {/* The other tabs (contacts / financials / settings) can stay as you had them */}
-            {/* ... */}
+            {activeTab !== "listings" && (
+              <div className="rounded-2xl border border-black/5 bg-white p-5 text-sm text-gray-600">
+                Coming soon.
+              </div>
+            )}
           </section>
         </div>
       </div>
     </main>
   );
 };
-
-export default HostDashboardPage;

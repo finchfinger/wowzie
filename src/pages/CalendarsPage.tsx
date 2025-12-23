@@ -5,10 +5,8 @@ import { useMyCalendar } from "../hooks/useMyCalendar";
 import { CalendarEventList } from "../components/calendar/CalendarEventList";
 import { CalendarMonthGrid } from "../components/calendar/CalendarMonthGrid";
 import { CalendarTabs } from "../components/calendar/CalendarTabs";
-import {
-  SharedCalendarList,
-  SharedCalendar,
-} from "../components/calendar/SharedCalendarList";
+import { SharedCalendarList } from "../components/calendar/SharedCalendarList";
+import type { SharedCalendar } from "../components/calendar/SharedCalendarList";
 import { CalendarShareModal } from "../components/calendar/CalendarShareModal";
 
 type CalendarTab = "my" | "shared";

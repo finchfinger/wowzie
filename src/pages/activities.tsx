@@ -1,6 +1,8 @@
+// src/pages/activities.tsx
 import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { CampCard, Camp } from "../components/CampCard";
+import { CampCard } from "../components/CampCard";
+import type { Camp } from "../components/CampCard";
 
 // You can later move these into env vars; for now we’ll reuse your old supabase.js values
 const SUPABASE_URL = "https://fzdhexysoleaegzwtryf.supabase.co";
@@ -11,16 +13,16 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const FAVORITES_KEY = "wowzie_favorites";
 
-function getFavorites(): string[] {
+function readFavorites(): string[] {
   try {
     const raw = localStorage.getItem(FAVORITES_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
   }
 }
 
-function setFavorites(favs: string[]) {
+function writeFavorites(favs: string[]) {
   try {
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
   } catch {
@@ -28,63 +30,77 @@ function setFavorites(favs: string[]) {
   }
 }
 
+type CampRow = {
+  id: string;
+  slug: string | null;
+  name: string;
+  description: string | null;
+  location: string | null;
+  image_url: string | null;
+  price_cents: number | null;
+  status: string | null;
+  created_at: string;
+};
+
 export const ActivitiesPage: React.FC = () => {
   const [camps, setCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [favorites, setFavoritesState] = useState<string[]>(() => getFavorites());
+  const [favorites, setFavoritesState] = useState<string[]>(() => readFavorites());
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const { data, error: dbError } = await supabase
         .from("camps")
-        .select(
-          "id, slug, name, description, location, image_url, price_cents, status, created_at"
-        )
+        .select("id, slug, name, description, location, image_url, price_cents, status, created_at")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error loading camps:", error);
+      if (dbError) {
+        console.error("Error loading camps:", dbError);
         setError("We couldn’t load camps right now. Please try again.");
         setLoading(false);
         return;
       }
 
-      if (!data) {
-        setCamps([]);
-        setLoading(false);
-        return;
-      }
+      const rows = (data ?? []) as CampRow[];
 
-      // only show approved
-      const visible = data.filter(
-        (c) => (c.status || "").trim() === "approved"
-      );
+      // only show approved + require slug (CampCard expects a slug string)
+      const visible = rows.filter((c) => (c.status || "").trim() === "approved" && !!c.slug);
 
       // dedupe by slug
       const uniqueBySlug = Object.values(
-        visible.reduce<Record<string, Camp>>((acc, camp) => {
-          if (!acc[camp.slug]) acc[camp.slug] = camp as Camp;
+        visible.reduce<Record<string, CampRow>>((acc, camp) => {
+          const key = String(camp.slug);
+          if (!acc[key]) acc[key] = camp;
           return acc;
         }, {})
-      ) as Camp[];
+      );
 
-      setCamps(uniqueBySlug);
+      // map to Camp type expected by CampCard
+      const mapped: Camp[] = uniqueBySlug.map((c) => ({
+        id: String(c.id),
+        slug: String(c.slug),
+        name: String(c.name ?? ""),
+        description: c.description ?? null,
+        image_url: c.image_url ?? null,
+        price_cents: c.price_cents ?? null,
+        meta: { location: c.location ?? null },
+      }));
+
+      setCamps(mapped);
       setLoading(false);
     };
 
-    load();
+    void load();
   }, []);
 
   const handleToggleFavorite = (id: string) => {
     setFavoritesState((prev) => {
-      const next = prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id];
-      setFavorites(next);
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      writeFavorites(next);
       return next;
     });
   };
@@ -93,16 +109,12 @@ export const ActivitiesPage: React.FC = () => {
     <div className="py-6">
       {/* Top copy from old index.html */}
       <section className="mb-8">
-        <h1 className="text-4xl font-bold text-blue-600 mb-3">
-          Welcome to Wowzie!
-        </h1>
+        <h1 className="text-4xl font-bold text-blue-600 mb-3">Welcome to Wowzie!</h1>
         <p className="text-lg text-gray-700 mb-8">
           Discover camps, classes, and experiences for kids in your city.
         </p>
 
-        <h2 className="text-2xl font-semibold mb-3">
-          What do parents want from a camp?
-        </h2>
+        <h2 className="text-2xl font-semibold mb-3">What do parents want from a camp?</h2>
         <ul className="list-disc ml-6 mb-6 space-y-1 text-gray-800">
           <li>Safety first</li>
           <li>Engaging experiences</li>
@@ -112,18 +124,12 @@ export const ActivitiesPage: React.FC = () => {
 
       {/* Camps grid */}
       <section>
-        {loading && (
-          <p className="text-sm text-gray-500">Loading camps…</p>
-        )}
+        {loading && <p className="text-sm text-gray-500">Loading camps…</p>}
 
-        {error && (
-          <p className="text-sm text-rose-600 mb-4">{error}</p>
-        )}
+        {error && <p className="text-sm text-rose-600 mb-4">{error}</p>}
 
         {!loading && !error && camps.length === 0 && (
-          <p className="text-sm text-gray-600">
-            No approved camps yet. Check back soon.
-          </p>
+          <p className="text-sm text-gray-600">No approved camps yet. Check back soon.</p>
         )}
 
         {camps.length > 0 && (
@@ -142,3 +148,5 @@ export const ActivitiesPage: React.FC = () => {
     </div>
   );
 };
+
+export default ActivitiesPage;

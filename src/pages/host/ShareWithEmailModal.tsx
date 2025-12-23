@@ -1,99 +1,112 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Modal } from "../ui/Modal";
-import { Button } from "../ui/Button";
+// src/pages/host/ShareWithEmailModal.tsx
+import React, { useEffect, useState } from "react";
+import { Button } from "../../components/ui/Button";
 
-type ShareWithEmailModalProps = {
-  isOpen: boolean;
+type Props = {
+  open: boolean;
   onClose: () => void;
-  activityTitle: string;
-  onShare: (email: string) => Promise<void>;
+  onShare?: (email: string) => Promise<void> | void;
 };
 
-const isValidEmail = (email: string) => {
-  const v = email.trim().toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-};
-
-export const ShareWithEmailModal: React.FC<ShareWithEmailModalProps> = ({
-  isOpen,
-  onClose,
-  activityTitle,
-  onShare,
-}) => {
+export const ShareWithEmailModal: React.FC<Props> = ({ open, onClose, onShare }) => {
   const [email, setEmail] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = useMemo(() => isValidEmail(email) && !saving, [email, saving]);
-
   useEffect(() => {
-    if (!isOpen) return;
+    if (!open) return;
     setEmail("");
-    setSaving(false);
+    setSubmitting(false);
     setError(null);
-  }, [isOpen]);
+  }, [open]);
 
-  const handleSubmit = async () => {
+  if (!open) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
-    const cleaned = email.trim().toLowerCase();
 
-    if (!isValidEmail(cleaned)) {
-      setError("Enter a valid email address.");
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError("Please enter an email.");
       return;
     }
 
-    setSaving(true);
     try {
-      await onShare(cleaned);
+      setSubmitting(true);
+      await onShare?.(trimmed);
       onClose();
-    } catch (e) {
-      console.error("[ShareWithEmailModal] share failed", e);
-      setError("We couldn’t send this invite. Please try again.");
-      setSaving(false);
+    } catch (err: any) {
+      setError(err?.message ?? "Could not share. Please try again.");
+      setSubmitting(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Share">
-      <div className="space-y-5">
-        <p className="text-sm text-gray-600">
-          Invite someone to view <span className="font-medium text-gray-900">{activityTitle}</span>.
-        </p>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Share by email"
+    >
+      {/* Backdrop */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/40"
+        aria-label="Close"
+      />
 
-        <div className="space-y-2">
-          <label className="block text-xs font-medium text-gray-700">Email address</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@email.com"
-            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-violet-200"
-            autoFocus
-          />
-          {error && <p className="text-xs text-rose-600">{error}</p>}
-        </div>
+      {/* Panel */}
+      <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-xl border border-black/10">
+        <div className="p-5 border-b border-black/5 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Share by email</p>
+            <p className="text-xs text-gray-500">Send a secure invite link.</p>
+          </div>
 
-        <div className="flex justify-end gap-2 pt-1">
           <button
             type="button"
             onClick={onClose}
-            disabled={saving}
-            className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 disabled:opacity-60"
+            className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
           >
-            Cancel
+            Close
           </button>
-
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="text-sm px-4 py-2"
-          >
-            {saving ? "Sending…" : "Send invite"}
-          </Button>
         </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <label className="block space-y-1">
+            <span className="text-xs font-medium text-gray-700">Email</span>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              required
+              className="block w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+              placeholder="name@email.com"
+              disabled={submitting}
+            />
+          </label>
+
+          {error ? (
+            <p className="text-xs text-red-600">{error}</p>
+          ) : (
+            <p className="text-[11px] text-gray-500">
+              We’ll email them a link to view what you shared.
+            </p>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Sending…" : "Send invite"}
+            </Button>
+          </div>
+        </form>
       </div>
-    </Modal>
+    </div>
   );
 };
 

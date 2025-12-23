@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { SectionHeader } from "../../components/layout/SectionHeader";
 import { Button } from "../../components/ui/Button";
 
-
-
 export const HelpPage: React.FC = () => {
   return (
     <main className="flex-1 bg-rose-50">
@@ -12,8 +10,8 @@ export const HelpPage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <SectionHeader
             title="Help Center"
-            description="Find quick answers and tips to make your Wowzie experience easy, fun, and stress-free."
-            rightSlot={
+            subtitle="Find quick answers and tips to make your Wowzie experience easy, fun, and stress-free."
+            actions={
               <Link to="/contact">
                 <Button size="sm">Contact us</Button>
               </Link>
@@ -23,16 +21,12 @@ export const HelpPage: React.FC = () => {
           <div className="mt-10 space-y-10">
             {/* For Parents */}
             <section>
-              <h2 className="text-sm font-semibold tracking-wide text-gray-700 mb-4">
+              <h2 className="mb-4 text-sm font-semibold tracking-wide text-gray-700">
                 For Parents
               </h2>
 
               <div className="grid gap-8 md:grid-cols-2">
-                {/* How booking works */}
-                <Link
-                  to="/help/how-booking-works"
-                  className="group flex gap-3"
-                >
+                <Link to="/help/how-booking-works" className="group flex gap-3">
                   <div className="mt-1 text-xl" aria-hidden="true">
                     🎟️
                   </div>
@@ -47,7 +41,6 @@ export const HelpPage: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Cancellations and refunds */}
                 <Link
                   to="/help/cancellations-refunds"
                   className="group flex gap-3"
@@ -66,7 +59,6 @@ export const HelpPage: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Managing your kids’ profiles */}
                 <Link
                   to="/help/managing-kid-profiles"
                   className="group flex gap-3"
@@ -85,7 +77,6 @@ export const HelpPage: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Messaging hosts */}
                 <Link to="/help/messaging-hosts" className="group flex gap-3">
                   <div className="mt-1 text-xl" aria-hidden="true">
                     💬
@@ -105,12 +96,11 @@ export const HelpPage: React.FC = () => {
 
             {/* For Camps */}
             <section>
-              <h2 className="text-sm font-semibold tracking-wide text-gray-700 mb-4">
+              <h2 className="mb-4 text-sm font-semibold tracking-wide text-gray-700">
                 For Camps
               </h2>
 
               <div className="grid gap-8 md:grid-cols-2">
-                {/* Listing a camp or class */}
                 <Link
                   to="/help/listing-camp-class"
                   className="group flex gap-3"
@@ -129,13 +119,12 @@ export const HelpPage: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Payments and payouts */}
                 <Link
                   to="/help/payments-payouts"
                   className="group flex gap-3"
                 >
                   <div className="mt-1 text-xl" aria-hidden="true">
-                    🙋🏽‍♀️
+                    💳
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 group-hover:text-violet-700">
@@ -148,13 +137,12 @@ export const HelpPage: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Reviews and feedback */}
                 <Link
                   to="/help/reviews-feedback"
                   className="group flex gap-3"
                 >
                   <div className="mt-1 text-xl" aria-hidden="true">
-                    🧠
+                    ⭐
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 group-hover:text-violet-700">
@@ -167,13 +155,12 @@ export const HelpPage: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Safety and verification */}
                 <Link
                   to="/help/safety-verification"
                   className="group flex gap-3"
                 >
                   <div className="mt-1 text-xl" aria-hidden="true">
-                    💬
+                    🛡️
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 group-hover:text-violet-700">

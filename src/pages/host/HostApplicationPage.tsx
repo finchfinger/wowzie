@@ -1,3 +1,4 @@
+// src/pages/host/HostApplicationPage.tsx
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
@@ -70,7 +71,7 @@ export const HostApplicationPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [businessName, setBusinessName] = useState("");
-  const [emailAddress, setEmailAddress] = useState(""); // display only; we’ll also pull auth email
+  const [emailAddress, setEmailAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [address1, setAddress1] = useState("");
   const [suite, setSuite] = useState("");
@@ -149,8 +150,12 @@ export const HostApplicationPage: React.FC = () => {
     if (address1.trim()) addrParts.push(address1.trim());
     if (suite.trim()) addrParts.push(suite.trim());
 
-    const cityStateZip = [city.trim(), state, normalizedPostal].filter(Boolean).join(", ");
-    const addrJoined = [addrParts.join(" "), cityStateZip].filter(Boolean).join(" • ");
+    const cityStateZip = [city.trim(), state, normalizedPostal]
+      .filter(Boolean)
+      .join(", ");
+    const addrJoined = [addrParts.join(" "), cityStateZip]
+      .filter(Boolean)
+      .join(" • ");
     if (addrJoined) aboutLines.push(`Address: ${addrJoined}`);
 
     aboutLines.push("");
@@ -170,7 +175,7 @@ export const HostApplicationPage: React.FC = () => {
           applied_at: nowIso,
           updated_at: nowIso,
         },
-        { onConflict: "user_id" }
+        { onConflict: "user_id" },
       );
 
     if (upsertErr) {
@@ -211,7 +216,9 @@ export const HostApplicationPage: React.FC = () => {
                     </label>
                     <Input
                       value={businessName}
-                      onChange={(e: any) => setBusinessName(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setBusinessName(e.target.value)
+                      }
                       disabled={submitting}
                       placeholder="Optional"
                     />
@@ -224,7 +231,9 @@ export const HostApplicationPage: React.FC = () => {
                     <Input
                       type="email"
                       value={emailAddress}
-                      onChange={(e: any) => setEmailAddress(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setEmailAddress(e.target.value)
+                      }
                       disabled={submitting}
                       placeholder="Optional (we’ll use your account email if available)"
                     />
@@ -236,7 +245,9 @@ export const HostApplicationPage: React.FC = () => {
                     </label>
                     <Input
                       value={phone}
-                      onChange={(e: any) => setPhone(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setPhone(e.target.value)
+                      }
                       disabled={submitting}
                       placeholder="Optional"
                     />
@@ -248,7 +259,9 @@ export const HostApplicationPage: React.FC = () => {
                     </label>
                     <Input
                       value={address1}
-                      onChange={(e: any) => setAddress1(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setAddress1(e.target.value)
+                      }
                       disabled={submitting}
                       placeholder="Optional"
                     />
@@ -260,7 +273,9 @@ export const HostApplicationPage: React.FC = () => {
                     </label>
                     <Input
                       value={suite}
-                      onChange={(e: any) => setSuite(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setSuite(e.target.value)
+                      }
                       disabled={submitting}
                       placeholder="Optional"
                     />
@@ -272,7 +287,9 @@ export const HostApplicationPage: React.FC = () => {
                     </label>
                     <Input
                       value={city}
-                      onChange={(e: any) => setCity(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setCity(e.target.value)
+                      }
                       disabled={submitting}
                       placeholder="Optional"
                     />
@@ -289,7 +306,7 @@ export const HostApplicationPage: React.FC = () => {
                         disabled={submitting}
                         className={cx(
                           "w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm",
-                          "focus:outline-none focus:ring-2 focus:ring-violet-300"
+                          "focus:outline-none focus:ring-2 focus:ring-violet-300",
                         )}
                       >
                         {STATES.map((s) => (
@@ -306,7 +323,9 @@ export const HostApplicationPage: React.FC = () => {
                       </label>
                       <Input
                         value={postalCode}
-                        onChange={(e: any) => setPostalCode(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setPostalCode(e.target.value)
+                        }
                         disabled={submitting}
                         placeholder="Optional"
                       />
@@ -319,7 +338,9 @@ export const HostApplicationPage: React.FC = () => {
                     </label>
                     <Textarea
                       value={description}
-                      onChange={(e: any) => setDescription(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setDescription(e.target.value)
+                      }
                       disabled={submitting}
                       rows={5}
                       placeholder="Tell us what you host, your experience, and what families should expect."
@@ -331,18 +352,23 @@ export const HostApplicationPage: React.FC = () => {
                   <div className="flex items-start gap-2">
                     <Checkbox
                       checked={agreeSafety}
-                      onChange={(v: boolean) => setAgreeSafety(v)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setAgreeSafety(e.target.checked)
+                      }
                       disabled={submitting}
                     />
                     <label className="text-xs text-gray-700">
-                      I agree to follow all safety guidelines and create a secure environment for participants.
+                      I agree to follow all safety guidelines and create a secure
+                      environment for participants.
                     </label>
                   </div>
 
                   <div className="flex items-start gap-2">
                     <Checkbox
                       checked={agreeCancellation}
-                      onChange={(v: boolean) => setAgreeCancellation(v)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setAgreeCancellation(e.target.checked)
+                      }
                       disabled={submitting}
                     />
                     <label className="text-xs text-gray-700">
@@ -353,7 +379,9 @@ export const HostApplicationPage: React.FC = () => {
                   <div className="flex items-start gap-2">
                     <Checkbox
                       checked={agreeTerms}
-                      onChange={(v: boolean) => setAgreeTerms(v)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setAgreeTerms(e.target.checked)
+                      }
                       disabled={submitting}
                     />
                     <label className="text-xs text-gray-700">
@@ -384,7 +412,7 @@ export const HostApplicationPage: React.FC = () => {
                     className={cx(
                       "text-sm font-medium",
                       "text-gray-600 hover:text-gray-900",
-                      submitting && "opacity-60 cursor-not-allowed"
+                      submitting && "opacity-60 cursor-not-allowed",
                     )}
                   >
                     Clear form

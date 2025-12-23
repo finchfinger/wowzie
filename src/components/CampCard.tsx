@@ -1,5 +1,5 @@
 // src/components/CampCard.tsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCampFavorite } from "../hooks/useCampFavorite";
 
@@ -17,41 +17,55 @@ export type Camp = {
 
 type CampCardProps = {
   camp: Camp;
+
+  // Option B support: allow parent to control favorites (like activities.tsx)
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
 };
 
-export const CampCard: React.FC<CampCardProps> = ({ camp }) => {
-  const {
-    id,
-    slug,
-    name,
-    image_urls,
-    image_url,
-    hero_image_url,
-    price_cents,
-    meta,
-  } = camp;
+export const CampCard: React.FC<CampCardProps> = ({
+  camp,
+  isFavorite: isFavoriteProp,
+  onToggleFavorite,
+}) => {
+  const { id, slug, name, image_urls, image_url, hero_image_url, price_cents, meta } = camp;
 
   // Build an ordered list of candidate images
-  const imageCandidates: string[] = [];
+  const images = useMemo(() => {
+    const candidates: string[] = [];
+    if (hero_image_url) candidates.push(hero_image_url);
+    if (image_urls?.length) candidates.push(...image_urls.filter(Boolean) as string[]);
+    if (image_url) candidates.push(image_url);
 
-  if (hero_image_url) imageCandidates.push(hero_image_url);
-  if (image_urls?.length)
-    imageCandidates.push(...image_urls.filter(Boolean));
-  if (image_url) imageCandidates.push(image_url);
-
-  const images =
-    imageCandidates.length > 0
-      ? imageCandidates
-      : ["https://placehold.co/800"];
+    return candidates.length > 0 ? candidates : ["https://placehold.co/800"];
+  }, [hero_image_url, image_urls, image_url]);
 
   const [index, setIndex] = useState(0);
   const dateLabel = meta?.dateLabel;
 
-  const price = Number.isInteger(price_cents)
-    ? `$${((price_cents || 0) / 100).toFixed(0)}`
-    : "";
+  const price =
+    Number.isInteger(price_cents) && typeof price_cents === "number"
+      ? `$${(price_cents / 100).toFixed(0)}`
+      : "";
 
-  const { isFavorite, toggleFavorite, favoriteLoading } = useCampFavorite(id);
+  // If parent passes favorite props, use them. Otherwise fall back to hook.
+  const hook = useCampFavorite(id);
+  const isControlled = typeof onToggleFavorite === "function" && typeof isFavoriteProp === "boolean";
+
+  const isFavorite = isControlled ? isFavoriteProp : hook.isFavorite;
+  const favoriteLoading = isControlled ? false : hook.favoriteLoading;
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isControlled) {
+      onToggleFavorite?.(id);
+      return;
+    }
+
+    hook.toggleFavorite();
+  };
 
   return (
     <article className="group relative flex flex-col rounded-2xl overflow-hidden bg-transparent">
@@ -67,18 +81,12 @@ export const CampCard: React.FC<CampCardProps> = ({ camp }) => {
         {/* Favorite heart */}
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFavorite();
-          }}
+          onClick={handleFavoriteClick}
           disabled={favoriteLoading}
-          className="absolute top-3 right-3 h-10 w-10 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-sm"
+          className="absolute top-3 right-3 h-10 w-10 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-sm disabled:opacity-60"
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
-          <span
-            className={`text-xl transition-colors ${
-              isFavorite ? "text-red-500" : "text-gray-700"
-            }`}
-          >
+          <span className={`text-xl transition-colors ${isFavorite ? "text-red-500" : "text-gray-700"}`}>
             {isFavorite ? "♥" : "♡"}
           </span>
         </button>
@@ -88,10 +96,14 @@ export const CampCard: React.FC<CampCardProps> = ({ camp }) => {
             {images.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setIndex(i)}
-                className={`h-2 w-2 rounded-full ${
-                  i === index ? "bg-white" : "bg-white/50"
-                }`}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIndex(i);
+                }}
+                className={`h-2 w-2 rounded-full ${i === index ? "bg-white" : "bg-white/50"}`}
+                aria-label={`View image ${i + 1}`}
               />
             ))}
           </div>
@@ -99,10 +111,7 @@ export const CampCard: React.FC<CampCardProps> = ({ camp }) => {
       </div>
 
       <div className="pt-4 pb-4 space-y-1">
-        <Link
-          to={`/camp/${slug}`}
-          className="block text-sm font-semibold text-gray-900 hover:text-black"
-        >
+        <Link to={`/camp/${slug}`} className="block text-sm font-semibold text-gray-900 hover:text-black">
           {name}
         </Link>
 

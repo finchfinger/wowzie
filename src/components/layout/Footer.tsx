@@ -23,27 +23,31 @@ export const Footer: React.FC = () => {
     const normalizedZipRaw = zip.replace(/\D/g, "").slice(0, 5);
     const normalizedZip = normalizedZipRaw.length === 5 ? normalizedZipRaw : null;
 
-    const { data, error } = await supabase.from("newsletter_signups").insert({
-      email,
-      zip_code: normalizedZip,
-    });
+    const trimmedEmail = email.trim();
 
-    if (error) {
-      if (error.code === "23505") {
-        setStatus("duplicate");
-        setSubmitting(false);
+    try {
+      const { error } = await supabase.from("newsletter_signups").insert({
+        email: trimmedEmail,
+        zip_code: normalizedZip,
+      });
+
+      if (error) {
+        if (error.code === "23505") {
+          setStatus("duplicate");
+          return;
+        }
+        setStatus("error");
         return;
       }
 
+      setStatus("success");
+      setEmail("");
+      setZip("");
+    } catch (err) {
       setStatus("error");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    setStatus("success");
-    setEmail("");
-    setZip("");
-    setSubmitting(false);
   };
 
   return (

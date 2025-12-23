@@ -1,3 +1,4 @@
+// src/pages/host/ActivityDetailPage.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
@@ -78,7 +79,9 @@ export const ActivityDetailPage: React.FC = () => {
   }, [id]);
 
   const title = activity?.name || "Awesome listing";
-  const price = activity?.price_cents ? `$${(activity.price_cents / 100).toFixed(0)}` : "$320";
+  const price = activity?.price_cents
+    ? `$${(activity.price_cents / 100).toFixed(0)}`
+    : "$320";
   const location = activity?.location || "Knowlwood Club, San Francisco, California";
 
   const handleShareByEmail = async (email: string) => {
@@ -123,7 +126,11 @@ export const ActivityDetailPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-gray-200 overflow-hidden flex items-center justify-center text-[10px] text-gray-600">
             {activity?.image_url ? (
-              <img src={activity.image_url} alt={title} className="h-full w-full object-cover" />
+              <img
+                src={activity.image_url}
+                alt={title}
+                className="h-full w-full object-cover"
+              />
             ) : (
               "IMG"
             )}
@@ -243,7 +250,10 @@ export const ActivityDetailPage: React.FC = () => {
                   <span className="text-gray-500">{guest.when}</span>
                   <ActionsMenu
                     items={[
-                      { label: "View guest detail", onSelect: () => navigate(`/host/guests/${guest.id}`) },
+                      {
+                        label: "View guest detail",
+                        onSelect: () => navigate(`/host/guests/${guest.id}`),
+                      },
                       { label: "Message", onSelect: () => console.log("Message", guest.id) },
                       { label: "Remove", onSelect: () => console.log("Remove guest", guest.id) },
                     ]}
@@ -260,8 +270,8 @@ export const ActivityDetailPage: React.FC = () => {
           <section className="space-y-2">
             <h2 className="font-semibold text-gray-900">Duplicate listing</h2>
             <p className="text-gray-600">
-              Create a new event with the same information as this one. Everything except the guest list and event blasts
-              will be copied over.
+              Create a new event with the same information as this one. Everything
+              except the guest list and event blasts will be copied over.
             </p>
             <Button className="text-xs px-3 py-1.5">Duplicate listing</Button>
           </section>
@@ -269,11 +279,13 @@ export const ActivityDetailPage: React.FC = () => {
           <section className="space-y-2">
             <h2 className="font-semibold text-gray-900">Event page</h2>
             <p className="text-gray-600">
-              When you choose a new URL, the current one will no longer work. Do not change your URL if you have already
-              shared the event.
+              When you choose a new URL, the current one will no longer work. Do not
+              change your URL if you have already shared the event.
             </p>
             <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2">
-              <p className="text-xs text-gray-700">Upgrade to Wowzie Pro to set a custom URL for this event.</p>
+              <p className="text-xs text-gray-700">
+                Upgrade to Wowzie Pro to set a custom URL for this event.
+              </p>
               <Button variant="subtle" className="text-xs px-3 py-1.5">
                 Learn more
               </Button>
@@ -282,46 +294,25 @@ export const ActivityDetailPage: React.FC = () => {
 
           <section className="space-y-2">
             <h2 className="font-semibold text-gray-900">Embed event</h2>
-            <p className="text-gray-600">Have your own site? Embed the event to let visitors know about it.</p>
-            <div className="relative rounded-lg border border-gray-200 bg-white p-3 font-mono text-[11px] text-gray-700">
-              <button className="absolute right-3 top-3 rounded-md border border-gray-200 bg-white px-2 py-1 text-[10px]">
-                Copy code
-              </button>
-              <pre className="whitespace-pre-wrap break-all pr-20">
-{`<a
-  href="https://wowzie.com"
-  class="wowzie-button"
-  data-wowzie-action="return"
->
-  Book to Wowzie
-</a>
-
-<script id="wowzie-return" src="https://wowzie.com/embed/button.js"></script>`}
-              </pre>
-            </div>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="font-semibold text-gray-900">Cancel event</h2>
             <p className="text-gray-600">
-              Cancel and permanently delete this event. This operation cannot be undone. If there are any registered
-              guests, we will notify them that the event has been cancelled.
+              Have your own site? Embed the event to let visitors know about it.
             </p>
-            <Button className="text-xs px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white">
-              Cancel event
-            </Button>
+            <div className="relative rounded-lg border border-gray-200 bg-white p-3 font-mono text-[11px] text-gray-700">
+              <button className="absolute right-3 top-3 rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] hover:bg-gray-50">
+                Copy
+              </button>
+              {"<script src=\"https://wowzie.kids/embed.js\" data-event=\"abc123\"></script>"}
+            </div>
           </section>
         </div>
       )}
 
+      {/* FIX: ShareWithEmailModal expects `open`, not `isOpen` */}
       <ShareWithEmailModal
-        isOpen={isShareOpen}
-        onClose={() => setIsShareOpen(false)}
-        activityTitle={title}
-        onShare={handleShareByEmail}
-      />
+  open={isShareOpen}
+  onClose={() => setIsShareOpen(false)}
+  onShare={handleShareByEmail}
+/>
     </div>
   );
 };
-
-export default ActivityDetailPage;

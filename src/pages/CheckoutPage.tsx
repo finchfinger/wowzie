@@ -1,3 +1,4 @@
+// src/pages/CheckoutPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
@@ -9,22 +10,37 @@ import { SectionHeader } from "../components/layout/SectionHeader";
 import { Textarea } from "../components/ui/Textarea";
 
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
 
 type CampDetail = Camp & {
   hero_image_url?: string | null;
   host_id?: string | null;
   meta?: any | null;
+
+  // Fix: Camp type in your project does not guarantee location exists,
+  // but this page uses it and your query selects it.
+  location?: string | null;
 };
 
-const STRIPE_MODE = (import.meta.env.VITE_STRIPE_MODE as string | undefined) || "mock"; // "mock" | "live"
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || "http://localhost:4242";
-const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+const STRIPE_MODE =
+  (import.meta.env.VITE_STRIPE_MODE as string | undefined) || "mock"; // "mock" | "live"
+const API_URL =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  "http://localhost:4242";
+const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as
+  | string
+  | undefined;
 
 const stripePromise =
   STRIPE_MODE === "live"
     ? (() => {
-        if (!PUBLISHABLE_KEY) throw new Error("Missing VITE_STRIPE_PUBLISHABLE_KEY.");
+        if (!PUBLISHABLE_KEY)
+          throw new Error("Missing VITE_STRIPE_PUBLISHABLE_KEY.");
         return loadStripe(PUBLISHABLE_KEY);
       })()
     : null;
@@ -68,7 +84,9 @@ async function insertBooking(args: {
   messageToHost: string;
   paymentStatus: string;
 }) {
-  const totalCents = Number.isInteger(args.camp.price_cents) ? (args.camp.price_cents as number) : 0;
+  const totalCents = Number.isInteger(args.camp.price_cents)
+    ? (args.camp.price_cents as number)
+    : 0;
 
   const { data, error } = await supabase
     .from("bookings")
@@ -122,10 +140,13 @@ function LiveCheckoutForm(props: { user: User; camp: CampDetail }) {
   const stripe = useStripe();
   const elements = useElements();
 
-  const defaultEmail = props.user.email || (props.user.user_metadata?.email as string | undefined) || "";
+  const defaultEmail =
+    props.user.email ||
+    (props.user.user_metadata?.email as string | undefined) ||
+    "";
   const [email, setEmail] = useState(defaultEmail);
   const [messageToHost, setMessageToHost] = useState(
-    "Hi there, we’re excited to join. Anything we should know before we arrive?"
+    "Hi there, we’re excited to join. Anything we should know before we arrive?",
   );
 
   const [submitting, setSubmitting] = useState(false);
@@ -174,7 +195,9 @@ function LiveCheckoutForm(props: { user: User; camp: CampDetail }) {
       navigate(`/checkout/confirmed/${bookingId}`);
     } catch (err: any) {
       console.error(err);
-      setError(err?.message || "Payment succeeded, but booking could not be saved.");
+      setError(
+        err?.message || "Payment succeeded, but booking could not be saved.",
+      );
       setSubmitting(false);
     }
   };
@@ -245,7 +268,9 @@ function LiveCheckoutForm(props: { user: User; camp: CampDetail }) {
         disabled={!canSubmit}
         className="inline-flex w-full items-center justify-center rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting ? "processing..." : `reserve ${formatMoney(props.camp.price_cents)}`}
+        {submitting
+          ? "processing..."
+          : `reserve ${formatMoney(props.camp.price_cents)}`}
       </button>
     </form>
   );
@@ -254,10 +279,13 @@ function LiveCheckoutForm(props: { user: User; camp: CampDetail }) {
 function MockCheckoutForm(props: { user: User; camp: CampDetail }) {
   const navigate = useNavigate();
 
-  const defaultEmail = props.user.email || (props.user.user_metadata?.email as string | undefined) || "";
+  const defaultEmail =
+    props.user.email ||
+    (props.user.user_metadata?.email as string | undefined) ||
+    "";
   const [email, setEmail] = useState(defaultEmail);
   const [messageToHost, setMessageToHost] = useState(
-    "Hi there, we’re excited to join. Anything we should know before we arrive?"
+    "Hi there, we’re excited to join. Anything we should know before we arrive?",
   );
 
   const [submitting, setSubmitting] = useState(false);
@@ -313,15 +341,25 @@ function MockCheckoutForm(props: { user: User; camp: CampDetail }) {
       </Card>
 
       <Card className="space-y-4">
-        <CardHeader title="payment" subtitle="Mock mode is on. No real payment is processed." />
+        <CardHeader
+          title="payment"
+          subtitle="Mock mode is on. No real payment is processed."
+        />
         <div className="rounded-xl border border-dashed border-black/10 bg-gray-50 px-3 py-6 text-xs text-gray-500 text-center">
           payment fields are disabled in mock mode
         </div>
       </Card>
 
       <Card className="space-y-4">
-        <CardHeader title="message the host" subtitle="Share who’s coming and anything helpful to know." />
-        <Textarea value={messageToHost} onChange={(e) => setMessageToHost(e.target.value)} rows={6} />
+        <CardHeader
+          title="message the host"
+          subtitle="Share who’s coming and anything helpful to know."
+        />
+        <Textarea
+          value={messageToHost}
+          onChange={(e) => setMessageToHost(e.target.value)}
+          rows={6}
+        />
       </Card>
 
       {error ? (
@@ -412,11 +450,14 @@ export const CheckoutPage: React.FC = () => {
       setError(null);
 
       try {
-        const resp = await postJSON<{ clientSecret: string }>(`${API_URL}/create-payment-intent`, {
-          amount: camp.price_cents || 0,
-          currency: "usd",
-          campId: camp.id,
-        });
+        const resp = await postJSON<{ clientSecret: string }>(
+          `${API_URL}/create-payment-intent`,
+          {
+            amount: camp.price_cents || 0,
+            currency: "usd",
+            campId: camp.id,
+          },
+        );
 
         if (!resp?.clientSecret) throw new Error("Missing clientSecret.");
         setClientSecret(resp.clientSecret);
@@ -434,7 +475,11 @@ export const CheckoutPage: React.FC = () => {
   if (loading) return <div className="py-10 text-center">loading...</div>;
 
   if (error || !camp) {
-    return <div className="py-10 text-center text-red-600">{error || "camp not found"}</div>;
+    return (
+      <div className="py-10 text-center text-red-600">
+        {error || "camp not found"}
+      </div>
+    );
   }
 
   const heroImage = camp.hero_image_url || camp.image_url || "https://placehold.co/1200";
@@ -460,16 +505,7 @@ export const CheckoutPage: React.FC = () => {
               stripe={stripePromise}
               options={{
                 clientSecret,
-                fields: {
-                  billingDetails: {
-                    name: "auto",
-                    email: "auto",
-                    address: {
-                      country: "auto",
-                      postalCode: "auto",
-                    },
-                  },
-                },
+                // Fix: remove unsupported `fields` option (caused TS2353).
                 appearance: {
                   theme: "stripe",
                   variables: {
@@ -493,12 +529,18 @@ export const CheckoutPage: React.FC = () => {
           <Card>
             <div className="flex items-center gap-3">
               <div className="h-16 w-16 overflow-hidden rounded-xl bg-gray-100">
-                <img src={heroImage} alt={camp.name} className="h-full w-full object-cover" />
+                <img
+                  src={heroImage}
+                  alt={camp.name}
+                  className="h-full w-full object-cover"
+                />
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-gray-500">camp</p>
                 <p className="text-sm font-semibold truncate">{camp.name}</p>
-                <p className="text-xs text-gray-500 truncate">{camp.location || ""}</p>
+                <p className="text-xs text-gray-500 truncate">
+                  {camp.location || ""}
+                </p>
               </div>
             </div>
 
@@ -518,7 +560,9 @@ export const CheckoutPage: React.FC = () => {
             </dl>
 
             <p className="mt-3 text-[11px] text-gray-500">
-              {STRIPE_MODE === "mock" ? "mock mode is on. no real payment is processed." : "checkout stays in wowzie."}
+              {STRIPE_MODE === "mock"
+                ? "mock mode is on. no real payment is processed."
+                : "checkout stays in wowzie."}
             </p>
           </Card>
         </aside>

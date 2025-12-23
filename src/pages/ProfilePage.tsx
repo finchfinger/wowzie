@@ -48,9 +48,7 @@ const Badge: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </span>
 );
 
-const ActivityRow: React.FC<{ activity: UpcomingActivity }> = ({
-  activity,
-}) => {
+const ActivityRow: React.FC<{ activity: UpcomingActivity }> = ({ activity }) => {
   return (
     <div className="flex items-center justify-between rounded-xl bg-white shadow-sm ring-1 ring-black/5 px-3 sm:px-4 py-2.5 text-sm">
       <div className="flex items-center gap-3">
@@ -95,14 +93,13 @@ export const ProfilePage: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hostProfile, setHostProfile] = useState<HostProfile | null>(null);
-  const [upcomingActivities, setUpcomingActivities] = useState<
-    UpcomingActivity[]
-  >(mockUpcomingActivities);
+  const [upcomingActivities, setUpcomingActivities] = useState<UpcomingActivity[]>(
+    mockUpcomingActivities
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isOwnProfile =
-    currentUserId && profile && currentUserId === profile.id;
+  const isOwnProfile = currentUserId && profile && currentUserId === profile.id;
 
   // Load current user id once
   useEffect(() => {
@@ -143,7 +140,7 @@ export const ProfilePage: React.FC = () => {
         }
 
         // 1) Profiles (match schema exactly)
-        const { data: profileRow, error: profileError } = await supabase
+        const { data: profileRowRaw, error: profileError } = await supabase
           .from("profiles")
           .select(
             [
@@ -165,6 +162,9 @@ export const ProfilePage: React.FC = () => {
           .eq("id", targetId)
           .maybeSingle();
 
+        // IMPORTANT: cast through unknown to avoid GenericStringError typing
+        const profileRow = profileRowRaw as unknown as Profile | null;
+
         if (profileError) {
           console.error("[ProfilePage] Error loading profile:", profileError);
           setError("We could not load this profile.");
@@ -179,7 +179,7 @@ export const ProfilePage: React.FC = () => {
         }
 
         if (!isMounted) return;
-        setProfile(profileRow as Profile);
+        setProfile(profileRow);
 
         // 2) Host profile (optional)
         if (profileRow.is_host) {
@@ -194,10 +194,7 @@ export const ProfilePage: React.FC = () => {
           if (!isMounted) return;
 
           if (hostError) {
-            console.error(
-              "[ProfilePage] Error loading host profile:",
-              hostError
-            );
+            console.error("[ProfilePage] Error loading host profile:", hostError);
           } else if (hostRow) {
             setHostProfile(hostRow as HostProfile);
           }
@@ -239,10 +236,7 @@ export const ProfilePage: React.FC = () => {
             setUpcomingActivities(mapped);
           }
         } catch (innerErr) {
-          console.warn(
-            "[ProfilePage] Error while loading upcoming activities:",
-            innerErr
-          );
+          console.warn("[ProfilePage] Error while loading upcoming activities:", innerErr);
           setUpcomingActivities([]);
         }
 
@@ -294,19 +288,15 @@ export const ProfilePage: React.FC = () => {
     );
   }
 
-  const displayName =
-    profile.preferred_first_name || profile.legal_name || "Parent";
+  const displayName = profile.preferred_first_name || profile.legal_name || "Parent";
   const aboutText =
     hostProfile?.about || profile.about || "This parent has not added a bio yet.";
 
   const locationPieces = [profile.city, profile.state].filter(Boolean);
-  const locationLabel =
-    locationPieces.length > 0 ? locationPieces.join(", ") : null;
+  const locationLabel = locationPieces.length > 0 ? locationPieces.join(", ") : null;
 
   const showIdentityBadge =
-    hostProfile?.identity_verified ||
-    hostProfile?.supermom_badge ||
-    profile.is_host;
+    hostProfile?.identity_verified || hostProfile?.supermom_badge || profile.is_host;
 
   return (
     <main className="flex-1 bg-emerald-50">
@@ -324,11 +314,7 @@ export const ProfilePage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2 text-[11px]">
               {showIdentityBadge && <Badge>Identity verified</Badge>}
               {hostProfile?.supermom_badge && <Badge>Supermom</Badge>}
-              {locationLabel && (
-                <span className="text-xs text-gray-600">
-                  {locationLabel}
-                </span>
-              )}
+              {locationLabel && <span className="text-xs text-gray-600">{locationLabel}</span>}
             </div>
           </div>
 
@@ -347,8 +333,7 @@ export const ProfilePage: React.FC = () => {
                 onClick={handleMessageClick}
                 className="inline-flex items-center rounded-full bg-gray-900 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-black"
               >
-                Message{" "}
-                {profile.preferred_first_name || profile.legal_name || "parent"}
+                Message {profile.preferred_first_name || profile.legal_name || "parent"}
               </button>
             )}
           </div>
@@ -358,12 +343,9 @@ export const ProfilePage: React.FC = () => {
         <div className="space-y-6 mb-8">
           <section>
             <h2 className="text-sm font-semibold text-gray-900 mb-1.5">
-              About{" "}
-              {profile.preferred_first_name || profile.legal_name || "this parent"}
+              About {profile.preferred_first_name || profile.legal_name || "this parent"}
             </h2>
-            <p className="text-sm leading-relaxed text-gray-700 max-w-3xl">
-              {aboutText}
-            </p>
+            <p className="text-sm leading-relaxed text-gray-700 max-w-3xl">{aboutText}</p>
           </section>
 
           {hostProfile && (
@@ -389,47 +371,27 @@ export const ProfilePage: React.FC = () => {
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-emerald-950">
                 {hostProfile.instagram_handle && (
                   <p>
-                    Instagram{" "}
-                    <span className="font-medium">
-                      @{hostProfile.instagram_handle}
-                    </span>
+                    Instagram <span className="font-medium">@{hostProfile.instagram_handle}</span>
                   </p>
                 )}
                 {hostProfile.x_handle && (
                   <p>
-                    X{" "}
-                    <span className="font-medium">
-                      @{hostProfile.x_handle}
-                    </span>
+                    X <span className="font-medium">@{hostProfile.x_handle}</span>
                   </p>
                 )}
                 {hostProfile.youtube_handle && (
                   <p>
-                    YouTube{" "}
-                    <span className="font-medium">
-                      {hostProfile.youtube_handle}
-                    </span>
+                    YouTube <span className="font-medium">@{hostProfile.youtube_handle}</span>
                   </p>
                 )}
                 {hostProfile.tiktok_handle && (
                   <p>
-                    TikTok{" "}
-                    <span className="font-medium">
-                      @{hostProfile.tiktok_handle}
-                    </span>
+                    TikTok <span className="font-medium">@{hostProfile.tiktok_handle}</span>
                   </p>
                 )}
                 {hostProfile.website_url && (
                   <p>
-                    Website{" "}
-                    <a
-                      href={hostProfile.website_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium underline"
-                    >
-                      {hostProfile.website_url.replace(/^https?:\/\//, "")}
-                    </a>
+                    Website <span className="font-medium">{hostProfile.website_url}</span>
                   </p>
                 )}
               </div>
@@ -438,22 +400,17 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* Upcoming activities */}
-        <section>
-          <h2 className="text-sm font-semibold text-gray-900 mb-1">
-            Upcoming activities
-          </h2>
-          <p className="mb-3 text-xs text-gray-500">
-            Here’s what{" "}
-            {profile.preferred_first_name || profile.legal_name || "this family"}{" "}
-            has coming up.
-          </p>
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-gray-900">Upcoming</h2>
 
           {upcomingActivities.length === 0 ? (
-            <p className="text-xs text-gray-500">No upcoming activities yet.</p>
+            <div className="rounded-2xl border border-black/5 bg-white p-5 text-sm text-gray-600">
+              No upcoming activities.
+            </div>
           ) : (
-            <div className="space-y-2.5">
-              {upcomingActivities.map((activity) => (
-                <ActivityRow key={activity.id} activity={activity} />
+            <div className="space-y-2">
+              {upcomingActivities.map((a) => (
+                <ActivityRow key={a.id} activity={a} />
               ))}
             </div>
           )}
@@ -462,5 +419,3 @@ export const ProfilePage: React.FC = () => {
     </main>
   );
 };
-
-export default ProfilePage;

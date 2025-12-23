@@ -33,8 +33,8 @@ export const HelpArticleLayout: React.FC<HelpArticleLayoutProps> = ({
 
           <SectionHeader
             title={title}
-            description={description}
-            rightSlot={
+            subtitle={description}
+            actions={
               <Link to="/contact">
                 <Button size="sm" variant="outline">
                   Contact us
