@@ -11,7 +11,7 @@ import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
 
 import { LoginModal } from "./components/auth/LoginModal";
-import { SignupModal } from "./components/auth/SignupModal";
+import { SignupModal } from "./components/auth/SignUpModal";
 
 import { CampDetailPage } from "./pages/CampDetailPage";
 import HomePage from "./pages/HomePage";

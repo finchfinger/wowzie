@@ -5,6 +5,7 @@ type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  size?: "sm" | "md" | "lg";
   children: React.ReactNode;
 };
 
@@ -12,6 +13,7 @@ export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
+  size = "sm",
   children,
 }) => {
   if (!isOpen) return null;
@@ -24,6 +26,12 @@ export const Modal: React.FC<ModalProps> = ({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+
+  const sizeClasses: Record<NonNullable<ModalProps["size"]>, string> = {
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-lg",
+  };
 
   return (
     <div
@@ -43,7 +51,8 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Dialog card */}
       <div
         className={clsx(
-          "relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 shadow-overlay ring-1 ring-black/10 sm:p-8"
+          "relative z-10 w-full rounded-2xl bg-white p-6 shadow-overlay ring-1 ring-black/10 sm:p-8",
+          sizeClasses[size]
         )}
       >
         {/* Close button */}

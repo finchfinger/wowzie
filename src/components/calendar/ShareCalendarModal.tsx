@@ -5,7 +5,7 @@ import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/Textarea";
 import { Button } from "../ui/Button";
-import { Snackbar } from "../ui/snackbar";
+import { Snackbar } from "../ui/Snackbar";
 
 type Props = {
   isOpen: boolean;

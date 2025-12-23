@@ -1,19 +1,17 @@
+// src/components/activity/ActivityListingCard.tsx
 import React from "react";
 import { Link } from "react-router-dom";
-import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { IconButton } from "../ui/IconButton";
 import { Badge } from "../ui/Badge";
 
 type ActivityListingCardProps = {
-  href: string;                      // route to detail page
+  href: string;
   title: string;
   timeLabel?: string;
   imageUrl?: string | null;
   placeholderLabel?: string;
   statusLabel?: string;
   statusTone?: "neutral" | "destructive";
-  isActive: boolean;
-  onToggleActive?: (next: boolean) => void;
   onOpenMenu?: () => void;
 };
 
@@ -25,8 +23,6 @@ export const ActivityListingCard: React.FC<ActivityListingCardProps> = ({
   placeholderLabel = "",
   statusLabel,
   statusTone = "neutral",
-  isActive,
-  onToggleActive,
   onOpenMenu,
 }) => {
   const stop = (e: React.MouseEvent) => {
@@ -40,7 +36,6 @@ export const ActivityListingCard: React.FC<ActivityListingCardProps> = ({
       className="block rounded-xl border border-black/5 bg-white shadow-sm hover:shadow transition"
     >
       <article className="flex items-center gap-3 px-3 py-2">
-        
         {/* Thumbnail */}
         <div className="h-14 w-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center text-[10px] text-gray-500">
           {imageUrl ? (
@@ -54,7 +49,9 @@ export const ActivityListingCard: React.FC<ActivityListingCardProps> = ({
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">{title}</p>
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {title}
+          </p>
           <p className="text-xs text-gray-500">
             {timeLabel && timeLabel.length > 0 ? timeLabel : "Time not set"}
           </p>
@@ -63,20 +60,10 @@ export const ActivityListingCard: React.FC<ActivityListingCardProps> = ({
         {/* Controls */}
         <div className="flex items-center gap-3">
           {statusLabel && (
-            <Badge
-              tone={statusTone}
-              size="sm"
-            >
+            <Badge tone={statusTone} size="sm">
               {statusLabel}
             </Badge>
           )}
-
-          <div onClick={stop}>
-            <ToggleSwitch
-              checked={isActive}
-              onChange={(val) => onToggleActive?.(val)}
-            />
-          </div>
 
           <div onClick={stop}>
             <IconButton

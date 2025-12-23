@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { CampCard, Camp } from "../components/camps/CampCard";
+import { CampCard, Camp } from "../components/CampCard";
 
 // You can later move these into env vars; for now we’ll reuse your old supabase.js values
 const SUPABASE_URL = "https://fzdhexysoleaegzwtryf.supabase.co";

@@ -1,8 +1,8 @@
 // src/pages/HostDashboardPage.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { HostListingCard } from "../components/activity/ActivityListingCard";
+import { ActivityListingCard } from "../components/activity/ActivityListingCard";
 
 type HostTab = "listings" | "contacts" | "financials" | "settings";
 
@@ -66,10 +66,7 @@ function getStatusBadge(listing: HostListing): {
   label: string;
   tone: "neutral" | "destructive";
 } | null {
-  if (
-    listing.status === "action_required" ||
-    listing.status === "needs_review"
-  ) {
+  if (listing.status === "action_required" || listing.status === "needs_review") {
     return { label: "Action required", tone: "destructive" };
   }
   if (listing.status === "draft") {
@@ -93,9 +90,7 @@ export const HostDashboardPage: React.FC = () => {
         } = await supabase.auth.getUser();
         console.log("Supabase auth user (host dashboard):", user, userError);
 
-        const { data, error } = await supabase
-          .from(HOST_LISTINGS_TABLE)
-          .select("*");
+        const { data, error } = await supabase.from(HOST_LISTINGS_TABLE).select("*");
 
         if (error) {
           console.error("Error loading camps from Supabase:", error);
@@ -125,7 +120,7 @@ export const HostDashboardPage: React.FC = () => {
       }
     };
 
-    loadListings();
+    void loadListings();
   }, []);
 
   const sortedListings = useMemo(() => {
@@ -153,9 +148,7 @@ export const HostDashboardPage: React.FC = () => {
   const handleToggleActive = (id: string, next: boolean) => {
     // For now just update local state; later wire to Supabase
     setListings((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, is_active: next } : item,
-      ),
+      prev.map((item) => (item.id === id ? { ...item, is_active: next } : item)),
     );
   };
 
@@ -167,9 +160,7 @@ export const HostDashboardPage: React.FC = () => {
   return (
     <main className="flex-1 bg-violet-50">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-10 lg:py-12">
-        {statusMessage && (
-          <p className="mb-3 text-xs text-gray-600">{statusMessage}</p>
-        )}
+        {statusMessage && <p className="mb-3 text-xs text-gray-600">{statusMessage}</p>}
 
         {/* Top bar */}
         <div className="flex items-center justify-between gap-4 mb-6">
@@ -177,13 +168,12 @@ export const HostDashboardPage: React.FC = () => {
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-xs text-white">
               ⟳
             </span>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Host Dashboard
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Host Dashboard</h1>
           </div>
 
+          {/* IMPORTANT: Host create route */}
           <Link
-            to="/activities/new"
+            to="/host/activities/new"
             className="inline-flex items-center rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
           >
             Create listing
@@ -192,35 +182,33 @@ export const HostDashboardPage: React.FC = () => {
 
         {/* Tabs */}
         <div className="mb-4 flex items-center gap-6 text-sm border-b border-black/10">
-          {(["listings", "contacts", "financials", "settings"] as HostTab[]).map(
-            (tab) => {
-              const isActive = activeTab === tab;
-              const label =
-                tab === "listings"
-                  ? "Listings"
-                  : tab === "contacts"
-                  ? "Contacts"
-                  : tab === "financials"
-                  ? "Financials"
-                  : "Settings";
+          {(["listings", "contacts", "financials", "settings"] as HostTab[]).map((tab) => {
+            const isActive = activeTab === tab;
+            const label =
+              tab === "listings"
+                ? "Listings"
+                : tab === "contacts"
+                ? "Contacts"
+                : tab === "financials"
+                ? "Financials"
+                : "Settings";
 
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={
-                    "pb-2 " +
-                    (isActive
-                      ? "border-b-2 border-gray-900 font-medium text-gray-900"
-                      : "text-gray-500 hover:text-gray-900")
-                  }
-                >
-                  {label}
-                </button>
-              );
-            },
-          )}
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={
+                  "pb-2 " +
+                  (isActive
+                    ? "border-b-2 border-gray-900 font-medium text-gray-900"
+                    : "text-gray-500 hover:text-gray-900")
+                }
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex gap-6 items-start">
@@ -268,9 +256,7 @@ export const HostDashboardPage: React.FC = () => {
                       className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium hover:bg-gray-50"
                       value={sort}
                       onChange={(e) =>
-                        setSort(
-                          e.target.value === "upcoming" ? "upcoming" : "alpha",
-                        )
+                        setSort(e.target.value === "upcoming" ? "upcoming" : "alpha")
                       }
                     >
                       <option value="alpha">Alphabetical</option>
@@ -286,18 +272,17 @@ export const HostDashboardPage: React.FC = () => {
                       const badge = getStatusBadge(listing);
 
                       return (
-                        <HostListingCard
+                        <ActivityListingCard
                           key={listing.id}
+                          href={`/host/activities/${listing.id}/overview`}
                           title={listing.name || "Untitled activity"}
                           timeLabel={formatTimeLabel(listing.start_time)}
-                          imageUrl={
-                            listing.hero_image_url || listing.image_url || undefined
-                          }
+                          imageUrl={listing.hero_image_url || listing.image_url || undefined}
                           placeholderLabel={listing.meta?.category_label}
                           statusLabel={badge?.label}
                           statusTone={badge?.tone ?? "neutral"}
                           isActive={!!listing.is_active}
-                          onToggleActive={(next) =>
+                          onToggleActive={(next: boolean) =>
                             handleToggleActive(listing.id, next)
                           }
                           onOpenMenu={() => handleOpenMenu(listing.id)}
@@ -312,7 +297,7 @@ export const HostDashboardPage: React.FC = () => {
                   <div className="rounded-2xl border border-dashed border-black/10 bg-white/60 px-5 py-8 text-center text-sm text-gray-600">
                     <p className="mb-3">You don’t have any listings yet.</p>
                     <Link
-                      to="/activities/new"
+                      to="/host/activities/new"
                       className="inline-flex items-center rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
                     >
                       Create your first listing
@@ -327,9 +312,7 @@ export const HostDashboardPage: React.FC = () => {
                       <p className="font-medium text-gray-900">
                         Turn Instant Book on or off
                       </p>
-                      <p className="text-xs text-gray-600">
-                        Choose how guests will book
-                      </p>
+                      <p className="text-xs text-gray-600">Choose how guests will book</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
@@ -337,9 +320,7 @@ export const HostDashboardPage: React.FC = () => {
                       <p className="font-medium text-gray-900">
                         Pick your policy for cancellations
                       </p>
-                      <p className="text-xs text-gray-600">
-                        Choose how guests will book
-                      </p>
+                      <p className="text-xs text-gray-600">Choose how guests will book</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
@@ -347,9 +328,7 @@ export const HostDashboardPage: React.FC = () => {
                       <p className="font-medium text-gray-900">
                         Pick your policy for cancellations
                       </p>
-                      <p className="text-xs text-gray-600">
-                        Choose how guests will book
-                      </p>
+                      <p className="text-xs text-gray-600">Choose how guests will book</p>
                     </div>
                   </div>
                 </div>
@@ -364,3 +343,5 @@ export const HostDashboardPage: React.FC = () => {
     </main>
   );
 };
+
+export default HostDashboardPage;

@@ -3,12 +3,14 @@ import clsx from "clsx";
 
 type ToggleSwitchVariant = "full" | "switch-only";
 
-type ToggleSwitchProps = {
-  label: string;
-  srLabel?: string;
-  helperText?: string;
+export type ToggleSwitchProps = {
   checked: boolean;
-  onChange: (checked: boolean) => void;
+  onChange: (val: boolean) => void;
+  label?: string;
+  srLabel?: string;
+
+  // Keep existing flexibility (won’t break current callers)
+  helperText?: string;
   disabled?: boolean;
   id?: string;
   variant?: ToggleSwitchVariant;
@@ -24,7 +26,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   id,
   variant = "full",
 }) => {
-  const a11yLabel = srLabel || label;
+  const a11yLabel = srLabel || label || "Toggle";
 
   const handleClick = () => {
     if (disabled) return;
@@ -65,12 +67,16 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 
   if (variant === "switch-only") return switchButton;
 
+  const showLabelBlock = Boolean(label || helperText);
+
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex-1">
-        <p className="text-sm text-gray-900">{label}</p>
-        {helperText && (
-          <p className="mt-0.5 text-xs text-gray-500">{helperText}</p>
+        {showLabelBlock && (
+          <>
+            {label && <p className="text-sm text-gray-900">{label}</p>}
+            {helperText && <p className="mt-0.5 text-xs text-gray-500">{helperText}</p>}
+          </>
         )}
       </div>
       {switchButton}

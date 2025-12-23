@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/ui/Button";
 import { ActionsMenu } from "../../components/ui/ActionsMenu";
-import ShareWithEmailModal from "../../components/host/ShareWithEmailModal";
+import { ShareWithEmailModal } from "./ShareWithEmailModal";
 
 type Activity = {
   id: string;
