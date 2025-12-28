@@ -2,54 +2,62 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { CampCard } from "../components/CampCard";
+import { CampCard, CampCardSkeleton } from "../components/CampCard";
 import type { Camp } from "../components/CampCard";
 import { Button } from "../components/ui/Button";
 
 const LIMIT = 5;
 
-const CAMP_COLUMNS = `
+/**
+ * Homepage is card-first.
+ * Keep this select thin so / loads fast.
+ * If CampCard ever needs an extra field, add it here only.
+ */
+const CAMP_CARD_COLUMNS = `
   id,
   program_id,
   slug,
   name,
-  description,
   location,
   image_url,
-  hero_image_url,
   price_cents,
-  status,
-  meta,
-  is_published,
-  is_active,
-  featured,
   category,
   categories,
   listing_type,
-  series_weeks,
   schedule_days,
-  start_local,
-  end_local,
   start_time,
-  end_time,
-  created_at
+  created_at,
+  featured,
+  meta,
+  hero_image_url,
+  image_urls
 `;
 
 type HomeRow = {
   title: string;
-  subtitle?: string;
   camps: Camp[];
+  seeMore?: {
+    label: string;
+    to: string;
+  };
 };
 
 type CampRow = Camp & {
   program_id?: string | null;
   start_time?: string | null;
   created_at?: string | null;
+  featured?: boolean | null;
+  category?: string | null;
+  location?: string | null;
+  listing_type?: string | null;
+  categories?: string[] | null;
 };
 
 const getCitySeed = () => {
   const fromStorage =
-    typeof window !== "undefined" ? window.localStorage.getItem("wowzie_city") : null;
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("wowzie_city")
+      : null;
   return (fromStorage || "Chicago").trim();
 };
 
@@ -61,7 +69,10 @@ const getRecentCategorySeed = () => {
   return (fromStorage || "music").trim();
 };
 
-const programKey = (c: CampRow) => (c.program_id && c.program_id.trim() ? c.program_id.trim() : c.id);
+const programKey = (c: CampRow) => {
+  const pid = (c.program_id || "").trim();
+  return pid ? pid : c.id;
+};
 
 const ts = (iso?: string | null) => {
   if (!iso) return null;
@@ -72,12 +83,11 @@ const ts = (iso?: string | null) => {
 /**
  * Dedupes a pool so you only keep ONE listing per program.
  * Mode:
- *  - "soonest": choose the next upcoming start_time when possible (best for Starting soon)
- *  - "newest": choose the newest created_at (best for Featured/Near/Exploring/Popular)
+ *  - "soonest": choose the next upcoming start_time when possible
+ *  - "newest": choose the newest created_at
  */
 function dedupeByProgram(items: CampRow[], mode: "soonest" | "newest") {
   const map = new Map<string, CampRow>();
-
   const now = Date.now();
 
   for (const item of items) {
@@ -133,7 +143,11 @@ function dedupeByProgram(items: CampRow[], mode: "soonest" | "newest") {
  * Ensures we don't repeat the same program across rows.
  * Tracks by program_id when present, else by id.
  */
-const takeUniquePrograms = (items: CampRow[], usedProgramKeys: Set<string>, limit: number) => {
+const takeUniquePrograms = (
+  items: CampRow[],
+  usedProgramKeys: Set<string>,
+  limit: number
+) => {
   const out: CampRow[] = [];
   for (const item of items) {
     if (!item?.id) continue;
@@ -146,20 +160,19 @@ const takeUniquePrograms = (items: CampRow[], usedProgramKeys: Set<string>, limi
   return out;
 };
 
-// Base query builder
+// Base query builder (thin columns)
 const baseQuery = () =>
   supabase
     .from("camps")
-    .select(CAMP_COLUMNS)
+    .select(CAMP_CARD_COLUMNS)
     .eq("is_published", true)
     .eq("is_active", true);
 
-// Queries
-const queryFeatured = () =>
-  baseQuery().eq("featured", true).order("created_at", { ascending: false }).limit(50);
-
-const queryNearYou = (city: string) =>
-  baseQuery().ilike("location", `%${city}%`).order("created_at", { ascending: false }).limit(75);
+// Two-query homepage strategy:
+// 1) A general recent pool for most rows
+// 2) A starting-soon pool for the "Starting soon" row
+const queryPool = () =>
+  baseQuery().order("created_at", { ascending: false }).limit(180);
 
 const queryStartingSoon = () => {
   const nowIso = new Date().toISOString();
@@ -167,20 +180,17 @@ const queryStartingSoon = () => {
     .not("start_time", "is", null)
     .gte("start_time", nowIso)
     .order("start_time", { ascending: true })
-    .limit(100);
+    .limit(120);
 };
 
-const queryBecauseExploring = (category: string) =>
-  baseQuery().eq("category", category).order("created_at", { ascending: false }).limit(75);
+const normalize = (s: string) => s.trim().toLowerCase();
 
-const queryPopularHeuristic = () =>
-  baseQuery()
-    .order("featured", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(150);
-
-const queryFallbackPool = () =>
-  baseQuery().order("created_at", { ascending: false }).limit(250);
+const includesCity = (location: string | null | undefined, city: string) => {
+  const loc = normalize(location || "");
+  const c = normalize(city);
+  if (!loc || !c) return false;
+  return loc.includes(c);
+};
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -198,60 +208,58 @@ const HomePage: React.FC = () => {
       setError(null);
 
       try {
-        const [featuredRes, nearRes, soonRes, exploringRes, popularRes, fallbackRes] =
-          await Promise.all([
-            queryFeatured(),
-            queryNearYou(city),
-            queryStartingSoon(),
-            queryBecauseExploring(recentCategory),
-            queryPopularHeuristic(),
-            queryFallbackPool(),
-          ]);
+        const [poolRes, soonRes] = await Promise.all([
+          queryPool(),
+          queryStartingSoon(),
+        ]);
 
-        const firstError =
-          featuredRes.error ||
-          nearRes.error ||
-          soonRes.error ||
-          exploringRes.error ||
-          popularRes.error ||
-          fallbackRes.error;
-
+        const firstError = poolRes.error || soonRes.error;
         if (firstError) {
           console.error("Supabase error(s):", {
-            featured: featuredRes.error,
-            near: nearRes.error,
+            pool: poolRes.error,
             soon: soonRes.error,
-            exploring: exploringRes.error,
-            popular: popularRes.error,
-            fallback: fallbackRes.error,
           });
           setError("Could not load activities. Check your table or permissions.");
           setRows([]);
-          setLoading(false);
           return;
         }
 
-        const featuredRaw = (featuredRes.data || []) as CampRow[];
-        const nearRaw = (nearRes.data || []) as CampRow[];
+        const poolRaw = (poolRes.data || []) as CampRow[];
         const soonRaw = (soonRes.data || []) as CampRow[];
-        const exploringRaw = (exploringRes.data || []) as CampRow[];
-        const popularRaw = (popularRes.data || []) as CampRow[];
-        const fallbackRaw = (fallbackRes.data || []) as CampRow[];
 
         // Dedup within each pool by program
-        const featuredPool = dedupeByProgram(featuredRaw, "newest");
-        const nearPool = dedupeByProgram(nearRaw, "newest");
+        const pool = dedupeByProgram(poolRaw, "newest");
         const soonPool = dedupeByProgram(soonRaw, "soonest");
-        const exploringPool = dedupeByProgram(exploringRaw, "newest");
-        const popularPool = dedupeByProgram(popularRaw, "newest");
-        const fallbackPool = dedupeByProgram(fallbackRaw, "newest");
+
+        // Derived pools for each row
+        const featuredPool = pool.filter((c) => !!c.featured);
+        const nearPool = pool.filter((c) => includesCity(c.location, city));
+        const recommendedPool = pool.filter(
+          (c) => (c.category || "").trim() === recentCategory
+        );
+
+        // Popular heuristic: featured first, then newest
+        const popularPool = [...pool].sort((a, b) => {
+          const af = a.featured ? 1 : 0;
+          const bf = b.featured ? 1 : 0;
+          if (af !== bf) return bf - af;
+          const at = ts(a.created_at) ?? -1;
+          const bt = ts(b.created_at) ?? -1;
+          return bt - at;
+        });
+
+        const fallbackPool = pool;
 
         const usedProgramKeys = new Set<string>();
 
-        const buildRow = (pool: CampRow[]) => {
-          const chosen = takeUniquePrograms(pool, usedProgramKeys, LIMIT);
+        const buildRow = (poolIn: CampRow[]) => {
+          const chosen = takeUniquePrograms(poolIn, usedProgramKeys, LIMIT);
           if (chosen.length < LIMIT) {
-            const fill = takeUniquePrograms(fallbackPool, usedProgramKeys, LIMIT - chosen.length);
+            const fill = takeUniquePrograms(
+              fallbackPool,
+              usedProgramKeys,
+              LIMIT - chosen.length
+            );
             return [...chosen, ...fill];
           }
           return chosen;
@@ -260,28 +268,31 @@ const HomePage: React.FC = () => {
         const nextRows: HomeRow[] = [
           {
             title: "Featured",
-            subtitle: "Hand-picked activities hosts love",
             camps: buildRow(featuredPool) as unknown as Camp[],
+            seeMore: { label: "See more", to: "/search?featured=true" },
           },
           {
             title: "Near you",
-            subtitle: `In and around ${city}`,
             camps: buildRow(nearPool) as unknown as Camp[],
+            seeMore: { label: "See more", to: `/search?city=${encodeURIComponent(city)}` },
           },
           {
             title: "Starting soon",
-            subtitle: "Upcoming options you can book next",
             camps: buildRow(soonPool) as unknown as Camp[],
+            seeMore: { label: "See more", to: "/search?sort=starting_soon" },
           },
           {
-            title: "Because you’re exploring",
-            subtitle: `More in ${recentCategory}`,
-            camps: buildRow(exploringPool) as unknown as Camp[],
+            title: "Recommended for you",
+            camps: buildRow(recommendedPool) as unknown as Camp[],
+            seeMore: {
+              label: "See more",
+              to: `/search?category=${encodeURIComponent(recentCategory)}`,
+            },
           },
           {
             title: "Popular right now",
-            subtitle: "What parents are booking and saving",
             camps: buildRow(popularPool) as unknown as Camp[],
+            seeMore: { label: "See more", to: "/search?sort=popular" },
           },
         ].filter((r) => r.camps.length > 0);
 
@@ -299,6 +310,14 @@ const HomePage: React.FC = () => {
   }, [city, recentCategory]);
 
   const hasAny = rows.some((r) => r.camps.length > 0);
+
+  const skeletonRows: Array<{ title: string }> = [
+    { title: "Featured" },
+    { title: "Near you" },
+    { title: "Starting soon" },
+    { title: "Recommended for you" },
+    { title: "Popular right now" },
+  ];
 
   return (
     <main className="flex-1 max-w-screen-2xl mx-auto px-4 sm:px-6 py-8 space-y-10">
@@ -328,7 +347,7 @@ const HomePage: React.FC = () => {
             <Button
               variant="subtle"
               className="px-5 py-2.5"
-              onClick={() => navigate("/host/listings")}
+              onClick={() => navigate("/host/dashboard")}
             >
               List an activity
             </Button>
@@ -336,18 +355,43 @@ const HomePage: React.FC = () => {
         </div>
 
         <div className="relative">
-          <div className="aspect-[16/10] w-full overflow-hidden rounded-3xl bg-gray-200 shadow-md">
+          {/* Updated: no shadow + 8px radius (rounded-lg) */}
+          <div className="aspect-[16/10] w-full overflow-hidden rounded-lg bg-gray-200">
             <img
               src="/images/home-hero-kids.jpg"
               alt="Kids at camp having fun"
               className="h-full w-full object-cover"
+              loading="eager"
+              fetchPriority="high"
             />
           </div>
         </div>
       </section>
 
-      {loading && <p className="text-gray-600 text-sm">Loading activities…</p>}
       {error && <p className="text-red-600 text-sm">{error}</p>}
+
+      {loading && (
+        <div className="space-y-10" aria-busy="true" aria-live="polite">
+          {skeletonRows.map((row) => (
+            <section key={row.title} className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="h-5 w-40 rounded bg-gray-100 relative overflow-hidden">
+                  <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100" />
+                </div>
+                <div className="h-8 w-24 rounded bg-gray-100 relative overflow-hidden">
+                  <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                {Array.from({ length: LIMIT }).map((_, i) => (
+                  <CampCardSkeleton key={i} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
 
       {!loading && !error && !hasAny && (
         <p className="text-gray-700 text-sm">
@@ -359,9 +403,20 @@ const HomePage: React.FC = () => {
         <div className="space-y-10">
           {rows.map((row) => (
             <section key={row.title} className="space-y-4">
-              <div className="flex items-baseline justify-between gap-2">
-                <h2 className="text-lg font-semibold text-gray-900">{row.title}</h2>
-                {row.subtitle && <span className="text-xs text-gray-500">{row.subtitle}</span>}
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {row.title}
+                </h2>
+
+                {row.seeMore && (
+                  <Button
+                    variant="ghost"
+                    className="px-3 py-1.5 text-sm"
+                    onClick={() => navigate(row.seeMore!.to)}
+                  >
+                    See more
+                  </Button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">

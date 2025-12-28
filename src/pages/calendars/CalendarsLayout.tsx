@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Container } from "../../components/layout/Container";
 import { SectionHeader } from "../../components/layout/SectionHeader";
 import { Tabs } from "../../components/ui/Tabs";
+import { Button } from "../../components/ui/Button";
 import type { TabItem } from "../../components/ui/Tabs";
+import ShareCalendarModal from "../../components/calendar/ShareCalendarModal";
 
 type CalendarTabId = "my" | "shared";
 
@@ -15,6 +17,7 @@ const CALENDAR_TABS: TabItem[] = [
 export const CalendarsLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [shareOpen, setShareOpen] = useState(false);
 
   const getActiveTab = (): CalendarTabId => {
     const path = location.pathname;
@@ -26,16 +29,11 @@ export const CalendarsLayout: React.FC = () => {
 
   const handleTabChange = (id: string) => {
     const tab = id as CalendarTabId;
-
-    switch (tab) {
-      case "shared":
-        navigate("/calendars/shared");
-        break;
-      case "my":
-      default:
-        navigate("/calendars/my");
-        break;
+    if (tab === "shared") {
+      navigate("/calendars/shared");
+      return;
     }
+    navigate("/calendars/my");
   };
 
   return (
@@ -43,8 +41,12 @@ export const CalendarsLayout: React.FC = () => {
       <Container className="py-6 lg:py-8">
         <SectionHeader
           title="Calendars"
-          subtitle="Manage schedules, availability, and upcoming sessions."
           className="mb-6"
+          actions={
+            <Button variant="primary" onClick={() => setShareOpen(true)}>
+              Share my calendar
+            </Button>
+          }
         />
 
         <Tabs
@@ -55,6 +57,8 @@ export const CalendarsLayout: React.FC = () => {
         />
 
         <Outlet />
+
+        <ShareCalendarModal isOpen={shareOpen} onClose={() => setShareOpen(false)} />
       </Container>
     </main>
   );

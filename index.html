@@ -3,17 +3,29 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- ✅ Updated favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <!-- Material Symbols (Rounded, weight 400, fill off) -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0"
+    />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>Wowzie</title>
   </head>
 
   <body>
     <div id="root"></div>
+
+    <!-- Google Maps JS (Places only) -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=%VITE_GOOGLE_MAPS_KEY%&libraries=places"
+      async
+      defer
+    ></script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -19,10 +19,8 @@ export const Footer: React.FC = () => {
     setSubmitting(true);
     setStatus("idle");
 
-    // Normalize zip: digits only, first 5, or null
     const normalizedZipRaw = zip.replace(/\D/g, "").slice(0, 5);
     const normalizedZip = normalizedZipRaw.length === 5 ? normalizedZipRaw : null;
-
     const trimmedEmail = email.trim();
 
     try {
@@ -43,7 +41,7 @@ export const Footer: React.FC = () => {
       setStatus("success");
       setEmail("");
       setZip("");
-    } catch (err) {
+    } catch {
       setStatus("error");
     } finally {
       setSubmitting(false);
@@ -55,18 +53,18 @@ export const Footer: React.FC = () => {
       <Container className="py-12">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
           {/* LEFT SIDE — LOGO + LINKS */}
-          <div className="flex gap-10">
+          <div className="flex flex-col gap-6 sm:flex-row sm:gap-10">
             {/* Logo */}
             <a
               href="/"
-              className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-wowzie-accent text-sm font-semibold text-white"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-wowzie-accent text-sm font-semibold text-white"
             >
               W
               <span className="sr-only">Wowzie</span>
             </a>
 
             {/* Link columns */}
-            <div className="flex gap-12 text-sm text-wowzie-text-subtle">
+            <div className="grid grid-cols-2 gap-12 text-sm text-wowzie-text-subtle">
               <div className="space-y-3">
                 <h3 className="font-medium text-wowzie-text">Support</h3>
                 <ul className="space-y-2">

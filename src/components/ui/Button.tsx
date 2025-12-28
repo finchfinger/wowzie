@@ -2,7 +2,12 @@ import React from "react";
 import clsx from "clsx";
 
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
-export type ButtonVariant = "primary" | "secondary" | "subtle" | "outline" | "ghost";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "subtle"
+  | "outline"
+  | "ghost";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -18,7 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const base =
-    "inline-flex items-center justify-center rounded-lg font-medium transition focus:outline-none focus:ring-2 focus:ring-violet-200 focus:ring-offset-2";
+    "inline-flex shrink-0 items-center justify-center whitespace-nowrap leading-none rounded-lg font-medium transition focus:outline-none focus:ring-2 focus:ring-violet-200 focus:ring-offset-2";
 
   const sizes: Record<ButtonSize, string> = {
     xs: "text-xs px-2.5 py-1.5",
@@ -35,7 +40,8 @@ export const Button: React.FC<ButtonProps> = ({
     ghost: "bg-transparent text-gray-900 hover:bg-gray-100",
   };
 
-  const disabledClasses = "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:brightness-100";
+  const disabledClasses =
+    "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:brightness-100";
 
   return (
     <button

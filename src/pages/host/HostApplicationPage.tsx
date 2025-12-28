@@ -9,6 +9,7 @@ import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
 import { Checkbox } from "../../components/ui/Checkbox";
 import { Button } from "../../components/ui/Button";
+import { AddressInput } from "../../components/ui/AddressInput";
 
 const STATES: Array<{ value: string; label: string }> = [
   { value: "AL", label: "Alabama" },
@@ -73,11 +74,15 @@ export const HostApplicationPage: React.FC = () => {
   const [businessName, setBusinessName] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
   const [phone, setPhone] = useState("");
+
+  // Address fields
+  const [formattedAddress, setFormattedAddress] = useState("");
   const [address1, setAddress1] = useState("");
   const [suite, setSuite] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("IL");
   const [postalCode, setPostalCode] = useState("");
+
   const [description, setDescription] = useState("");
 
   const [agreeSafety, setAgreeSafety] = useState(false);
@@ -97,11 +102,14 @@ export const HostApplicationPage: React.FC = () => {
     setBusinessName("");
     setEmailAddress("");
     setPhone("");
+
+    setFormattedAddress("");
     setAddress1("");
     setSuite("");
     setCity("");
     setState("IL");
     setPostalCode("");
+
     setDescription("");
     setAgreeSafety(false);
     setAgreeCancellation(false);
@@ -150,12 +158,8 @@ export const HostApplicationPage: React.FC = () => {
     if (address1.trim()) addrParts.push(address1.trim());
     if (suite.trim()) addrParts.push(suite.trim());
 
-    const cityStateZip = [city.trim(), state, normalizedPostal]
-      .filter(Boolean)
-      .join(", ");
-    const addrJoined = [addrParts.join(" "), cityStateZip]
-      .filter(Boolean)
-      .join(" • ");
+    const cityStateZip = [city.trim(), state, normalizedPostal].filter(Boolean).join(", ");
+    const addrJoined = [addrParts.join(" "), cityStateZip].filter(Boolean).join(" • ");
     if (addrJoined) aboutLines.push(`Address: ${addrJoined}`);
 
     aboutLines.push("");
@@ -175,7 +179,7 @@ export const HostApplicationPage: React.FC = () => {
           applied_at: nowIso,
           updated_at: nowIso,
         },
-        { onConflict: "user_id" },
+        { onConflict: "user_id" }
       );
 
     if (upsertErr) {
@@ -189,236 +193,240 @@ export const HostApplicationPage: React.FC = () => {
   };
 
   return (
-    <main className="flex-1 bg-gray-100">
-      <Container className="py-10">
+    <main className="flex-1 bg-[#F5F1FF]">
+      <Container className="py-10 pb-16">
         <Grid cols={12} gap="gap-8">
-          <div className="col-span-12 lg:col-span-7">
-            <SectionHeader
-              title="Tell us a little bit about you"
-              subtitle="To make sure every camp is safe, fun, and a good fit, we ask all hosts to tell us a bit about themselves. We’ll review your application and get back to you quickly."
-            />
-          </div>
+          <div className="col-span-12 lg:col-span-8 lg:col-start-3">
+            <div className="mx-auto w-full max-w-[840px]">
+              <SectionHeader
+                title="Tell us a little bit about you"
+                subtitle="To make sure every camp is safe, fun, and a good fit, we ask all hosts to tell us a bit about themselves. We’ll review your application and get back to you quickly."
+              />
 
-          <div className="col-span-12 lg:col-span-5">
-            <div className="rounded-2xl border border-black/5 bg-white shadow-sm">
-              <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Basics</p>
-                  <p className="mt-1 text-[11px] text-gray-500">
-                    We will need a lawyer to sign off on this.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
+              <div className="mt-8 rounded-2xl border border-black/5 bg-white shadow-sm">
+                <form onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-6">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Business name
-                    </label>
-                    <Input
-                      value={businessName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setBusinessName(e.target.value)
-                      }
-                      disabled={submitting}
-                      placeholder="Optional"
-                    />
+                    <p className="text-sm font-semibold text-gray-900">Basics</p>
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      We will need a lawyer to sign off on this.
+                    </p>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Email address
-                    </label>
-                    <Input
-                      type="email"
-                      value={emailAddress}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setEmailAddress(e.target.value)
-                      }
-                      disabled={submitting}
-                      placeholder="Optional (we’ll use your account email if available)"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Telephone number
-                    </label>
-                    <Input
-                      value={phone}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setPhone(e.target.value)
-                      }
-                      disabled={submitting}
-                      placeholder="Optional"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Address
-                    </label>
-                    <Input
-                      value={address1}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setAddress1(e.target.value)
-                      }
-                      disabled={submitting}
-                      placeholder="Optional"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Suite (if applicable)
-                    </label>
-                    <Input
-                      value={suite}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setSuite(e.target.value)
-                      }
-                      disabled={submitting}
-                      placeholder="Optional"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      City
-                    </label>
-                    <Input
-                      value={city}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCity(e.target.value)
-                      }
-                      disabled={submitting}
-                      placeholder="Optional"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        State
-                      </label>
-                      <select
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        disabled={submitting}
-                        className={cx(
-                          "w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm",
-                          "focus:outline-none focus:ring-2 focus:ring-violet-300",
-                        )}
-                      >
-                        {STATES.map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Postal code
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Business name
                       </label>
                       <Input
-                        value={postalCode}
+                        value={businessName}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setPostalCode(e.target.value)
+                          setBusinessName(e.target.value)
                         }
                         disabled={submitting}
                         placeholder="Optional"
                       />
                     </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Email address
+                      </label>
+                      <Input
+                        type="email"
+                        value={emailAddress}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setEmailAddress(e.target.value)
+                        }
+                        disabled={submitting}
+                        placeholder="Optional (we’ll use your account email if available)"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Telephone number
+                      </label>
+                      <Input
+                        value={phone}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
+                        disabled={submitting}
+                        placeholder="Optional"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Address
+                      </label>
+                      <AddressInput
+                        value={formattedAddress}
+                        onChange={(next) => {
+                          setFormattedAddress(next);
+                          setAddress1(next);
+                        }}
+                        disabled={submitting}
+                        placeholder="Start typing an address"
+                        onSelect={(p) => {
+                          const formatted = p.formattedAddress || "";
+                          const line1 = p.line1 || formatted;
+
+                          setFormattedAddress(formatted || line1);
+                          setAddress1(line1 || "");
+                          setCity(p.city || "");
+                          setState(p.state || "IL");
+                          setPostalCode(p.postalCode || "");
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Suite (if applicable)
+                      </label>
+                      <Input
+                        value={suite}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSuite(e.target.value)}
+                        disabled={submitting}
+                        placeholder="Optional"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        City
+                      </label>
+                      <Input
+                        value={city}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
+                        disabled={submitting}
+                        placeholder="Optional"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-700">
+                          State
+                        </label>
+                        <select
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                          disabled={submitting}
+                          className={cx(
+                            "w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm",
+                            "focus:outline-none focus:ring-2 focus:ring-violet-300"
+                          )}
+                        >
+                          {STATES.map((s) => (
+                            <option key={s.value} value={s.value}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-700">
+                          Postal code
+                        </label>
+                        <Input
+                          value={postalCode}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setPostalCode(e.target.value)
+                          }
+                          disabled={submitting}
+                          placeholder="Optional"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Description
+                      </label>
+                      <Textarea
+                        value={description}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                          setDescription(e.target.value)
+                        }
+                        disabled={submitting}
+                        rows={5}
+                        placeholder="Tell us what you host, your experience, and what families should expect."
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <Textarea
-                      value={description}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                        setDescription(e.target.value)
-                      }
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        checked={agreeSafety}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setAgreeSafety(e.target.checked)
+                        }
+                        disabled={submitting}
+                      />
+                      <label className="text-xs text-gray-700">
+                        I agree to follow all safety guidelines and create a secure environment for
+                        participants.
+                      </label>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        checked={agreeCancellation}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setAgreeCancellation(e.target.checked)
+                        }
+                        disabled={submitting}
+                      />
+                      <label className="text-xs text-gray-700">
+                        I agree to honor my stated cancellation and refund policy.
+                      </label>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        checked={agreeTerms}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setAgreeTerms(e.target.checked)
+                        }
+                        disabled={submitting}
+                      />
+                      <label className="text-xs text-gray-700">
+                        I have read and agree to the full{" "}
+                        <a className="underline" href="/terms">
+                          Host Terms &amp; Rules
+                        </a>
+                        .
+                      </label>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                      {error}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <Button type="submit" disabled={submitting || !canSubmit}>
+                      {submitting ? "Submitting…" : "Submit"}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={clearForm}
                       disabled={submitting}
-                      rows={5}
-                      placeholder="Tell us what you host, your experience, and what families should expect."
-                    />
+                      className={cx(
+                        "text-sm font-medium text-gray-600 hover:text-gray-900",
+                        submitting && "cursor-not-allowed opacity-60"
+                      )}
+                    >
+                      Clear form
+                    </button>
                   </div>
-                </div>
-
-                <div className="pt-2 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      checked={agreeSafety}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setAgreeSafety(e.target.checked)
-                      }
-                      disabled={submitting}
-                    />
-                    <label className="text-xs text-gray-700">
-                      I agree to follow all safety guidelines and create a secure
-                      environment for participants.
-                    </label>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      checked={agreeCancellation}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setAgreeCancellation(e.target.checked)
-                      }
-                      disabled={submitting}
-                    />
-                    <label className="text-xs text-gray-700">
-                      I agree to honor my stated cancellation and refund policy.
-                    </label>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      checked={agreeTerms}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setAgreeTerms(e.target.checked)
-                      }
-                      disabled={submitting}
-                    />
-                    <label className="text-xs text-gray-700">
-                      I have read and agree to the full{" "}
-                      <a className="underline" href="/terms">
-                        Host Terms &amp; Rules
-                      </a>
-                      .
-                    </label>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                    {error}
-                  </div>
-                )}
-
-                <div className="pt-2 flex flex-wrap items-center gap-3">
-                  <Button type="submit" disabled={submitting || !canSubmit}>
-                    {submitting ? "Submitting…" : "Submit"}
-                  </Button>
-
-                  <button
-                    type="button"
-                    onClick={clearForm}
-                    disabled={submitting}
-                    className={cx(
-                      "text-sm font-medium",
-                      "text-gray-600 hover:text-gray-900",
-                      submitting && "opacity-60 cursor-not-allowed",
-                    )}
-                  >
-                    Clear form
-                  </button>
-                </div>
-              </form>
+                </form>
+              </div>
             </div>
           </div>
         </Grid>

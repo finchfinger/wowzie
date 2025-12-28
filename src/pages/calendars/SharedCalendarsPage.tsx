@@ -75,8 +75,6 @@ export const SharedCalendarsPage: React.FC = () => {
   const loadSenderProfiles = async (senderIds: string[]) => {
     if (!senderIds.length) return;
 
-    // Try to fetch whatever name fields exist. If your profiles table doesn’t have these,
-    // update the select list to match your schema.
     const { data, error } = await supabase
       .from("profiles")
       .select("id, full_name, preferred_name, display_name, avatar_emoji")
@@ -137,7 +135,7 @@ export const SharedCalendarsPage: React.FC = () => {
     setLoading(false);
   };
 
-  // 1) Accept token if present
+  // Accept token if present
   useEffect(() => {
     const acceptFromToken = async () => {
       if (!token) return;
@@ -172,7 +170,6 @@ export const SharedCalendarsPage: React.FC = () => {
       }
 
       showSnack("Calendar added to Shared calendars.");
-
       navigate("/calendars/shared", { replace: true });
 
       setAccepting(false);
@@ -183,7 +180,7 @@ export const SharedCalendarsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // 2) Load list on normal view
+  // Load list on normal view
   useEffect(() => {
     void loadShared();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -196,13 +193,6 @@ export const SharedCalendarsPage: React.FC = () => {
         message={snackMessage}
         onClose={() => setSnackOpen(false)}
       />
-
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Shared calendars</h2>
-        <p className="text-sm text-gray-600">
-          Calendars other people have shared with you.
-        </p>
-      </div>
 
       {(accepting || loading) && (
         <p className="text-sm text-gray-500">

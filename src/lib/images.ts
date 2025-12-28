@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { supabase } from "../lib/supabase";
-import { uploadActivityImages } from "../lib/images";
 
 type Visibility = "private" | "public";
 type ActivityType = "fixed" | "ongoing";
@@ -139,29 +138,30 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
   );
 };
 
-const CANCELLATION_OPTIONS: Array<{ value: string; label: string; helper: string }> = [
-  {
-    value: "Cancel at least 1 day before the start time for a full refund.",
-    label: "Flexible",
-    helper: "Full refund up to 24 hours before start time.",
-  },
-  {
-    value: "Cancel at least 7 days before the start time for a full refund.",
-    label: "Moderate",
-    helper: "Full refund up to 7 days before start time.",
-  },
-  {
-    value: "Cancel at least 14 days before the start time for a full refund.",
-    label: "Firm",
-    helper: "Full refund up to 14 days before start time.",
-  },
-  {
-    value:
-      "All sales are final. If you can’t attend, message the host to ask about a credit or transfer.",
-    label: "Strict",
-    helper: "No guaranteed refunds.",
-  },
-];
+const CANCELLATION_OPTIONS: Array<{ value: string; label: string; helper: string }> =
+  [
+    {
+      value: "Cancel at least 1 day before the start time for a full refund.",
+      label: "Flexible",
+      helper: "Full refund up to 24 hours before start time.",
+    },
+    {
+      value: "Cancel at least 7 days before the start time for a full refund.",
+      label: "Moderate",
+      helper: "Full refund up to 7 days before start time.",
+    },
+    {
+      value: "Cancel at least 14 days before the start time for a full refund.",
+      label: "Firm",
+      helper: "Full refund up to 14 days before start time.",
+    },
+    {
+      value:
+        "All sales are final. If you can’t attend, message the host to ask about a credit or transfer.",
+      label: "Strict",
+      helper: "No guaranteed refunds.",
+    },
+  ];
 
 export const CreateActivityPage: React.FC = () => {
   const navigate = useNavigate();
@@ -230,7 +230,7 @@ export const CreateActivityPage: React.FC = () => {
     }));
   };
 
-  // Advanced controls
+  // Advanced controls (default to FALSE)
   const [offerEarlyDropoff, setOfferEarlyDropoff] = useState(false);
   const [earlyDropoffPrice, setEarlyDropoffPrice] = useState("");
   const [earlyDropoffStart, setEarlyDropoffStart] = useState("");
@@ -243,7 +243,8 @@ export const CreateActivityPage: React.FC = () => {
 
   // Sibling discount (checkbox + dropdown + value)
   const [offerSiblingDiscount, setOfferSiblingDiscount] = useState(false);
-  const [siblingDiscountType, setSiblingDiscountType] = useState<SiblingDiscountType>("none");
+  const [siblingDiscountType, setSiblingDiscountType] =
+    useState<SiblingDiscountType>("none");
   const [siblingDiscountValue, setSiblingDiscountValue] = useState("");
 
   // Submit / load state
@@ -344,21 +345,20 @@ export const CreateActivityPage: React.FC = () => {
       const legacyPrice = (sib as any).price as string | undefined;
       const loadedEnabled = Boolean(sib.enabled);
 
-      const loadedType: SiblingDiscountType = sib.type ?? (loadedEnabled ? "amount" : "none");
+      const loadedType: SiblingDiscountType =
+        sib.type ??
+        (loadedEnabled ? "amount" : "none");
 
       setOfferSiblingDiscount(loadedEnabled);
+
       setSiblingDiscountType(loadedEnabled ? loadedType : "none");
       setSiblingDiscountValue((sib.value ?? legacyPrice ?? "") as string);
 
       // Existing images
-      const existingHero = data.hero_image_url ?? null;
-      const existingGallery = (((data.image_urls as string[]) || []) as string[]) || [];
-
-      setExistingHeroUrl(existingHero);
-      setExistingGalleryUrls(existingGallery);
-
-      setHeroPreview(existingHero);
-      setGalleryPreviews(existingGallery);
+      setExistingHeroUrl(data.hero_image_url ?? null);
+      setExistingGalleryUrls(((data.image_urls as string[]) || []) as string[]);
+      setHeroPreview(data.hero_image_url ?? null);
+      setGalleryPreviews((((data.image_urls as string[]) || []) as string[]) || []);
 
       setInitialLoading(false);
     };
@@ -401,6 +401,12 @@ export const CreateActivityPage: React.FC = () => {
         .replace(/-+/g, "-") || "camp";
     const suffix = Math.random().toString(36).slice(2, 6);
     return `${base}-${suffix}`;
+  };
+
+  const getExtension = (file: File): string => {
+    const parts = file.name.split(".");
+    if (parts.length < 2) return "jpg";
+    return parts[parts.length - 1].toLowerCase();
   };
 
   const normalizePriceToCents = (value: string): number | null => {
@@ -517,90 +523,61 @@ export const CreateActivityPage: React.FC = () => {
       // 3) Determine slug
       const slug = existingSlug ?? slugify(title);
 
-      // 4) Upload resized images to storage
-      // Preserve existing images in edit mode if no new ones uploaded
+      // 4) Upload images to storage
+      const bucket = "activity-images";
       let heroUrl: string | null = existingHeroUrl;
       let galleryUrls: string[] = [...existingGalleryUrls];
+      let anyImageUploadFailed = false;
 
-      const hasNewHero = Boolean(heroImage);
-      const hasNewGallery = galleryImages.length > 0;
+      // Hero
+      if (heroImage) {
+        const ext = getExtension(heroImage);
+        const heroPath = `${slug}/hero.${ext}`;
 
-      if (hasNewHero || hasNewGallery) {
-        const uploaded = await uploadActivityImages({
-          bucket: "activity-images",
-          slug,
-          heroImage,
-          galleryImages,
-        });
+        const { error: heroUploadError } = await supabase.storage
+          .from(bucket)
+          .upload(heroPath, heroImage, {
+            cacheControl: "3600",
+            upsert: true,
+          });
 
-        if (uploaded.heroUrl) heroUrl = uploaded.heroUrl;
-
-        if (uploaded.galleryUrls.length) {
-          // append behavior (matches your previous behavior)
-          galleryUrls = [...galleryUrls, ...uploaded.galleryUrls];
-        }
-
-        // Keep a good card image (prefer card variant, else hero, else first gallery)
-        const primaryCardUrl = uploaded.cardUrl ?? heroUrl ?? galleryUrls[0] ?? null;
-
-        const payload = {
-          name: title.trim(),
-          slug,
-          description: description || null,
-          location: location || null,
-          price_cents: priceCents,
-          host_id: hostId,
-          is_published: visibility === "public",
-          is_active: true,
-          hero_image_url: heroUrl,
-          image_urls: galleryUrls.length ? galleryUrls : null,
-          image_url: primaryCardUrl,
-          meta,
-        };
-
-        let savedId = activityId ?? null;
-
-        if (isEditMode && activityId) {
-          const { data, error } = await supabase
-            .from("camps")
-            .update(payload)
-            .eq("id", activityId)
-            .select("id, slug")
-            .single();
-
-          if (error || !data) {
-            console.error("Error updating camp:", error);
-            setSubmitError("We couldn’t save your changes. Please try again.");
-            setSubmitting(false);
-            return;
-          }
-
-          savedId = data.id;
+        if (heroUploadError) {
+          anyImageUploadFailed = true;
+          console.error("Error uploading hero image:", heroUploadError);
         } else {
-          const { data, error } = await supabase
-            .from("camps")
-            .insert(payload)
-            .select("id, slug")
-            .single();
-
-          if (error || !data) {
-            console.error("Error inserting camp:", error);
-            setSubmitError("We couldn’t save your activity. Please try again.");
-            setSubmitting(false);
-            return;
-          }
-
-          savedId = data.id;
+          const { data: heroPublic } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(heroPath);
+          heroUrl = heroPublic.publicUrl;
         }
-
-        if (savedId) navigate(`/host/activities/${savedId}`);
-        else navigate("/host/listings");
-
-        return;
       }
 
-      // No new images uploaded, still save using existing URLs
-      const primaryCardUrl = heroUrl ?? galleryUrls[0] ?? null;
+      // Gallery (append new images)
+      for (let i = 0; i < galleryImages.length; i++) {
+        const file = galleryImages[i];
+        const ext = getExtension(file);
+        const path = `${slug}/gallery-${Date.now()}-${i + 1}.${ext}`;
+
+        const { error: galleryUploadError } = await supabase.storage
+          .from(bucket)
+          .upload(path, file, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (galleryUploadError) {
+          anyImageUploadFailed = true;
+          console.error(`Error uploading gallery image ${i + 1}:`, galleryUploadError);
+          continue;
+        }
+
+        const { data: galleryPublic } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(path);
+        galleryUrls.push(galleryPublic.publicUrl);
+      }
+
+      if (!galleryUrls.length) galleryUrls = [];
 
       const payload = {
         name: title.trim(),
@@ -613,13 +590,14 @@ export const CreateActivityPage: React.FC = () => {
         is_active: true,
         hero_image_url: heroUrl,
         image_urls: galleryUrls.length ? galleryUrls : null,
-        image_url: primaryCardUrl,
+        image_url: heroUrl ?? (galleryUrls[0] ?? null),
         meta,
       };
 
       let savedId = activityId ?? null;
 
       if (isEditMode && activityId) {
+        // UPDATE
         const { data, error } = await supabase
           .from("camps")
           .update(payload)
@@ -636,6 +614,7 @@ export const CreateActivityPage: React.FC = () => {
 
         savedId = data.id;
       } else {
+        // CREATE
         const { data, error } = await supabase
           .from("camps")
           .insert(payload)
@@ -652,6 +631,13 @@ export const CreateActivityPage: React.FC = () => {
         savedId = data.id;
       }
 
+      if (anyImageUploadFailed) {
+        console.warn(
+          "One or more images failed to upload. Activity was saved without some images."
+        );
+      }
+
+      // Navigate after save
       if (savedId) navigate(`/host/activities/${savedId}`);
       else navigate("/host/listings");
     } catch (err) {
@@ -728,7 +714,9 @@ export const CreateActivityPage: React.FC = () => {
             <div className="px-4 sm:px-6 py-4 space-y-4 text-sm">
               {/* Visibility */}
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-gray-700">Visibility</label>
+                <label className="block text-xs font-medium text-gray-700">
+                  Visibility
+                </label>
                 <select
                   className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   value={visibility}
@@ -737,7 +725,9 @@ export const CreateActivityPage: React.FC = () => {
                   <option value="private">Private</option>
                   <option value="public">Public</option>
                 </select>
-                <p className="text-[11px] text-gray-500">Unlisted. Only people with link can register.</p>
+                <p className="text-[11px] text-gray-500">
+                  Unlisted. Only people with link can register.
+                </p>
               </div>
 
               {/* Title */}
@@ -754,7 +744,9 @@ export const CreateActivityPage: React.FC = () => {
 
               {/* Location + virtual toggle */}
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-gray-700">Location</label>
+                <label className="block text-xs font-medium text-gray-700">
+                  Location
+                </label>
                 <div className="flex gap-3">
                   <input
                     type="text"
@@ -777,7 +769,9 @@ export const CreateActivityPage: React.FC = () => {
 
               {/* Price */}
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-gray-700">Price per child</label>
+                <label className="block text-xs font-medium text-gray-700">
+                  Price per child
+                </label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
                     $
@@ -790,12 +784,16 @@ export const CreateActivityPage: React.FC = () => {
                     placeholder="e.g. 450"
                   />
                 </div>
-                <p className="text-[11px] text-gray-500">Total price for this camp or series in USD.</p>
+                <p className="text-[11px] text-gray-500">
+                  Total price for this camp or series in USD.
+                </p>
               </div>
 
               {/* Age range */}
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-gray-700">Age range</label>
+                <label className="block text-xs font-medium text-gray-700">
+                  Age range
+                </label>
                 <div className="flex gap-3">
                   <div className="flex-1">
                     <input
@@ -825,7 +823,9 @@ export const CreateActivityPage: React.FC = () => {
 
               {/* Cancellation policy */}
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-gray-700">Cancellation policy</label>
+                <label className="block text-xs font-medium text-gray-700">
+                  Cancellation policy
+                </label>
                 <select
                   className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   value={cancellationPolicy}
@@ -844,7 +844,9 @@ export const CreateActivityPage: React.FC = () => {
 
               {/* Description */}
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-gray-700">Description</label>
+                <label className="block text-xs font-medium text-gray-700">
+                  Description
+                </label>
                 <textarea
                   rows={4}
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -858,14 +860,16 @@ export const CreateActivityPage: React.FC = () => {
               <div className="space-y-3 border-t border-black/5 pt-4">
                 <p className="text-xs font-medium text-gray-700">Photos</p>
                 <p className="text-[11px] text-gray-500 max-w-md">
-                  Add a cover photo and a few gallery images. We will automatically resize and convert images
-                  so the site loads fast.
+                  Add a cover photo and a few gallery images. We’ll automatically rename
+                  and organize them for this activity when you publish.
                 </p>
 
                 {/* Hero / cover photo */}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[180px,1fr] items-start">
                   <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-700">Cover photo</label>
+                    <label className="block text-xs font-medium text-gray-700">
+                      Cover photo
+                    </label>
                     <div className="aspect-[4/3] w-full rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[11px] text-gray-500 overflow-hidden">
                       {heroPreview || existingHeroUrl ? (
                         <img
@@ -881,8 +885,8 @@ export const CreateActivityPage: React.FC = () => {
 
                   <div className="space-y-2 text-xs">
                     <p className="text-gray-600">
-                      This will be the main image families see on your listing. Use a bright, welcoming shot
-                      that shows the space or kids in action.
+                      This will be the main image families see on your listing. Use a
+                      bright, welcoming shot that shows the space or kids in action.
                     </p>
                     <input
                       type="file"
@@ -895,9 +899,12 @@ export const CreateActivityPage: React.FC = () => {
 
                 {/* Gallery images */}
                 <div className="space-y-2">
-                  <label className="block text-xs font-medium text-gray-700">Gallery (optional)</label>
+                  <label className="block text-xs font-medium text-gray-700">
+                    Gallery (optional)
+                  </label>
                   <p className="text-[11px] text-gray-500">
-                    Add a few more photos to show different activities, spaces, or details. Up to 8 images.
+                    Add a few more photos to show different activities, spaces, or details.
+                    Up to 8 images.
                   </p>
                   <input
                     type="file"
@@ -966,7 +973,9 @@ export const CreateActivityPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">Start date</label>
+                    <label className="block text-xs font-medium text-gray-700">
+                      Start date
+                    </label>
                     <input
                       type="date"
                       className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -975,7 +984,9 @@ export const CreateActivityPage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">End date</label>
+                    <label className="block text-xs font-medium text-gray-700">
+                      End date
+                    </label>
                     <input
                       type="date"
                       className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -987,7 +998,9 @@ export const CreateActivityPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">Start time</label>
+                    <label className="block text-xs font-medium text-gray-700">
+                      Start time
+                    </label>
                     <TimeSelect
                       value={fixedStartTime}
                       onChange={(v) => setFixedStartTime(v)}
@@ -996,7 +1009,9 @@ export const CreateActivityPage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">End time</label>
+                    <label className="block text-xs font-medium text-gray-700">
+                      End time
+                    </label>
                     <TimeSelect
                       value={fixedEndTime}
                       onChange={(v) => setFixedEndTime(v)}
@@ -1048,7 +1063,9 @@ export const CreateActivityPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">Start date</label>
+                    <label className="block text-xs font-medium text-gray-700">
+                      Start date
+                    </label>
                     <input
                       type="date"
                       className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -1057,7 +1074,9 @@ export const CreateActivityPage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">End date</label>
+                    <label className="block text-xs font-medium text-gray-700">
+                      End date
+                    </label>
                     <input
                       type="date"
                       className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -1137,7 +1156,9 @@ export const CreateActivityPage: React.FC = () => {
                 {offerEarlyDropoff && (
                   <>
                     <div className="space-y-1">
-                      <label className="block text-xs font-medium text-gray-700">Price</label>
+                      <label className="block text-xs font-medium text-gray-700">
+                        Price
+                      </label>
                       <input
                         type="text"
                         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -1149,7 +1170,9 @@ export const CreateActivityPage: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-700">Start time</label>
+                        <label className="block text-xs font-medium text-gray-700">
+                          Start time
+                        </label>
                         <TimeSelect
                           value={earlyDropoffStart}
                           onChange={setEarlyDropoffStart}
@@ -1157,7 +1180,9 @@ export const CreateActivityPage: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-700">End time</label>
+                        <label className="block text-xs font-medium text-gray-700">
+                          End time
+                        </label>
                         <TimeSelect
                           value={earlyDropoffEnd}
                           onChange={setEarlyDropoffEnd}
@@ -1184,7 +1209,9 @@ export const CreateActivityPage: React.FC = () => {
                 {offerExtendedDay && (
                   <>
                     <div className="space-y-1">
-                      <label className="block text-xs font-medium text-gray-700">Price</label>
+                      <label className="block text-xs font-medium text-gray-700">
+                        Price
+                      </label>
                       <input
                         type="text"
                         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -1196,7 +1223,9 @@ export const CreateActivityPage: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-700">Start time</label>
+                        <label className="block text-xs font-medium text-gray-700">
+                          Start time
+                        </label>
                         <TimeSelect
                           value={extendedDayStart}
                           onChange={setExtendedDayStart}
@@ -1204,7 +1233,9 @@ export const CreateActivityPage: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-700">End time</label>
+                        <label className="block text-xs font-medium text-gray-700">
+                          End time
+                        </label>
                         <TimeSelect
                           value={extendedDayEnd}
                           onChange={setExtendedDayEnd}
@@ -1233,6 +1264,7 @@ export const CreateActivityPage: React.FC = () => {
                         return;
                       }
 
+                      // if turning on and type was none, default to percent to avoid "enabled + none"
                       if (siblingDiscountType === "none") setSiblingDiscountType("percent");
                     }}
                   />
@@ -1243,11 +1275,16 @@ export const CreateActivityPage: React.FC = () => {
                   <div className="space-y-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-700">Discount type</label>
+                        <label className="block text-xs font-medium text-gray-700">
+                          Discount type
+                        </label>
                         <select
-                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm
+                                     focus:outline-none focus:ring-2 focus:ring-violet-500"
                           value={siblingDiscountType === "none" ? "percent" : siblingDiscountType}
-                          onChange={(e) => setSiblingDiscountType(e.target.value as SiblingDiscountType)}
+                          onChange={(e) =>
+                            setSiblingDiscountType(e.target.value as SiblingDiscountType)
+                          }
                         >
                           <option value="percent">% off each additional sibling</option>
                           <option value="amount">$ off each additional sibling</option>
@@ -1255,9 +1292,12 @@ export const CreateActivityPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-700">Value</label>
+                        <label className="block text-xs font-medium text-gray-700">
+                          Value
+                        </label>
                         <div className="relative">
-                          {(siblingDiscountType === "amount" || siblingDiscountType === "none") && (
+                          {(siblingDiscountType === "amount" ||
+                            siblingDiscountType === "none") && (
                             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
                               $
                             </span>
@@ -1298,8 +1338,18 @@ export const CreateActivityPage: React.FC = () => {
             >
               Save for later
             </Button>
-            <Button type="submit" className="text-sm bg-gray-900 text-white" disabled={submitting}>
-              {submitting ? (isEditMode ? "Saving…" : "Creating…") : isEditMode ? "Save changes" : "Create event"}
+            <Button
+              type="submit"
+              className="text-sm bg-gray-900 text-white"
+              disabled={submitting}
+            >
+              {submitting
+                ? isEditMode
+                  ? "Saving…"
+                  : "Creating…"
+                : isEditMode
+                  ? "Save changes"
+                  : "Create event"}
             </Button>
           </div>
         </form>
