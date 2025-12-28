@@ -140,9 +140,8 @@ const ActivityGuestDetailPage = lazy(() =>
 );
 
 // Activity create / review
-const CreateActivityPage = lazy(() =>
-  import("./pages/CreateActivityPage").then((m) => ({ default: m.CreateActivityPage }))
-);
+const CreateActivityPage = lazy(() => import("./pages/CreateActivityPage"));
+
 const ActivityReviewPage = lazy(() =>
   import("./pages/ActivityReviewPage").then((m) => ({ default: m.ActivityReviewPage }))
 );
