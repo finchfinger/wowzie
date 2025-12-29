@@ -90,7 +90,7 @@ export const CampCard: React.FC<CampCardProps> = ({
   const { id, slug, name, meta } = camp;
 
   const images = useMemo(() => buildImageList(camp), [camp]);
-  const [imageIndex, setImageIndex] = useState(0);
+const [imageIndex] = useState(0);
   const safeIndex = imageIndex >= 0 && imageIndex < images.length ? imageIndex : 0;
 
   const price = useMemo(() => formatPrice(camp.price_cents), [camp.price_cents]);
