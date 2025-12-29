@@ -49,12 +49,11 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="border-t border-wowzie-borderSubtle bg-wowzie-surface mt-16">
+    <footer>
       <Container className="py-12">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
-          {/* LEFT SIDE — LOGO + LINKS */}
+          {/* LEFT — LOGO + LINKS */}
           <div className="flex flex-col gap-6 sm:flex-row sm:gap-10">
-            {/* Logo */}
             <a
               href="/"
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-wowzie-accent text-sm font-semibold text-white"
@@ -63,7 +62,6 @@ export const Footer: React.FC = () => {
               <span className="sr-only">Wowzie</span>
             </a>
 
-            {/* Link columns */}
             <div className="grid grid-cols-2 gap-12 text-sm text-wowzie-text-subtle">
               <div className="space-y-3">
                 <h3 className="font-medium text-wowzie-text">Support</h3>
@@ -122,7 +120,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* RIGHT SIDE — NEWSLETTER */}
+          {/* RIGHT — NEWSLETTER */}
           <div className="w-full max-w-xl space-y-4 text-sm">
             <div className="space-y-1">
               <h3 className="text-base font-medium text-wowzie-text">
