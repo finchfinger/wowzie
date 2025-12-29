@@ -1,4 +1,3 @@
-// src/components/CampCard.tsx
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCampFavorite } from "../hooks/useCampFavorite";
@@ -16,8 +15,8 @@ export type Camp = {
   hero_image_url?: string | null;
 
   price_cents?: number | null;
+  price_unit?: string | null;
 
-  // Add these (you already select listing_type on HomePage)
   listing_type?: "camp" | "series" | "class" | string | null;
   schedule_days?: string[] | null;
 
@@ -42,17 +41,13 @@ export const CampCardSkeleton: React.FC<CampCardSkeletonProps> = ({
   showPrice = true,
 }) => {
   return (
-    <article className="group relative flex flex-col rounded-xl overflow-hidden bg-transparent">
-      <div className="relative w-full aspect-square overflow-hidden rounded-xl">
+    <article className="flex flex-col">
+      <div className="aspect-square rounded-xl overflow-hidden">
         <Skeleton className="h-full w-full" rounded="xl" />
-
-        <div className="absolute top-3 right-3 h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center">
-          <Skeleton className="h-5 w-5" rounded="full" />
-        </div>
       </div>
 
-      <div className="pt-4 pb-4 space-y-2">
-        <Skeleton className="h-4 w-4/5" rounded="md" />
+      <div className="pt-4 space-y-2">
+        <Skeleton className="h-4 w-3/4" rounded="md" />
         {showDateLabel && <Skeleton className="h-3 w-2/5" rounded="md" />}
         {showPrice && <Skeleton className="h-4 w-1/2" rounded="md" />}
       </div>
@@ -60,9 +55,11 @@ export const CampCardSkeleton: React.FC<CampCardSkeletonProps> = ({
   );
 };
 
+/* ---------- helpers ---------- */
+
 const formatPrice = (price_cents?: number | null) => {
-  if (typeof price_cents !== "number" || !Number.isFinite(price_cents)) return "";
-  if (price_cents <= 0) return "";
+  if (typeof price_cents !== "number" || !Number.isFinite(price_cents)) return null;
+  if (price_cents <= 0) return null;
   return `$${Math.round(price_cents / 100)}`;
 };
 
@@ -79,16 +76,11 @@ const buildImageList = (camp: Camp) => {
 
   if (camp.image_url && camp.image_url.trim()) candidates.push(camp.image_url.trim());
 
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const u of candidates) {
-    if (seen.has(u)) continue;
-    seen.add(u);
-    out.push(u);
-  }
-
+  const out = Array.from(new Set(candidates));
   return out.length ? out : ["https://placehold.co/800"];
 };
+
+/* ---------- card ---------- */
 
 export const CampCard: React.FC<CampCardProps> = ({
   camp,
@@ -98,96 +90,82 @@ export const CampCard: React.FC<CampCardProps> = ({
   const { id, slug, name, meta } = camp;
 
   const images = useMemo(() => buildImageList(camp), [camp]);
-  const [index, setIndex] = useState(0);
-  const safeIndex = index >= 0 && index < images.length ? index : 0;
+  const [imageIndex, setImageIndex] = useState(0);
+  const safeIndex = imageIndex >= 0 && imageIndex < images.length ? imageIndex : 0;
+
+  const price = useMemo(() => formatPrice(camp.price_cents), [camp.price_cents]);
+  const unit = useMemo(() => getPriceUnit(camp), [camp]);
 
   const dateLabel: string | null =
     typeof meta?.dateLabel === "string" && meta.dateLabel.trim()
       ? meta.dateLabel.trim()
       : null;
 
-  const price = useMemo(() => formatPrice(camp.price_cents), [camp.price_cents]);
-  const unit = useMemo(() => getPriceUnit(camp), [camp]);
-
-  const hook = useCampFavorite(id);
+  const favoriteHook = useCampFavorite(id);
   const isControlled =
     typeof onToggleFavorite === "function" && typeof isFavoriteProp === "boolean";
 
-  const isFavorite = isControlled ? isFavoriteProp : hook.isFavorite;
-  const favoriteLoading = isControlled ? false : hook.favoriteLoading;
+  const isFavorite = isControlled ? isFavoriteProp : favoriteHook.isFavorite;
+  const favoriteLoading = isControlled ? false : favoriteHook.favoriteLoading;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (isControlled) {
-      onToggleFavorite(id);
+      onToggleFavorite!(id);
       return;
     }
 
-    hook.toggleFavorite();
+    favoriteHook.toggleFavorite();
   };
 
   return (
-    <article className="group relative flex flex-col rounded-xl overflow-hidden bg-transparent">
-      <div className="relative w-full aspect-square overflow-hidden rounded-xl">
-        <Link to={`/camp/${slug}`} className="block h-full w-full">
+    <article className="group relative">
+      {/* FULL TILE LINK */}
+      <Link
+        to={`/camp/${slug}`}
+        className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-200 focus:ring-offset-2"
+        aria-label={`View ${name}`}
+      >
+        {/* IMAGE */}
+        <div className="relative aspect-square overflow-hidden rounded-xl bg-gray-100">
           <img
             src={images[safeIndex]}
             alt={name}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
             loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
-        </Link>
 
-        <button
-          type="button"
-          onClick={handleFavoriteClick}
-          disabled={favoriteLoading}
-          className="absolute top-3 right-3 h-10 w-10 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-sm disabled:opacity-60"
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          <span
-            className={`text-xl transition-colors ${
-              isFavorite ? "text-red-500" : "text-gray-700"
-            }`}
-          >
-            {isFavorite ? "♥" : "♡"}
-          </span>
-        </button>
+</div>
 
-        {/* No dots. Optional click-to-advance when multiple images */}
-        {images.length > 1 && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIndex((prev) => (prev + 1) % images.length);
-            }}
-            className="absolute inset-0"
-            aria-label="Next photo"
-          />
-        )}
-      </div>
+        {/* CONTENT */}
+        <div className="pt-4 space-y-1">
+          <div className="text-sm font-semibold text-gray-900">{name}</div>
 
-      <div className="pt-4 pb-4 space-y-1">
-        <Link
-          to={`/camp/${slug}`}
-          className="block text-sm font-semibold text-gray-900 hover:text-black"
-        >
-          {name}
-        </Link>
+          {dateLabel && <div className="text-xs text-gray-600">{dateLabel}</div>}
 
-        {dateLabel && <p className="text-xs text-gray-600">{dateLabel}</p>}
+          {price && (
+            <div className="text-sm">
+              <span className="font-semibold">{price}</span>
+              <span className="text-gray-500"> {unit}</span>
+            </div>
+          )}
+        </div>
+      </Link>
 
-        {price && (
-          <p className="text-sm">
-            <span className="font-semibold">{price}</span>
-            <span className="text-gray-500"> {unit}</span>
-          </p>
-        )}
-      </div>
+      {/* FAVORITE (outside link, so it won't navigate) */}
+      <button
+        type="button"
+        onClick={handleFavoriteClick}
+        disabled={favoriteLoading}
+        className="absolute top-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white disabled:opacity-60"
+        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      >
+        <span className={isFavorite ? "text-red-500" : "text-gray-700"}>
+          {isFavorite ? "♥" : "♡"}
+        </span>
+      </button>
     </article>
   );
 };
