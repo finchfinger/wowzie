@@ -25,3 +25,6 @@ dist-ssr
 backend/.env
 backend/.env
 supabase/.temp/
+
+*storybook.log
+storybook-static

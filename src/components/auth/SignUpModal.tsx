@@ -1,7 +1,9 @@
 // src/components/auth/SignupModal.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal } from "../ui/Modal";
 import { supabase } from "../../lib/supabase";
+import { AddressInput } from "../ui/AddressInput";
+import type { AddressSelection } from "../ui/AddressInput";
 
 type SignupModalProps = {
   isOpen: boolean;
@@ -12,7 +14,7 @@ type SignupModalProps = {
 
 type ChildDraft = {
   name: string;
-  ageYears: string; // keep as string for input, parse to int for DB
+  birthdate: string; // keep as string for input, store "YYYY-MM-DD"
   interests: string[];
 };
 
@@ -34,6 +36,56 @@ const ALL_INTERESTS = [
 const cx = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(" ");
 
+/**
+ * AddressInput's onSelect can arrive as either:
+ * - AddressSelection (from Places/autocomplete selection)
+ * - SyntheticEvent (if the component forwards an input event in some cases)
+ *
+ * We only want to read AddressSelection fields when it is truly a selection.
+ */
+function isAddressSelection(v: unknown): v is AddressSelection {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  return (
+    "formattedAddress" in o ||
+    "placeId" in o ||
+    "line1" in o ||
+    "city" in o ||
+    "state" in o ||
+    "postalCode" in o
+  );
+}
+
+function parseBirthdateToAgeYears(birthdate: string): number | null {
+  // birthdate expected "YYYY-MM-DD"
+  if (!birthdate) return null;
+
+  const [yStr, mStr, dStr] = birthdate.split("-");
+  const y = Number(yStr);
+  const m = Number(mStr);
+  const d = Number(dStr);
+  if (!y || !m || !d) return null;
+
+  const dob = new Date(Date.UTC(y, m - 1, d));
+  if (Number.isNaN(dob.getTime())) return null;
+
+  const now = new Date();
+  const nowUTC = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  );
+
+  let age = nowUTC.getUTCFullYear() - dob.getUTCFullYear();
+  const hasHadBirthdayThisYear =
+    nowUTC.getUTCMonth() > dob.getUTCMonth() ||
+    (nowUTC.getUTCMonth() === dob.getUTCMonth() &&
+      nowUTC.getUTCDate() >= dob.getUTCDate());
+
+  if (!hasHadBirthdayThisYear) age -= 1;
+  if (age < 0 || age > 120) return null;
+
+  return age;
+}
+
 export const SignupModal: React.FC<SignupModalProps> = ({
   isOpen,
   onClose,
@@ -49,11 +101,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // Step 2: parent details
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+
+  // Location
+  // We keep two values:
+  // - location: what we display (typed text or formatted address)
+  // - locationCity: best-effort extracted city (for profiles.city)
   const [location, setLocation] = useState("");
+  const [locationCity, setLocationCity] = useState("");
 
   // Step 3: child details (draft)
   const [childName, setChildName] = useState("");
-  const [childAgeYears, setChildAgeYears] = useState("");
+  const [childBirthdate, setChildBirthdate] = useState(""); // YYYY-MM-DD
   const [childInterests, setChildInterests] = useState<string[]>([]);
 
   // Collected children (not saved until Step 4 -> Save)
@@ -74,9 +132,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setFirstName("");
     setLastName("");
     setLocation("");
+    setLocationCity("");
 
     setChildName("");
-    setChildAgeYears("");
+    setChildBirthdate("");
     setChildInterests([]);
 
     setChildren([]);
@@ -175,7 +234,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
       const user = userResult.user;
 
-      // Update auth metadata (optional, but fine)
+      // Update auth metadata (optional)
       const { error: updateError } = await supabase.auth.updateUser({
         data: {
           first_name: firstName.trim(),
@@ -195,7 +254,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         email: user.email,
         legal_name: legalName || null,
         preferred_first_name: firstName.trim() || null,
-        city: location.trim() || null,
+        city: locationCity.trim() || null,
       });
 
       setStatus("");
@@ -220,14 +279,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     e.preventDefault();
     setError("");
 
-    if (!childName.trim() || !childAgeYears.trim()) {
-      setError("Please add your child’s name and age, or choose Skip.");
+    if (!childName.trim() || !childBirthdate.trim()) {
+      setError("Please add your child’s name and birthdate, or choose Skip.");
       return;
     }
 
     const draft: ChildDraft = {
       name: childName.trim(),
-      ageYears: childAgeYears.trim(),
+      birthdate: childBirthdate.trim(),
       interests: childInterests,
     };
 
@@ -235,7 +294,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     // reset draft
     setChildName("");
-    setChildAgeYears("");
+    setChildBirthdate("");
     setChildInterests([]);
 
     setStep(4);
@@ -248,7 +307,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   const handleAddAnotherChild = () => {
     setChildName("");
-    setChildAgeYears("");
+    setChildBirthdate("");
     setChildInterests([]);
     setStep(3);
   };
@@ -273,14 +332,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
       if (children.length > 0) {
         const rows = children.map((child) => {
-          const parsedAge = parseInt(child.ageYears, 10);
-          const ageYears = Number.isNaN(parsedAge) ? null : parsedAge;
+          const ageYears = parseBirthdateToAgeYears(child.birthdate);
 
           return {
             parent_id: parentId,
             legal_name: child.name,
             preferred_name: null,
-            birthdate: null,
+            birthdate: child.birthdate,
             allergies: null,
             immunization_notes: null,
             medications: null,
@@ -290,7 +348,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           };
         });
 
-        const { error: insertError } = await supabase.from("children").insert(rows);
+        const { error: insertError } = await supabase
+          .from("children")
+          .insert(rows);
 
         if (insertError) {
           console.error("Error inserting children:", insertError);
@@ -326,6 +386,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   if (step === 3) title = "Who are you booking for?";
   if (step === 4) title = "Here’s what we have so far";
   if (step === 5) title = "Registration created";
+
+  const todayISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
@@ -447,22 +509,32 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label
-                htmlFor="parent-location"
-                className="block text-sm font-medium text-gray-800"
-              >
-                Location
+              <label className="block text-sm font-medium text-gray-800">
+                Where should we look for activities near you?
               </label>
-              <input
-                id="parent-location"
-                type="text"
-                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-                placeholder="Neighborhood or city"
+
+              <AddressInput
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(next) => {
+                  // typed value
+                  setLocation(next);
+                  setLocationCity("");
+                }}
+                placeholder="Neighborhood, city, or zip code"
+                onSelect={(p) => {
+                  if (!isAddressSelection(p)) return;
+
+                  const formatted = p.formattedAddress || "";
+                  const city = p.city || "";
+
+                  // prefer formatted address, fall back to city
+                  setLocation(formatted || city);
+                  setLocationCity(city);
+                }}
               />
+
               <p className="text-xs text-gray-500">
-                This helps us personalize nearby activities.
+                We’ll use this to show nearby camps and classes.
               </p>
             </div>
 
@@ -514,21 +586,18 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
             <div className="space-y-1.5">
               <label
-                htmlFor="child-age"
+                htmlFor="child-birthdate"
                 className="block text-sm font-medium text-gray-800"
               >
-                How old are they?
+                What’s their birthdate?
               </label>
               <input
-                id="child-age"
-                type="text"
-                inputMode="numeric"
+                id="child-birthdate"
+                type="date"
+                max={todayISO}
                 className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-                placeholder="7"
-                value={childAgeYears}
-                onChange={(e) =>
-                  setChildAgeYears(e.target.value.replace(/[^0-9]/g, ""))
-                }
+                value={childBirthdate}
+                onChange={(e) => setChildBirthdate(e.target.value)}
               />
             </div>
 
@@ -598,7 +667,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 >
                   <div className="font-medium">{child.name}</div>
                   <div className="text-xs text-gray-600">
-                    Age {child.ageYears || "—"}
+                    Birthdate {child.birthdate || "—"}
                   </div>
                   {child.interests.length > 0 && (
                     <div className="mt-1 text-xs text-gray-700">

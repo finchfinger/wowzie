@@ -1,9 +1,10 @@
 // src/pages/CampDetailPage.tsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/Button";
+import CampShareModal from "../components/ui/CampShareModal";
 import { useCampFavorite } from "../hooks/useCampFavorite";
 import type { Camp as BaseCamp } from "../components/CampCard";
 import { InfoRow } from "../components/layout/InfoRow";
@@ -89,7 +90,6 @@ const cancellationPolicyToCopy = (policy?: string | null): string => {
     return "This booking is non-refundable once reserved.";
   }
 
-  // Backward-compatible fallback if old camps stored free-form text
   if (p) return p;
 
   return "See details at checkout.";
@@ -99,7 +99,6 @@ const formatMoneyLoose = (value?: string | null): string | null => {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
 
-  // If someone typed "$25", keep it. If they typed "25", show "$25".
   const cleaned = raw.replace(/[^0-9.]/g, "");
   const num = Number(cleaned);
   if (!Number.isFinite(num)) return raw;
@@ -121,7 +120,6 @@ const formatPercentLoose = (value?: string | null): string | null => {
     return `${shown}%`;
   }
 
-  // If they typed something odd, keep it.
   return raw.includes("%") ? raw : `${raw}%`;
 };
 
@@ -138,7 +136,6 @@ const formatSiblingDiscountLine = (sib?: CampMetaAdvanced["siblingDiscount"]): s
   const type = sib.type;
   const value = sib.value ?? null;
 
-  // Legacy fallback
   const legacy = sib.price ?? null;
 
   if (type === "percent") {
@@ -153,7 +150,6 @@ const formatSiblingDiscountLine = (sib?: CampMetaAdvanced["siblingDiscount"]): s
     return `Sibling discount: ${money} off each additional child`;
   }
 
-  // If enabled but type missing, attempt to show legacy or best effort
   const moneyLegacy = formatMoneyLoose(legacy);
   if (moneyLegacy) return `Sibling discount: ${moneyLegacy} off each additional child`;
 
@@ -174,10 +170,16 @@ export const CampDetailPage: React.FC = () => {
   const [confirmedCount, setConfirmedCount] = useState<number | null>(null);
   const [loadingBooking, setLoadingBooking] = useState(false);
 
-  const shareInFlightRef = useRef(false);
-  const [sharing, setSharing] = useState(false);
-
   const { isFavorite, favoriteLoading, toggleFavorite } = useCampFavorite(camp?.id ?? null);
+
+  // Share modal
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+
+  useEffect(() => {
+    // Set after mount; avoids window access during render
+    setShareUrl(window.location.href);
+  }, []);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -267,6 +269,11 @@ export const CampDetailPage: React.FC = () => {
   const handleBack = () => {
     if (window.history.length > 1) navigate(-1);
     else navigate("/");
+  };
+
+  const openShareModal = () => {
+    setShareUrl(window.location.href);
+    setShareOpen(true);
   };
 
   if (loadingCamp) {
@@ -374,7 +381,6 @@ export const CampDetailPage: React.FC = () => {
   else if (minAge) guestRequirements = `This activity is for guests ages ${minAge} and up.`;
   else if (maxAge) guestRequirements = `This activity is for guests up to age ${maxAge}.`;
 
-  // Add-ons pulled from meta.advanced
   const advanced = (meta?.advanced || {}) as CampMetaAdvanced;
 
   const early = advanced.earlyDropoff;
@@ -399,43 +405,6 @@ export const CampDetailPage: React.FC = () => {
   ]
     .filter(Boolean)
     .join("\n");
-
-  const handleShare = async () => {
-    const url = window.location.href;
-
-    if (shareInFlightRef.current) return;
-
-    const canNativeShare = typeof navigator !== "undefined" && "share" in navigator;
-    const canClipboard = typeof navigator !== "undefined" && !!navigator.clipboard?.writeText;
-
-    shareInFlightRef.current = true;
-    setSharing(true);
-
-    try {
-      if (canNativeShare) {
-        await (navigator as any).share({
-          title: name,
-          text: "Check out this camp on Wowzie",
-          url,
-        });
-        return;
-      }
-
-      if (canClipboard) {
-        await navigator.clipboard.writeText(url);
-        return;
-      }
-
-      window.prompt("Copy this link:", url);
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      if (err?.name === "InvalidStateError") return;
-      console.error("Share failed:", err);
-    } finally {
-      shareInFlightRef.current = false;
-      setSharing(false);
-    }
-  };
 
   const handleMessage = () => {
     navigate(`/messages?campId=${id}`);
@@ -514,12 +483,11 @@ export const CampDetailPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={handleShare}
-                  disabled={sharing}
-                  className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 disabled:opacity-60"
+                  onClick={openShareModal}
+                  className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
                 >
                   <span>👨‍👩‍👧</span>
-                  <span>{sharing ? "Sharing…" : "Share"}</span>
+                  <span>Share</span>
                 </button>
 
                 <button
@@ -564,9 +532,7 @@ export const CampDetailPage: React.FC = () => {
 
               {statusVariant === "booked" && (
                 <>
-                  <p className="text-sm font-semibold text-emerald-900">
-                    ✅ You’re in. We can’t wait to see you!
-                  </p>
+                  <p className="text-sm font-semibold text-emerald-900">✅ You’re in. We can’t wait to see you!</p>
                   <div className="flex flex-wrap gap-2 mt-2">
                     <Button
                       size="xs"
@@ -634,6 +600,18 @@ export const CampDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <CampShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        campName={name}
+        url={shareUrl || window.location.href}
+        onShareEmail={async (email) => {
+          // Stub: wire this to an Edge Function when ready.
+          // Keeping it non-throwing prevents the modal from showing a false error.
+          console.log("Share invite requested:", { email, campId: id, url: shareUrl || window.location.href, campName: name });
+        }}
+      />
     </main>
   );
 };

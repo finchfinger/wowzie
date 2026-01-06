@@ -1,4 +1,5 @@
-import React from "react";
+// src/components/ui/Button.tsx
+import type { ButtonHTMLAttributes } from "react";
 import clsx from "clsx";
 
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
@@ -9,19 +10,19 @@ export type ButtonVariant =
   | "outline"
   | "ghost";
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
 };
 
-export const Button: React.FC<ButtonProps> = ({
+export const Button = ({
   children,
   variant = "primary",
   size = "md",
   className,
   disabled,
   ...props
-}) => {
+}: ButtonProps) => {
   const base =
     "inline-flex shrink-0 items-center justify-center whitespace-nowrap leading-none rounded-lg font-medium transition focus:outline-none focus:ring-2 focus:ring-violet-200 focus:ring-offset-2";
 
