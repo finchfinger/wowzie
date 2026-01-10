@@ -24,7 +24,9 @@ const Protected: React.FC<ProtectedProps> = ({ user, children }) => {
 };
 
 const LoadingShell: React.FC = () => (
-  <div className="px-4 sm:px-6 py-8 text-sm text-gray-600">Loading…</div>
+  <div className="px-4 sm:px-6 py-8 text-sm text-wowzie-text-subtle">
+    Loading…
+  </div>
 );
 
 /**
@@ -71,7 +73,9 @@ const ChildDetailPage = lazy(() => import("./pages/ChildDetailPage"));
 
 // Notifications & messages
 const NotificationsPage = lazy(() =>
-  import("./pages/NotificationsPage").then((m) => ({ default: m.NotificationsPage }))
+  import("./pages/NotificationsPage").then((m) => ({
+    default: m.NotificationsPage,
+  }))
 );
 const MessagesPage = lazy(() => import("./pages/messages/MessagesPage"));
 
@@ -95,10 +99,14 @@ const HostLayout = lazy(() =>
   import("./pages/host/HostLayout").then((m) => ({ default: m.HostLayout }))
 );
 const HostListingsPage = lazy(() =>
-  import("./pages/host/HostListingsPage").then((m) => ({ default: m.HostListingsPage }))
+  import("./pages/host/HostListingsPage").then((m) => ({
+    default: m.HostListingsPage,
+  }))
 );
 const HostContactsPage = lazy(() =>
-  import("./pages/host/HostContactsPage").then((m) => ({ default: m.HostContactsPage }))
+  import("./pages/host/HostContactsPage").then((m) => ({
+    default: m.HostContactsPage,
+  }))
 );
 const HostFinancialsPage = lazy(() =>
   import("./pages/host/HostFinancialsPage").then((m) => ({
@@ -106,7 +114,9 @@ const HostFinancialsPage = lazy(() =>
   }))
 );
 const HostSettingsPage = lazy(() =>
-  import("./pages/host/HostSettingsPage").then((m) => ({ default: m.HostSettingsPage }))
+  import("./pages/host/HostSettingsPage").then((m) => ({
+    default: m.HostSettingsPage,
+  }))
 );
 
 const HostApplicationPage = lazy(() => import("./pages/host/HostApplicationPage"));
@@ -143,14 +153,20 @@ const ActivityGuestDetailPage = lazy(() =>
 const CreateActivityPage = lazy(() => import("./pages/CreateActivityPage"));
 
 const ActivityReviewPage = lazy(() =>
-  import("./pages/ActivityReviewPage").then((m) => ({ default: m.ActivityReviewPage }))
+  import("./pages/ActivityReviewPage").then((m) => ({
+    default: m.ActivityReviewPage,
+  }))
 );
 
 // Activities (parent-facing)
 const ActivitiesLayout = lazy(() => import("./pages/activities/ActivitiesLayout"));
-const ActivitiesUpcomingPage = lazy(() => import("./pages/activities/ActivitiesUpcomingPage"));
+const ActivitiesUpcomingPage = lazy(() =>
+  import("./pages/activities/ActivitiesUpcomingPage")
+);
 const ActivitiesPastPage = lazy(() => import("./pages/activities/ActivitiesPastPage"));
-const ActivitiesFavoritesPage = lazy(() => import("./pages/activities/ActivitiesFavoritesPage"));
+const ActivitiesFavoritesPage = lazy(() =>
+  import("./pages/activities/ActivitiesFavoritesPage")
+);
 
 // Help center
 const HelpPage = lazy(() =>
@@ -200,8 +216,12 @@ const SafetyVerificationPage = lazy(() =>
 // Calendars
 const CalendarsLayout = lazy(() => import("./pages/calendars/CalendarsLayout"));
 const MyCalendarPage = lazy(() => import("./pages/calendars/MyCalendarPage"));
-const SharedCalendarsPage = lazy(() => import("./pages/calendars/SharedCalendarsPage"));
-const CalendarDetailPage = lazy(() => import("./pages/calendars/CalendarDetailPage"));
+const SharedCalendarsPage = lazy(() =>
+  import("./pages/calendars/SharedCalendarsPage")
+);
+const CalendarDetailPage = lazy(() =>
+  import("./pages/calendars/CalendarDetailPage")
+);
 
 // Profile (named export)
 const ProfilePage = lazy(() =>
@@ -292,142 +312,152 @@ const App: React.FC = () => {
 
   return (
     <SupabaseProvider>
-      <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
+      {/* App shell background: light gray */}
+      <div className="min-h-screen flex flex-col bg-wowzie-surfaceSubtle text-wowzie-text">
         <Header
           user={user}
           onSignInClick={() => setLoginOpen(true)}
           onHostClick={handleHostClick}
         />
 
-        <Suspense fallback={<LoadingShell />}>
-          <Routes>
-            {/* Core app */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/camp/:slug" element={<CampDetailPage />} />
+        {/* Main fills remaining height so footer stays below the fold */}
+        <main className="flex-1">
+          <Suspense fallback={<LoadingShell />}>
+            <Routes>
+              {/* Core app */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/camp/:slug" element={<CampDetailPage />} />
 
-            {/* Checkout */}
-            <Route path="/checkout/:campId" element={<CheckoutPage />} />
-            <Route path="/checkout/complete" element={<CheckoutCompletePage />} />
-            <Route
-              path="/checkout/confirmed/:bookingId"
-              element={<CheckoutCompletePage />}
-            />
+              {/* Checkout */}
+              <Route path="/checkout/:campId" element={<CheckoutPage />} />
+              <Route path="/checkout/complete" element={<CheckoutCompletePage />} />
+              <Route
+                path="/checkout/confirmed/:bookingId"
+                element={<CheckoutCompletePage />}
+              />
 
-            {/* Search */}
-            <Route path="/search" element={<SearchPage />} />
+              {/* Search */}
+              <Route path="/search" element={<SearchPage />} />
 
-            {/* Contact */}
-            <Route path="/contact" element={<ContactPage />} />
+              {/* Contact */}
+              <Route path="/contact" element={<ContactPage />} />
 
-            {/* Data transparency */}
-            <Route path="/data-transparency" element={<DataTransparencyPage />} />
+              {/* Data transparency */}
+              <Route path="/data-transparency" element={<DataTransparencyPage />} />
 
-            {/* Settings (protected) */}
-            <Route
-              path="/settings"
-              element={
-                <Protected user={user}>
-                  <SettingsLayout />
-                </Protected>
-              }
-            >
-              <Route index element={<SettingsAccountPage />} />
-              <Route path="children" element={<SettingsChildrenPage />} />
-              <Route path="child/:id" element={<ChildDetailPage />} />
-              <Route path="login" element={<SettingsLoginPage />} />
-              <Route path="notifications" element={<SettingsNotificationsPage />} />
-            </Route>
+              {/* Settings (protected) */}
+              <Route
+                path="/settings"
+                element={
+                  <Protected user={user}>
+                    <SettingsLayout />
+                  </Protected>
+                }
+              >
+                <Route index element={<SettingsAccountPage />} />
+                <Route path="children" element={<SettingsChildrenPage />} />
+                <Route path="child/:id" element={<ChildDetailPage />} />
+                <Route path="login" element={<SettingsLoginPage />} />
+                <Route path="notifications" element={<SettingsNotificationsPage />} />
+              </Route>
 
-            {/* Notifications & messages */}
-            <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/messages" element={<MessagesPage />} />
+              {/* Notifications & messages */}
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
 
-            {/* Profile pages */}
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/profile/:id" element={<ProfilePage />} />
+              {/* Profile pages */}
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/:id" element={<ProfilePage />} />
 
-            {/* Activities */}
-            <Route path="/activities" element={<ActivitiesLayout />}>
-              <Route index element={<Navigate to="upcoming" replace />} />
-              <Route path="upcoming" element={<ActivitiesUpcomingPage />} />
-              <Route path="past" element={<ActivitiesPastPage />} />
-              <Route path="favorites" element={<ActivitiesFavoritesPage />} />
-            </Route>
+              {/* Activities */}
+              <Route path="/activities" element={<ActivitiesLayout />}>
+                <Route index element={<Navigate to="upcoming" replace />} />
+                <Route path="upcoming" element={<ActivitiesUpcomingPage />} />
+                <Route path="past" element={<ActivitiesPastPage />} />
+                <Route path="favorites" element={<ActivitiesFavoritesPage />} />
+              </Route>
 
-            {/* Calendars */}
-            <Route path="/calendars" element={<CalendarsLayout />}>
-              <Route index element={<Navigate to="my" replace />} />
-              <Route path="my" element={<MyCalendarPage />} />
-              <Route path="shared" element={<SharedCalendarsPage />} />
-            </Route>
-            <Route path="/calendars/:calendarId" element={<CalendarDetailPage />} />
+              {/* Calendars */}
+              <Route path="/calendars" element={<CalendarsLayout />}>
+                <Route index element={<Navigate to="my" replace />} />
+                <Route path="my" element={<MyCalendarPage />} />
+                <Route path="shared" element={<SharedCalendarsPage />} />
+              </Route>
+              <Route path="/calendars/:calendarId" element={<CalendarDetailPage />} />
 
-            {/* Host (protected) */}
-            <Route
-              path="/host"
-              element={
-                <Protected user={user}>
-                  <HostLayout />
-                </Protected>
-              }
-            >
-              <Route index element={<Navigate to="listings" replace />} />
-              <Route path="apply" element={<HostApplicationPage />} />
-              <Route path="reviewing" element={<HostReviewingPage />} />
-              <Route path="listings" element={<HostListingsPage />} />
-              <Route path="contacts" element={<HostContactsPage />} />
-              <Route path="financials" element={<HostFinancialsPage />} />
-              <Route path="settings" element={<HostSettingsPage />} />
-              <Route path="activities/new" element={<CreateActivityPage />} />
-              <Route path="activities/review" element={<ActivityReviewPage />} />
-              <Route path="activities/:activityId/edit" element={<CreateActivityPage />} />
-            </Route>
+              {/* Host (protected) */}
+              <Route
+                path="/host"
+                element={
+                  <Protected user={user}>
+                    <HostLayout />
+                  </Protected>
+                }
+              >
+                <Route index element={<Navigate to="listings" replace />} />
+                <Route path="apply" element={<HostApplicationPage />} />
+                <Route path="reviewing" element={<HostReviewingPage />} />
+                <Route path="listings" element={<HostListingsPage />} />
+                <Route path="contacts" element={<HostContactsPage />} />
+                <Route path="financials" element={<HostFinancialsPage />} />
+                <Route path="settings" element={<HostSettingsPage />} />
+                <Route path="activities/new" element={<CreateActivityPage />} />
+                <Route path="activities/review" element={<ActivityReviewPage />} />
+                <Route path="activities/:activityId/edit" element={<CreateActivityPage />} />
+              </Route>
 
-            {/* Activity detail (host) */}
-            <Route path="/host/activities/:activityId" element={<ActivityLayoutPage />}>
-              <Route index element={<ActivityOverviewPage />} />
-              <Route path="overview" element={<ActivityOverviewPage />} />
-              <Route path="guests" element={<ActivityGuestsPage />} />
-              <Route path="more" element={<ActivityMorePage />} />
-            </Route>
+              {/* Activity detail (host) */}
+              <Route
+                path="/host/activities/:activityId"
+                element={<ActivityLayoutPage />}
+              >
+                <Route index element={<ActivityOverviewPage />} />
+                <Route path="overview" element={<ActivityOverviewPage />} />
+                <Route path="guests" element={<ActivityGuestsPage />} />
+                <Route path="more" element={<ActivityMorePage />} />
+              </Route>
 
-            <Route
-              path="/host/activities/:activityId/guests/:guestId"
-              element={<ActivityGuestDetailPage />}
-            />
+              <Route
+                path="/host/activities/:activityId/guests/:guestId"
+                element={<ActivityGuestDetailPage />}
+              />
 
-            {/* Activity create + review (legacy routes) */}
-            <Route path="/activities/new" element={<CreateActivityPage />} />
-            <Route path="/activities/review" element={<ActivityReviewPage />} />
+              {/* Activity create + review (legacy routes) */}
+              <Route path="/activities/new" element={<CreateActivityPage />} />
+              <Route path="/activities/review" element={<ActivityReviewPage />} />
 
-            {/* Help center */}
-            <Route path="/help" element={<HelpPage />} />
-            <Route path="/help/how-booking-works" element={<HowBookingWorksPage />} />
-            <Route
-              path="/help/cancellations-refunds"
-              element={<CancellationsRefundsPage />}
-            />
-            <Route
-              path="/help/listing-camp-class"
-              element={<ListingCampClassPage />}
-            />
-            <Route
-              path="/help/managing-kid-profiles"
-              element={<ManagingKidProfilesPage />}
-            />
-            <Route path="/help/messaging-hosts" element={<MessagingHostsPage />} />
-            <Route path="/help/payments-payouts" element={<PaymentsPayoutsPage />} />
-            <Route path="/help/reviews-feedback" element={<ReviewsFeedbackPage />} />
-            <Route
-              path="/help/safety-verification"
-              element={<SafetyVerificationPage />}
-            />
+              {/* Help center */}
+              <Route path="/help" element={<HelpPage />} />
+              <Route
+                path="/help/how-booking-works"
+                element={<HowBookingWorksPage />}
+              />
+              <Route
+                path="/help/cancellations-refunds"
+                element={<CancellationsRefundsPage />}
+              />
+              <Route
+                path="/help/listing-camp-class"
+                element={<ListingCampClassPage />}
+              />
+              <Route
+                path="/help/managing-kid-profiles"
+                element={<ManagingKidProfilesPage />}
+              />
+              <Route path="/help/messaging-hosts" element={<MessagingHostsPage />} />
+              <Route path="/help/payments-payouts" element={<PaymentsPayoutsPage />} />
+              <Route path="/help/reviews-feedback" element={<ReviewsFeedbackPage />} />
+              <Route
+                path="/help/safety-verification"
+                element={<SafetyVerificationPage />}
+              />
 
-            {/* Legal */}
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-          </Routes>
-        </Suspense>
+              {/* Legal */}
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+            </Routes>
+          </Suspense>
+        </main>
 
         <Footer />
 

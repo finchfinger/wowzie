@@ -5,6 +5,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "../ui/Button";
 import { ProfileMenu } from "./ProfileMenu";
+import { Container } from "./Container";
 
 type HeaderProps = {
   user: User | null;
@@ -52,8 +53,6 @@ export const Header: React.FC<HeaderProps> = ({
     navigate(`/search?q=${encodeURIComponent(q)}`);
   };
 
-  // Uses your Button component so hover/focus behavior matches everywhere.
-  // Gradient is the ONLY override (no other overrides).
   const HostBasecampButton = (
     <Button
       type="button"
@@ -68,116 +67,135 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-wowzie-borderSubtle bg-wowzie-surface/90 backdrop-blur">
-        <div className="h-16 mx-auto w-full max-w-7xl px-4 sm:px-6 flex items-center justify-between gap-3">
-          {/* Left: Logo */}
-          <NavLink to="/" className="flex items-center" aria-label="Go to homepage">
-            <img src="/logo.svg" alt="Wowzie" className="h-8 w-auto" />
-          </NavLink>
+        <Container>
+          <div className="h-16 flex items-center justify-between gap-3">
+            {/* Left: Logo */}
+            <NavLink
+              to="/"
+              className="flex items-center"
+              aria-label="Go to homepage"
+            >
+              <img src="/logo.svg" alt="Wowzie" className="h-8 w-auto" />
+            </NavLink>
 
-          {/* Center: Search (desktop) */}
-          <div className="hidden md:flex flex-1 max-w-xl mx-4">
-            <div className="w-full">
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submitSearch();
-                }}
-                placeholder="Search camps, classes, activities…"
-                className="w-full rounded-xl border border-wowzie-borderSubtle bg-white px-4 py-2 text-sm text-wowzie-text placeholder:text-wowzie-text-subtle focus:outline-none focus:ring-2 focus:ring-wowzie-accent"
+            {/* Center: Search (desktop) */}
+            <div className="hidden md:flex flex-1 max-w-xl mx-4">
+              <div className="w-full">
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitSearch();
+                  }}
+                  placeholder="Search camps, classes, activities…"
+                  className="w-full rounded-xl border border-wowzie-borderSubtle bg-white px-4 py-2 text-sm text-wowzie-text placeholder:text-wowzie-text-subtle focus:outline-none focus:ring-2 focus:ring-wowzie-accent"
+                  aria-label="Search"
+                />
+              </div>
+            </div>
+
+            {/* Right side */}
+            <div className="flex items-center gap-2">
+              {isLoggedIn ? (
+                <>
+                  <nav className="hidden md:flex items-center gap-4 text-bodySm text-wowzie-text-muted">
+                    <NavLink
+                      to="/activities"
+                      className="hover:text-wowzie-text-primary"
+                    >
+                      🌱 Activities
+                    </NavLink>
+
+                    <NavLink
+                      to="/calendars"
+                      className="hover:text-wowzie-text-primary"
+                    >
+                      📅 Calendars
+                    </NavLink>
+
+                    <NavLink
+                      to="/messages"
+                      className="hover:text-wowzie-text-primary"
+                    >
+                      💬 Messages
+                      <span className="ml-1 h-1.5 w-1.5 inline-block rounded-full bg-red-500 align-middle" />
+                    </NavLink>
+
+                    <NavLink
+                      to="/notifications"
+                      className="hover:text-wowzie-text-primary"
+                    >
+                      🔔 Notifications
+                      <span className="ml-1 h-1.5 w-1.5 inline-block rounded-full bg-red-500 align-middle" />
+                    </NavLink>
+
+                    {HostBasecampButton}
+                  </nav>
+
+                  <div className="relative hidden md:inline-flex">
+                    <button
+                      type="button"
+                      onClick={toggleProfile}
+                      className="h-8 w-8 flex items-center justify-center rounded-full bg-wowzie-surfaceSubtle border border-wowzie-borderSubtle text-lg"
+                      aria-label="Account menu"
+                      aria-expanded={profileOpen}
+                    >
+                      🥺
+                    </button>
+
+                    {user && (
+                      <ProfileMenu
+                        user={user}
+                        isOpen={profileOpen}
+                        onClose={closeProfile}
+                        variant="desktop"
+                      />
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="hidden sm:inline-flex">
+                    {HostBasecampButton}
+                  </div>
+
+                  <Button
+                    variant="subtle"
+                    className="text-bodySm px-3 py-2 hidden sm:inline-flex"
+                    onClick={onSignInClick}
+                  >
+                    Sign in
+                  </Button>
+                </>
+              )}
+
+              {/* Mobile search */}
+              <button
+                type="button"
+                onClick={() => navigate("/search")}
+                className="inline-flex md:hidden items-center justify-center h-9 w-9 rounded-full border border-wowzie-borderSubtle bg-wowzie-surface"
                 aria-label="Search"
-              />
+              >
+                🔍
+              </button>
+
+              {/* Mobile menu */}
+              <button
+                type="button"
+                onClick={openMobile}
+                className="inline-flex md:hidden items-center justify-center h-9 w-9 rounded-full border border-wowzie-borderSubtle bg-wowzie-surface"
+                aria-label="Menu"
+                aria-expanded={mobileOpen}
+              >
+                ☰
+              </button>
             </div>
           </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-2">
-            {isLoggedIn ? (
-              <>
-                <nav className="hidden md:flex items-center gap-4 text-bodySm text-wowzie-text-muted">
-                  <NavLink to="/activities" className="hover:text-wowzie-text-primary">
-                    🌱 Activities
-                  </NavLink>
-
-                  <NavLink to="/calendars" className="hover:text-wowzie-text-primary">
-                    📅 Calendars
-                  </NavLink>
-
-                  <NavLink to="/messages" className="hover:text-wowzie-text-primary">
-                    💬 Messages
-                    <span className="ml-1 h-1.5 w-1.5 inline-block rounded-full bg-red-500 align-middle" />
-                  </NavLink>
-
-                  <NavLink to="/notifications" className="hover:text-wowzie-text-primary">
-                    🔔 Notifications
-                    <span className="ml-1 h-1.5 w-1.5 inline-block rounded-full bg-red-500 align-middle" />
-                  </NavLink>
-
-                  {HostBasecampButton}
-                </nav>
-
-                <div className="relative hidden md:inline-flex">
-                  <button
-                    type="button"
-                    onClick={toggleProfile}
-                    className="h-8 w-8 flex items-center justify-center rounded-full bg-wowzie-surfaceSubtle border border-wowzie-borderSubtle text-lg"
-                    aria-label="Account menu"
-                    aria-expanded={profileOpen}
-                  >
-                    🥺
-                  </button>
-
-                  {user && (
-                    <ProfileMenu
-                      user={user}
-                      isOpen={profileOpen}
-                      onClose={closeProfile}
-                      variant="desktop"
-                    />
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Logged-out: Host Basecamp */}
-                <div className="hidden sm:inline-flex">{HostBasecampButton}</div>
-
-                <Button
-                  variant="subtle"
-                  className="text-bodySm px-3 py-2 hidden sm:inline-flex"
-                  onClick={onSignInClick}
-                >
-                  Sign in
-                </Button>
-              </>
-            )}
-
-            {/* Mobile search button */}
-            <button
-              type="button"
-              onClick={() => navigate("/search")}
-              className="inline-flex md:hidden items-center justify-center h-9 w-9 rounded-full border border-wowzie-borderSubtle bg-wowzie-surface"
-              aria-label="Search"
-            >
-              🔍
-            </button>
-
-            {/* Mobile menu button */}
-            <button
-              type="button"
-              onClick={openMobile}
-              className="inline-flex md:hidden items-center justify-center h-9 w-9 rounded-full border border-wowzie-borderSubtle bg-wowzie-surface"
-              aria-label="Menu"
-              aria-expanded={mobileOpen}
-            >
-              ☰
-            </button>
-          </div>
-        </div>
+        </Container>
       </header>
 
-      {/* Mobile menus as siblings of header */}
+      {/* Mobile menus */}
       {isLoggedIn && user && (
         <ProfileMenu
           user={user}
@@ -232,7 +250,11 @@ export const Header: React.FC<HeaderProps> = ({
                 <NavLink to="/help" onClick={closeMobile} className="block py-3">
                   Help Center
                 </NavLink>
-                <NavLink to="/privacy" onClick={closeMobile} className="block py-3">
+                <NavLink
+                  to="/privacy"
+                  onClick={closeMobile}
+                  className="block py-3"
+                >
                   Privacy policy
                 </NavLink>
                 <NavLink to="/terms" onClick={closeMobile} className="block py-3">

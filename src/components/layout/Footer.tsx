@@ -1,3 +1,4 @@
+// src/components/layout/Footer.tsx
 import React, { useState } from "react";
 import { Container } from "./Container";
 import { supabase } from "../../lib/supabase";
@@ -20,7 +21,8 @@ export const Footer: React.FC = () => {
     setStatus("idle");
 
     const normalizedZipRaw = zip.replace(/\D/g, "").slice(0, 5);
-    const normalizedZip = normalizedZipRaw.length === 5 ? normalizedZipRaw : null;
+    const normalizedZip =
+      normalizedZipRaw.length === 5 ? normalizedZipRaw : null;
     const trimmedEmail = email.trim();
 
     try {
@@ -56,10 +58,15 @@ export const Footer: React.FC = () => {
           <div className="flex flex-col gap-6 sm:flex-row sm:gap-10">
             <a
               href="/"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-wowzie-accent text-sm font-semibold text-white"
+              className="inline-flex items-start text-wowzie-text-subtle"
+              aria-label="Go to homepage"
             >
-              W
-              <span className="sr-only">Wowzie</span>
+              <img
+                src="/logo.svg"
+                alt="Wowzie"
+                className="h-8 w-auto"
+                style={{ color: "currentColor" }}
+              />
             </a>
 
             <div className="grid grid-cols-2 gap-12 text-sm text-wowzie-text-subtle">
@@ -106,12 +113,20 @@ export const Footer: React.FC = () => {
                 <h3 className="font-medium text-wowzie-text">Connect</h3>
                 <ul className="space-y-2">
                   <li>
-                    <a href="/contact" className="hover:text-wowzie-text-primary">
+                    <a
+                      href="/contact"
+                      className="hover:text-wowzie-text-primary"
+                    >
                       Contact
                     </a>
                   </li>
                   <li>
-                    <a href="/follow" className="hover:text-wowzie-text-primary">
+                    <a
+                      href="https://www.instagram.com/wowzie.kids"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:text-wowzie-text-primary"
+                    >
                       Follow
                     </a>
                   </li>
@@ -191,19 +206,8 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* BOTTOM BAR */}
-        <div className="mt-10 flex flex-col gap-3 border-t border-wowzie-borderSubtle pt-4 text-xs text-wowzie-text-subtle sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 border-t border-wowzie-borderSubtle pt-4 text-xs text-wowzie-text-subtle">
           <p>© {year} Wowzie. All rights reserved.</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <a href="/privacy" className="hover:text-wowzie-text-primary">
-              Privacy
-            </a>
-            <a href="/terms" className="hover:text-wowzie-text-primary">
-              Terms
-            </a>
-            <a href="/cookies" className="hover:text-wowzie-text-primary">
-              Cookies
-            </a>
-          </div>
         </div>
       </Container>
     </footer>

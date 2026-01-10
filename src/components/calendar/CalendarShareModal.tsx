@@ -13,21 +13,41 @@ export const CalendarShareModal: React.FC<Props> = ({ open, onClose }) => {
   const [status, setStatus] = useState<string>("");
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [senderId, setSenderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
 
-    const origin = window.location.origin || "";
-    const token =
-      typeof crypto !== "undefined" && (crypto as any).randomUUID
-        ? (crypto as any).randomUUID()
-        : Date.now().toString(36);
+    const init = async () => {
+      setEmail("");
+      setMessage("");
+      setStatus("");
+      setShareUrl(null);
+      setShareToken(null);
+      setSenderId(null);
 
-    const url = `${origin}/calendars?share=${encodeURIComponent(token)}`;
+      const { data: userRes, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !userRes.user) {
+        setStatus("Please sign in to share a calendar.");
+        return;
+      }
 
-    setShareToken(token);
-    setShareUrl(url);
-    setStatus("");
+      const origin = window.location.origin || "";
+      const token =
+        typeof crypto !== "undefined" && (crypto as any).randomUUID
+          ? (crypto as any).randomUUID()
+          : Date.now().toString(36);
+
+      // IMPORTANT: acceptance flow expects ?token=
+      // and SharedCalendarsPage lives at /calendars/shared
+      const url = `${origin}/calendars/shared?token=${encodeURIComponent(token)}`;
+
+      setSenderId(userRes.user.id);
+      setShareToken(token);
+      setShareUrl(url);
+    };
+
+    void init();
   }, [open]);
 
   if (!open) return null;
@@ -37,8 +57,10 @@ export const CalendarShareModal: React.FC<Props> = ({ open, onClose }) => {
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl);
+        setStatus("Link copied to clipboard.");
+        return;
       }
-      setStatus("Link copied to clipboard.");
+      setStatus("Could not copy link.");
     } catch (err) {
       console.error("Copy failed", err);
       setStatus("Could not copy link.");
@@ -47,17 +69,32 @@ export const CalendarShareModal: React.FC<Props> = ({ open, onClose }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !shareUrl || !shareToken) return;
+    if (!shareUrl || !shareToken) return;
+
+    // Email is required in your UI, keep it required.
+    // If you later support link-only invites, create a separate flow.
+    if (!email.trim()) {
+      setStatus("Please enter an email address.");
+      return;
+    }
+
+    if (!senderId) {
+      setStatus("Please sign in to share a calendar.");
+      return;
+    }
 
     setStatus("Sending…");
 
     try {
       const { error } = await supabase.from("calendar_shares").insert([
         {
-          email,
-          message,
+          email: email.trim().toLowerCase(),
+          message: message.trim() ? message.trim() : null,
           token: shareToken,
           share_url: shareUrl,
+          sender_id: senderId,
+          status: "pending",
+          sent_at: new Date().toISOString(),
         },
       ]);
 
@@ -66,9 +103,9 @@ export const CalendarShareModal: React.FC<Props> = ({ open, onClose }) => {
       setStatus("Shared. You can send this link to the parent.");
       setEmail("");
       setMessage("");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Share save failed", err);
-      setStatus("Could not save share. Please try again.");
+      setStatus(err?.message || "Could not save share. Please try again.");
     }
   };
 
@@ -78,8 +115,8 @@ export const CalendarShareModal: React.FC<Props> = ({ open, onClose }) => {
       aria-modal="true"
       role="dialog"
     >
-      <div className="mx-4 max-w-lg w-full">
-        <div className="rounded-3xl bg-white shadow-xl p-6 sm:p-8">
+      <div className="mx-4 w-full max-w-lg">
+        <div className="rounded-3xl bg-white p-6 shadow-xl sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <h2 className="text-xl font-semibold text-gray-900">
               Share calendar
@@ -105,7 +142,7 @@ export const CalendarShareModal: React.FC<Props> = ({ open, onClose }) => {
                 placeholder="parent@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -118,7 +155,7 @@ export const CalendarShareModal: React.FC<Props> = ({ open, onClose }) => {
                 placeholder="Hi, here is the calendar for Jamie’s summer activities…"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -132,12 +169,10 @@ export const CalendarShareModal: React.FC<Props> = ({ open, onClose }) => {
             </button>
 
             {shareUrl && (
-              <p className="mt-1 text-xs text-gray-400 break-all">
-                {shareUrl}
-              </p>
+              <p className="mt-1 break-all text-xs text-gray-400">{shareUrl}</p>
             )}
 
-            <p className="text-xs text-gray-500">{status}</p>
+            {status ? <p className="text-xs text-gray-500">{status}</p> : null}
 
             <div className="mt-4 flex justify-end gap-3">
               <button
