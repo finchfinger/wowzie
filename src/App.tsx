@@ -1,11 +1,18 @@
 // src/App.tsx
 import React, { useEffect, useState, Suspense, lazy } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  useNavigate,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 
 import { SupabaseProvider } from "./lib/supabaseClient";
 import { supabase } from "./lib/supabase";
 import { trackCurrentSession } from "./lib/sessions";
+import { initGA } from "./lib/ga";
 
 import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
@@ -240,6 +247,26 @@ const DataTransparencyPage = lazy(() =>
 
 const App: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const gaId = (import.meta.env.VITE_GA_MEASUREMENT_ID || "").trim();
+
+  // ---- GA init (once) ----
+  useEffect(() => {
+    if (!gaId) return;
+    initGA(gaId);
+  }, [gaId]);
+
+  // ---- GA pageviews for SPA ----
+  useEffect(() => {
+    if (!gaId) return;
+    if (typeof window === "undefined") return;
+    if (!window.gtag) return;
+
+    window.gtag("event", "page_view", {
+      page_path: location.pathname + location.search,
+    });
+  }, [gaId, location.pathname, location.search]);
 
   // Auth
   const [user, setUser] = useState<User | null>(null);

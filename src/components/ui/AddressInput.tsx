@@ -50,21 +50,35 @@ function loadGoogleMaps(): Promise<void> {
   if (window.google?.maps) return Promise.resolve();
   if (googleMapsLoaderPromise) return googleMapsLoaderPromise;
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  // IMPORTANT: match your .env.local variable name
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 
-  if (!apiKey) {
+  if (!apiKey || !apiKey.trim()) {
     googleMapsLoaderPromise = Promise.reject(
-      new Error("Missing VITE_GOOGLE_MAPS_API_KEY. Add it to .env and restart Vite.")
+      new Error(
+        "Missing VITE_GOOGLE_MAPS_KEY. Add it to .env.local and restart Vite."
+      )
     );
     return googleMapsLoaderPromise;
   }
 
   googleMapsLoaderPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector('script[data-google-maps="wowzie"]');
+    const existing = document.querySelector(
+      'script[data-google-maps="wowzie"]'
+    ) as HTMLScriptElement | null;
+
     if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () =>
-        reject(new Error("Google Maps script failed to load."))
+      // If it already loaded, resolve immediately.
+      if ((existing as any).dataset?.loaded === "true") {
+        resolve();
+        return;
+      }
+
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Google Maps script failed to load.")),
+        { once: true }
       );
       return;
     }
@@ -73,6 +87,7 @@ function loadGoogleMaps(): Promise<void> {
     script.async = true;
     script.defer = true;
     script.dataset.googleMaps = "wowzie";
+
     script.src =
       "https://maps.googleapis.com/maps/api/js" +
       `?key=${encodeURIComponent(apiKey)}` +
@@ -80,7 +95,10 @@ function loadGoogleMaps(): Promise<void> {
       "&libraries=places" +
       "&loading=async";
 
-    script.onload = () => resolve();
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
     script.onerror = () => reject(new Error("Google Maps script failed to load."));
 
     document.head.appendChild(script);
@@ -212,11 +230,14 @@ export const AddressInput: React.FC<AddressInputProps> = ({
         // Region bias (optional)
         if (regionCode) request.region = regionCode.toLowerCase();
 
-        const res = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+        const res =
+          await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
 
         if (activeRequestIdRef.current !== requestId) return;
 
-        const next = (res?.suggestions || []).filter((s: any) => s?.placePrediction);
+        const next = (res?.suggestions || []).filter(
+          (s: any) => s?.placePrediction
+        );
         setSuggestions(next);
         setOpen(next.length > 0);
       } catch (e) {
@@ -257,8 +278,9 @@ export const AddressInput: React.FC<AddressInputProps> = ({
 
       const line1 = mode === "address" ? buildLine1(comps) : undefined;
 
-      const location =
-        place.location ? { lat: place.location.lat, lng: place.location.lng } : undefined;
+      const location = place.location
+        ? { lat: place.location.lat, lng: place.location.lng }
+        : undefined;
 
       const selection: AddressSelection = {
         placeId: place.id,
@@ -273,7 +295,9 @@ export const AddressInput: React.FC<AddressInputProps> = ({
 
       // Set the visible input value
       if (mode === "city") {
-        const label = [selection.city, selection.state].filter(Boolean).join(", ");
+        const label = [selection.city, selection.state]
+          .filter(Boolean)
+          .join(", ");
         onChange(label || selection.formattedAddress || value);
       } else {
         onChange(selection.line1 || selection.formattedAddress || value);
@@ -319,7 +343,8 @@ export const AddressInput: React.FC<AddressInputProps> = ({
         >
           <ul className="max-h-72 overflow-auto py-1">
             {suggestions.map((s: any, idx: number) => {
-              const text = s.placePrediction?.text?.toString?.() || "Suggestion";
+              const text =
+                s.placePrediction?.text?.toString?.() || "Suggestion";
               return (
                 <li key={`${s.placePrediction?.placeId || idx}`}>
                   <button
