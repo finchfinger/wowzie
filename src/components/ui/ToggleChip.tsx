@@ -1,3 +1,4 @@
+// src/components/ui/ToggleChip.tsx
 import React from "react";
 
 type ToggleChipProps = {
@@ -25,7 +26,7 @@ export const ToggleChip: React.FC<ToggleChipProps> = ({
       disabled={disabled}
       aria-pressed={selected}
       className={cx(
-        "inline-flex items-center justify-between gap-2 rounded-full border px-3 py-2 text-xs",
+        "inline-flex items-center rounded-full border px-3 py-2 text-xs",
         "transition-colors outline-none focus:ring-2 focus:ring-violet-200",
         disabled && "opacity-60 cursor-not-allowed",
         selected
@@ -34,19 +35,7 @@ export const ToggleChip: React.FC<ToggleChipProps> = ({
         className
       )}
     >
-      {/* Label should always render */}
-      <span className="truncate">{label}</span>
-
-      {/* Optional selected indicator */}
-      <span
-        aria-hidden="true"
-        className={cx(
-          "h-4 w-4 rounded-full border flex items-center justify-center text-[10px] leading-none",
-          selected ? "border-violet-600 bg-violet-600 text-white" : "border-gray-300 bg-white text-transparent"
-        )}
-      >
-        ✓
-      </span>
+      <span className="whitespace-nowrap">{label}</span>
     </button>
   );
 };

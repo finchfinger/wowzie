@@ -1,3 +1,4 @@
+// src/components/ui/AddressInput.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "./Input";
 
@@ -50,14 +51,11 @@ function loadGoogleMaps(): Promise<void> {
   if (window.google?.maps) return Promise.resolve();
   if (googleMapsLoaderPromise) return googleMapsLoaderPromise;
 
-  // IMPORTANT: match your .env.local variable name
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 
   if (!apiKey || !apiKey.trim()) {
     googleMapsLoaderPromise = Promise.reject(
-      new Error(
-        "Missing VITE_GOOGLE_MAPS_KEY. Add it to .env.local and restart Vite."
-      )
+      new Error("Missing VITE_GOOGLE_MAPS_KEY. Add it to .env.local and restart Vite.")
     );
     return googleMapsLoaderPromise;
   }
@@ -68,7 +66,6 @@ function loadGoogleMaps(): Promise<void> {
     ) as HTMLScriptElement | null;
 
     if (existing) {
-      // If it already loaded, resolve immediately.
       if ((existing as any).dataset?.loaded === "true") {
         resolve();
         return;
@@ -142,6 +139,9 @@ function useDebouncedValue(value: string, delayMs: number) {
   return debounced;
 }
 
+const cx = (...classes: Array<string | false | null | undefined>) =>
+  classes.filter(Boolean).join(" ");
+
 export const AddressInput: React.FC<AddressInputProps> = ({
   mode = "address",
   value,
@@ -150,6 +150,7 @@ export const AddressInput: React.FC<AddressInputProps> = ({
   country = "us",
   error,
   disabled,
+  className,
   ...rest
 }) => {
   const [ready, setReady] = useState(false);
@@ -167,7 +168,6 @@ export const AddressInput: React.FC<AddressInputProps> = ({
     return c.length === 2 ? c.toUpperCase() : undefined;
   }, [country]);
 
-  // Load Maps JS and import Places library
   useEffect(() => {
     let mounted = true;
 
@@ -198,7 +198,6 @@ export const AddressInput: React.FC<AddressInputProps> = ({
     };
   }, []);
 
-  // Fetch suggestions (new Places Autocomplete Data API)
   useEffect(() => {
     const run = async () => {
       if (!ready) return;
@@ -227,17 +226,13 @@ export const AddressInput: React.FC<AddressInputProps> = ({
           sessionToken: sessionTokenRef.current,
         };
 
-        // Region bias (optional)
         if (regionCode) request.region = regionCode.toLowerCase();
 
-        const res =
-          await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+        const res = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
 
         if (activeRequestIdRef.current !== requestId) return;
 
-        const next = (res?.suggestions || []).filter(
-          (s: any) => s?.placePrediction
-        );
+        const next = (res?.suggestions || []).filter((s: any) => s?.placePrediction);
         setSuggestions(next);
         setOpen(next.length > 0);
       } catch (e) {
@@ -293,11 +288,8 @@ export const AddressInput: React.FC<AddressInputProps> = ({
         location,
       };
 
-      // Set the visible input value
       if (mode === "city") {
-        const label = [selection.city, selection.state]
-          .filter(Boolean)
-          .join(", ");
+        const label = [selection.city, selection.state].filter(Boolean).join(", ");
         onChange(label || selection.formattedAddress || value);
       } else {
         onChange(selection.line1 || selection.formattedAddress || value);
@@ -306,7 +298,6 @@ export const AddressInput: React.FC<AddressInputProps> = ({
       setOpen(false);
       setSuggestions([]);
 
-      // End the billing session after a selection
       sessionTokenRef.current = null;
 
       if (onSelect) onSelect(selection);
@@ -334,6 +325,13 @@ export const AddressInput: React.FC<AddressInputProps> = ({
         error={error}
         autoComplete={mode === "city" ? "address-level2" : "street-address"}
         data-places-ready={ready ? "true" : "false"}
+        className={cx(
+          // match the rest of the homepage controls
+          "h-11 w-full rounded-lg border border-black/10 bg-white px-3 text-sm text-gray-900",
+          "outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200",
+          disabled && "opacity-60 cursor-not-allowed",
+          className
+        )}
       />
 
       {open && !disabled && suggestions.length > 0 && (
@@ -343,8 +341,7 @@ export const AddressInput: React.FC<AddressInputProps> = ({
         >
           <ul className="max-h-72 overflow-auto py-1">
             {suggestions.map((s: any, idx: number) => {
-              const text =
-                s.placePrediction?.text?.toString?.() || "Suggestion";
+              const text = s.placePrediction?.text?.toString?.() || "Suggestion";
               return (
                 <li key={`${s.placePrediction?.placeId || idx}`}>
                   <button
