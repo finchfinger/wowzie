@@ -10,6 +10,7 @@ import { Textarea } from "../components/ui/Textarea";
 import { Checkbox } from "../components/ui/Checkbox";
 import { DateInput } from "../components/ui/DateInput";
 import { MultiSelect } from "../components/ui/MultiSelect";
+import { AddressInput } from "../components/ui/AddressInput";
 
 import {
   Select,
@@ -839,19 +840,41 @@ const CreateActivityPage: React.FC = () => {
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-gray-700">Location</label>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Input
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Address or general area"
-                  />
+                  <div className="flex-1">
+                    <AddressInput
+                      value={location}
+                      onChange={setLocation}
+                      placeholder={isVirtual ? "Virtual" : "Start typing an address"}
+                      disabled={isVirtual}
+                    />
+                  </div>
+
                   <label className="flex items-center gap-2 text-xs text-gray-700 whitespace-nowrap">
                     <Checkbox
                       checked={isVirtual}
-                      onCheckedChange={(checked) => setIsVirtual(Boolean(checked))}
+                      onCheckedChange={(checked) => {
+                        const next = Boolean(checked);
+                        setIsVirtual(next);
+
+                        if (next) {
+                          setLocation("Virtual");
+                          return;
+                        }
+
+                        if (location.trim().toLowerCase() === "virtual") setLocation("");
+                      }}
                     />
                     This is a virtual event
                   </label>
                 </div>
+
+                {isVirtual ? (
+                  <p className="text-[11px] text-gray-500">Location is set to Virtual.</p>
+                ) : (
+                  <p className="text-[11px] text-gray-500">
+                    Start typing and pick a suggestion for the best match.
+                  </p>
+                )}
               </div>
 
               {/* Price per child */}
@@ -1313,28 +1336,28 @@ const CreateActivityPage: React.FC = () => {
             </div>
           </section>
 
-{/* ACTIONS */}
-<div className="flex items-center gap-3 pt-2">
-  <Button
-    type="button"
-    variant="outline"
-    size="lg"
-    onClick={handleSaveForLater}
-    disabled={submitting}
-  >
-    Save for later
-  </Button>
+          {/* ACTIONS */}
+          <div className="flex items-center gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={handleSaveForLater}
+              disabled={submitting}
+            >
+              Save for later
+            </Button>
 
-  <Button type="submit" variant="primary" size="lg" disabled={submitting}>
-    {submitting
-      ? isEditMode
-        ? "Saving…"
-        : "Creating…"
-      : isEditMode
-        ? "Save changes"
-        : "Create event"}
-  </Button>
-</div>
+            <Button type="submit" variant="primary" size="lg" disabled={submitting}>
+              {submitting
+                ? isEditMode
+                  ? "Saving…"
+                  : "Creating…"
+                : isEditMode
+                  ? "Save changes"
+                  : "Create event"}
+            </Button>
+          </div>
         </form>
       </div>
     </main>
