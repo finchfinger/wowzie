@@ -11,6 +11,14 @@ import { Checkbox } from "../../components/ui/Checkbox";
 import { Button } from "../../components/ui/Button";
 import { AddressInput } from "../../components/ui/AddressInput";
 import type { AddressSelection } from "../../components/ui/AddressInput";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "../../components/ui/Select";
+import Modal from "../../components/ui/Modal";
+import TermsContent from "../../components/legal/TermsContent";
 
 const STATES: Array<{ value: string; label: string }> = [
   { value: "AL", label: "Alabama" },
@@ -69,13 +77,6 @@ const STATES: Array<{ value: string; label: string }> = [
 const cx = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(" ");
 
-/**
- * AddressInput's onSelect can arrive as either:
- * - AddressSelection (from Places/autocomplete selection)
- * - SyntheticEvent (if the component forwards an input event in some cases)
- *
- * We only want to read AddressSelection fields when it is truly a selection.
- */
 function isAddressSelection(v: unknown): v is AddressSelection {
   if (!v || typeof v !== "object") return false;
   const o = v as Record<string, unknown>;
@@ -89,6 +90,8 @@ function isAddressSelection(v: unknown): v is AddressSelection {
   );
 }
 
+const req = (s: string) => s.trim().length > 0;
+
 const HostApplicationPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -96,7 +99,6 @@ const HostApplicationPage: React.FC = () => {
   const [emailAddress, setEmailAddress] = useState("");
   const [phone, setPhone] = useState("");
 
-  // Address fields
   const [formattedAddress, setFormattedAddress] = useState("");
   const [address1, setAddress1] = useState("");
   const [suite, setSuite] = useState("");
@@ -110,14 +112,48 @@ const HostApplicationPage: React.FC = () => {
   const [agreeCancellation, setAgreeCancellation] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
+  const [termsOpen, setTermsOpen] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = useMemo(() => {
-    if (!description.trim()) return false;
-    if (!agreeSafety || !agreeCancellation || !agreeTerms) return false;
-    return true;
-  }, [description, agreeSafety, agreeCancellation, agreeTerms]);
+  const stateLabel = useMemo(() => {
+    const hit = STATES.find((s) => s.value === state);
+    return hit?.label || state;
+  }, [state]);
+
+  const validation = useMemo(() => {
+    const missing: string[] = [];
+
+    if (!req(businessName)) missing.push("Business name");
+    if (!req(emailAddress)) missing.push("Email address");
+    if (!req(phone)) missing.push("Telephone number");
+
+    if (!req(address1)) missing.push("Address");
+    if (!req(city)) missing.push("City");
+    if (!req(state)) missing.push("State");
+    if (!req(postalCode)) missing.push("Postal code");
+
+    if (!req(description)) missing.push("Description");
+
+    if (!agreeSafety) missing.push("Safety agreement");
+    if (!agreeCancellation) missing.push("Cancellation agreement");
+    if (!agreeTerms) missing.push("Terms agreement");
+
+    return { ok: missing.length === 0, missing };
+  }, [
+    businessName,
+    emailAddress,
+    phone,
+    address1,
+    city,
+    state,
+    postalCode,
+    description,
+    agreeSafety,
+    agreeCancellation,
+    agreeTerms,
+  ]);
 
   const clearForm = () => {
     setBusinessName("");
@@ -144,73 +180,80 @@ const HostApplicationPage: React.FC = () => {
 
     setError(null);
 
-    if (!canSubmit) {
-      setError("Please complete the form and agree to all items.");
+    if (!validation.ok) {
+      setError(`Please complete: ${validation.missing.join(", ")}.`);
       return;
     }
 
     setSubmitting(true);
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      setError("You need to be signed in to apply.");
-      setSubmitting(false);
-      return;
-    }
+      if (userError || !user) {
+        setError("You need to be signed in to apply.");
+        setSubmitting(false);
+        return;
+      }
 
-    const normalizedPostal = postalCode.replace(/\s+/g, "").slice(0, 10);
+      const normalizedPostal = postalCode.replace(/\s+/g, "").slice(0, 10);
 
-    const aboutLines: string[] = [];
-    aboutLines.push("Host application");
-    aboutLines.push("");
+      const aboutLines: string[] = [];
+      aboutLines.push("Host application");
+      aboutLines.push("");
 
-    if (businessName.trim()) aboutLines.push(`Business name: ${businessName.trim()}`);
+      aboutLines.push(`Business name: ${businessName.trim()}`);
+      aboutLines.push(`Email: ${emailAddress.trim()}`);
+      aboutLines.push(`Telephone: ${phone.trim()}`);
 
-    const effectiveEmail = user.email || emailAddress.trim();
-    if (effectiveEmail) aboutLines.push(`Email: ${effectiveEmail}`);
+      const addrParts: string[] = [];
+      addrParts.push(address1.trim());
+      if (suite.trim()) addrParts.push(suite.trim());
 
-    if (phone.trim()) aboutLines.push(`Telephone: ${phone.trim()}`);
+      const cityStateZip = [city.trim(), state, normalizedPostal]
+        .filter(Boolean)
+        .join(", ");
+      const addrJoined = [addrParts.join(" "), cityStateZip]
+        .filter(Boolean)
+        .join(" • ");
+      aboutLines.push(`Address: ${addrJoined}`);
 
-    const addrParts: string[] = [];
-    if (address1.trim()) addrParts.push(address1.trim());
-    if (suite.trim()) addrParts.push(suite.trim());
+      aboutLines.push("");
+      aboutLines.push("Description:");
+      aboutLines.push(description.trim());
 
-    const cityStateZip = [city.trim(), state, normalizedPostal].filter(Boolean).join(", ");
-    const addrJoined = [addrParts.join(" "), cityStateZip].filter(Boolean).join(" • ");
-    if (addrJoined) aboutLines.push(`Address: ${addrJoined}`);
+      const aboutPayload = aboutLines.join("\n");
+      const nowIso = new Date().toISOString();
 
-    aboutLines.push("");
-    aboutLines.push("Description:");
-    aboutLines.push(description.trim());
+      const { error: upsertErr } = await supabase
+        .from("host_profiles")
+        .upsert(
+          {
+            user_id: user.id,
+            about: aboutPayload,
+            host_status: "pending",
+            applied_at: nowIso,
+            updated_at: nowIso,
+          },
+          { onConflict: "user_id" }
+        );
 
-    const aboutPayload = aboutLines.join("\n");
-    const nowIso = new Date().toISOString();
+      if (upsertErr) {
+        console.error("[HostApplicationPage] submit error:", upsertErr);
+        setError("We couldn’t submit your application. Please try again.");
+        setSubmitting(false);
+        return;
+      }
 
-    const { error: upsertErr } = await supabase
-      .from("host_profiles")
-      .upsert(
-        {
-          user_id: user.id,
-          about: aboutPayload,
-          host_status: "pending",
-          applied_at: nowIso,
-          updated_at: nowIso,
-        },
-        { onConflict: "user_id" }
-      );
-
-    if (upsertErr) {
-      console.error("[HostApplicationPage] submit error:", upsertErr);
+      navigate("/host/reviewing", { replace: true });
+    } catch (err) {
+      console.error("[HostApplicationPage] unexpected submit error:", err);
       setError("We couldn’t submit your application. Please try again.");
       setSubmitting(false);
-      return;
     }
-
-    navigate("/host/reviewing", { replace: true });
   };
 
   return (
@@ -226,160 +269,177 @@ const HostApplicationPage: React.FC = () => {
 
               <div className="mt-8 rounded-2xl border border-black/5 bg-white shadow-sm">
                 <form onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-6">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Basics</p>
-                    <p className="mt-1 text-[11px] text-gray-500">
-                      We will need a lawyer to sign off on this.
-                    </p>
+                  {/* Business name */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Business name
+                    </label>
+                    <Input
+                      value={businessName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setBusinessName(e.target.value)
+                      }
+                      disabled={submitting}
+                      placeholder="Your business name"
+                      error={!req(businessName) && !!error}
+                    />
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
-                        Business name
-                      </label>
-                      <Input
-                        value={businessName}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setBusinessName(e.target.value)
-                        }
-                        disabled={submitting}
-                        placeholder="Optional"
-                      />
-                    </div>
+                  {/* Email */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Email address
+                    </label>
+                    <Input
+                      type="email"
+                      value={emailAddress}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setEmailAddress(e.target.value)
+                      }
+                      disabled={submitting}
+                      placeholder="you@domain.com"
+                      error={!req(emailAddress) && !!error}
+                    />
+                  </div>
 
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
-                        Email address
-                      </label>
-                      <Input
-                        type="email"
-                        value={emailAddress}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setEmailAddress(e.target.value)
-                        }
-                        disabled={submitting}
-                        placeholder="Optional (we’ll use your account email if available)"
-                      />
-                    </div>
+                  {/* Phone */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Telephone number
+                    </label>
+                    <Input
+                      value={phone}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setPhone(e.target.value)
+                      }
+                      disabled={submitting}
+                      placeholder="(312) 555-0123"
+                      error={!req(phone) && !!error}
+                    />
+                  </div>
 
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
-                        Telephone number
-                      </label>
-                      <Input
-                        value={phone}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
-                        disabled={submitting}
-                        placeholder="Optional"
-                      />
-                    </div>
+                  {/* Address */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Address
+                    </label>
+                    <AddressInput
+                      value={formattedAddress}
+                      onChange={(next) => {
+                        setFormattedAddress(next);
+                        setAddress1(next);
+                      }}
+                      disabled={submitting}
+                      placeholder="Start typing an address"
+                      error={!req(address1) && !!error}
+                      onSelect={(p) => {
+                        if (!isAddressSelection(p)) return;
 
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
-                        Address
-                      </label>
-                      <AddressInput
-                        value={formattedAddress}
-                        onChange={(next) => {
-                          setFormattedAddress(next);
-                          setAddress1(next);
-                        }}
-                        disabled={submitting}
-                        placeholder="Start typing an address"
-                        onSelect={(p) => {
-                          if (!isAddressSelection(p)) return;
+                        const formatted = p.formattedAddress || "";
+                        const line1 = p.line1 || formatted;
 
-                          const formatted = p.formattedAddress || "";
-                          const line1 = p.line1 || formatted;
+                        setFormattedAddress(formatted || line1);
+                        setAddress1(line1 || "");
+                        setCity(p.city || "");
+                        setState(p.state || "IL");
+                        setPostalCode(p.postalCode || "");
+                      }}
+                    />
+                  </div>
 
-                          setFormattedAddress(formatted || line1);
-                          setAddress1(line1 || "");
-                          setCity(p.city || "");
-                          setState(p.state || "IL");
-                          setPostalCode(p.postalCode || "");
-                        }}
-                      />
-                    </div>
+                  {/* Suite */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Suite
+                    </label>
+                    <Input
+                      value={suite}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setSuite(e.target.value)
+                      }
+                      disabled={submitting}
+                      placeholder="Apt, suite, unit"
+                    />
+                  </div>
 
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
-                        Suite (if applicable)
-                      </label>
-                      <Input
-                        value={suite}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSuite(e.target.value)}
-                        disabled={submitting}
-                        placeholder="Optional"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                  {/* City / State / Postal */}
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
                         City
                       </label>
                       <Input
                         value={city}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setCity(e.target.value)
+                        }
                         disabled={submitting}
-                        placeholder="Optional"
+                        placeholder="City"
+                        error={!req(city) && !!error}
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-700">
-                          State
-                        </label>
-                        <select
-                          value={state}
-                          onChange={(e) => setState(e.target.value)}
-                          disabled={submitting}
-                          className={cx(
-                            "w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm",
-                            "focus:outline-none focus:ring-2 focus:ring-violet-300"
-                          )}
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
+                        State
+                      </label>
+                      <Select value={state} onValueChange={(v) => setState(v)}>
+                        <SelectTrigger
+                          className={cx("h-11 w-full")}
+                          aria-label="State"
+                          error={!req(state) && !!error}
                         >
+                          <span className="text-gray-900">{stateLabel}</span>
+                        </SelectTrigger>
+                        <SelectContent>
                           {STATES.map((s) => (
-                            <option key={s.value} value={s.value}>
+                            <SelectItem key={s.value} value={s.value}>
                               {s.label}
-                            </option>
+                            </SelectItem>
                           ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-700">
-                          Postal code
-                        </label>
-                        <Input
-                          value={postalCode}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setPostalCode(e.target.value)
-                          }
-                          disabled={submitting}
-                          placeholder="Optional"
-                        />
-                      </div>
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-700">
-                        Description
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
+                        Postal code
                       </label>
-                      <Textarea
-                        value={description}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                          setDescription(e.target.value)
+                      <Input
+                        value={postalCode}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setPostalCode(e.target.value)
                         }
                         disabled={submitting}
-                        rows={5}
-                        placeholder="Tell us what you host, your experience, and what families should expect."
+                        placeholder="ZIP"
+                        error={!req(postalCode) && !!error}
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-3 pt-2">
+                  {/* Description */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Description
+                    </label>
+                    <Textarea
+                      value={description}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setDescription(e.target.value)
+                      }
+                      disabled={submitting}
+                      rows={6}
+                      placeholder="Tell us what you host, your experience, and what families should expect."
+                      error={!req(description) && !!error}
+                    />
+                    <p className="text-[11px] text-gray-500">
+                      Be specific: what you offer, who it’s for, and what a typical session looks
+                      like.
+                    </p>
+                  </div>
+
+                  {/* Agreements */}
+                  <div className="space-y-3 pt-1">
                     <div className="flex items-start gap-2">
                       <Checkbox
                         checked={agreeSafety}
@@ -416,10 +476,14 @@ const HostApplicationPage: React.FC = () => {
                         disabled={submitting}
                       />
                       <label className="text-xs text-gray-700">
-                        I have read and agree to the full{" "}
-                        <a className="underline" href="/terms">
+                        I have read and agree to the{" "}
+                        <button
+                          type="button"
+                          onClick={() => setTermsOpen(true)}
+                          className="underline"
+                        >
                           Host Terms &amp; Rules
-                        </a>
+                        </button>
                         .
                       </label>
                     </div>
@@ -431,11 +495,8 @@ const HostApplicationPage: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-3 pt-2">
-                    <Button type="submit" disabled={submitting || !canSubmit}>
-                      {submitting ? "Submitting…" : "Submit"}
-                    </Button>
-
+                  {/* Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                     <button
                       type="button"
                       onClick={clearForm}
@@ -447,6 +508,10 @@ const HostApplicationPage: React.FC = () => {
                     >
                       Clear form
                     </button>
+
+                    <Button type="submit" disabled={submitting || !validation.ok}>
+                      {submitting ? "Submitting…" : "Submit application"}
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -454,6 +519,29 @@ const HostApplicationPage: React.FC = () => {
           </div>
         </Grid>
       </Container>
+
+      <Modal
+        isOpen={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        title="Host Terms & Rules"
+        size="lg"
+      >
+        <div className="max-h-[60vh] overflow-auto pr-1 space-y-4 overscroll-contain">
+          <TermsContent />
+        </div>
+
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={() => setTermsOpen(false)}>
+            Close
+          </Button>
+
+          <a href="/terms" target="_blank" rel="noreferrer">
+            <Button type="button" variant="primary">
+              Open full page
+            </Button>
+          </a>
+        </div>
+      </Modal>
     </main>
   );
 };

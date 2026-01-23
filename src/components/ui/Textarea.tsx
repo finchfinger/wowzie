@@ -1,25 +1,34 @@
-import React from "react";
-import clsx from "clsx";
+import * as React from "react";
+import { cn } from "../../lib/utils";
 
-type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-  error?: boolean;
-};
+export type TextareaProps =
+  React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+    error?: boolean;
+  };
 
-export const Textarea: React.FC<TextareaProps> = ({
-  className,
-  error,
-  ...props
-}) => {
+export const Textarea = React.forwardRef<
+  HTMLTextAreaElement,
+  TextareaProps
+>(({ className, error, ...props }, ref) => {
   return (
     <textarea
-      className={clsx(
-        "block w-full rounded-xl border bg-gray-50 px-3 py-2 text-sm text-gray-900 shadow-sm",
-        "focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500",
-        "placeholder:text-gray-400 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed",
-        error ? "border-red-500" : "border-black/10",
+      ref={ref}
+      className={cn(
+        // match Input.tsx
+        "flex w-full rounded-xl border bg-background px-3 py-2 text-sm text-foreground shadow-sm",
+        "placeholder:text-muted-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0",
+        "disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-60",
+
+        // textarea-specific
+        "min-h-[120px] resize-vertical",
+
+        error ? "border-destructive" : "border-input",
         className
       )}
       {...props}
     />
   );
-};
+});
+
+Textarea.displayName = "Textarea";

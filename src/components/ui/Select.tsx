@@ -1,3 +1,4 @@
+// src/components/ui/Select.tsx
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
@@ -16,7 +17,8 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex w-full items-center justify-between rounded-xl border bg-background px-3 py-2 text-sm text-foreground shadow-sm",
+      // Match Input.tsx (Wowzie standard)
+      "flex h-11 w-full items-center justify-between rounded-lg border bg-background px-3 text-sm text-foreground shadow-sm",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0",
       "disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-60",
       error ? "border-destructive" : "border-input",
@@ -41,8 +43,11 @@ const SelectContent = React.forwardRef<
       ref={ref}
       position={position}
       className={cn(
-        "relative z-50 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-md",
+        // Match overall system radius
+        "relative z-50 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md",
         "min-w-[var(--radix-select-trigger-width)]",
+        // Cap height so long lists (times) scroll properly
+        "max-h-[320px]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -55,7 +60,13 @@ const SelectContent = React.forwardRef<
         <ChevronUp className="h-4 w-4" />
       </SelectPrimitive.ScrollUpButton>
 
-      <SelectPrimitive.Viewport className="p-1 min-w-[var(--radix-select-trigger-width)]">
+      {/* Viewport is the actual scroll container */}
+      <SelectPrimitive.Viewport
+        className={cn(
+          "min-w-[var(--radix-select-trigger-width)] p-1",
+          "max-h-[320px] overflow-y-auto"
+        )}
+      >
         {children}
       </SelectPrimitive.Viewport>
 

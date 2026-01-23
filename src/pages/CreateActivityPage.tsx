@@ -1,9 +1,25 @@
 // src/pages/CreateActivityPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "../components/ui/Button";
 import { supabase } from "../lib/supabase";
 import { uploadActivityImages } from "../lib/images";
+
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Textarea } from "../components/ui/Textarea";
+import { Checkbox } from "../components/ui/Checkbox";
+import { DateInput } from "../components/ui/DateInput";
+import { MultiSelect } from "../components/ui/MultiSelect";
+
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "../components/ui/Select";
+
+import { PhotoUploader, type PhotoItem } from "../components/host/PhotoUploader";
 
 type Visibility = "private" | "public";
 type ActivityType = "fixed" | "ongoing";
@@ -16,6 +32,7 @@ type DaySchedule = {
 };
 
 type SiblingDiscountType = "none" | "percent" | "amount";
+type AgeBucket = "all" | "3-5" | "6-8" | "9-12" | "13+";
 
 type CampMeta = {
   visibility?: Visibility;
@@ -24,6 +41,11 @@ type CampMeta = {
 
   cancellation_policy?: string | null;
 
+  // New multi-select support
+  age_buckets?: AgeBucket[];
+
+  // Legacy compatibility
+  age_bucket?: AgeBucket;
   min_age?: number | null;
   max_age?: number | null;
 
@@ -75,6 +97,9 @@ type CampMeta = {
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
+const isNonEmptyString = (v: unknown): v is string =>
+  typeof v === "string" && v.trim().length > 0;
+
 const toAmPmLabel = (valueHHMM: string) => {
   const [hhRaw, mmRaw] = valueHHMM.split(":");
   const hh = Number.parseInt(hhRaw ?? "", 10);
@@ -105,7 +130,6 @@ type TimeSelectProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  className?: string;
 };
 
 const TimeSelect: React.FC<TimeSelectProps> = ({
@@ -114,28 +138,20 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
   onChange,
   placeholder = "Select time",
   disabled,
-  className,
 }) => {
   return (
-    <select
-      id={id}
-      disabled={disabled}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={[
-        "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm",
-        "focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500",
-        "disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed",
-        className ?? "",
-      ].join(" ")}
-    >
-      <option value="">{placeholder}</option>
-      {TIME_OPTIONS.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger id={id} className="h-11 text-sm">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {TIME_OPTIONS.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 };
 
@@ -163,11 +179,116 @@ const CANCELLATION_OPTIONS: Array<{ value: string; label: string; helper: string
   },
 ];
 
-const CreateActivityPage: React.FC = () => {
+const AGE_BUCKETS: Array<{ value: AgeBucket; label: string }> = [
+  { value: "all", label: "All ages" },
+  { value: "3-5", label: "Ages 3 to 5" },
+  { value: "6-8", label: "Ages 6 to 8" },
+  { value: "9-12", label: "Ages 9 to 12" },
+  { value: "13+", label: "Ages 13+" },
+];
 
+const AGE_BUCKET_SET = new Set<AgeBucket>(AGE_BUCKETS.map((b) => b.value));
+const isAgeBucket = (v: string): v is AgeBucket => AGE_BUCKET_SET.has(v as AgeBucket);
+
+const normalizeAgeBuckets = (vals: AgeBucket[]): AgeBucket[] => {
+  if (!vals.length) return [];
+  if (vals.includes("all")) return ["all"];
+  return vals.filter((v) => v !== "all");
+};
+
+const ageBucketToMinMax = (bucket: AgeBucket): { min: number | null; max: number | null } => {
+  switch (bucket) {
+    case "all":
+      return { min: null, max: null };
+    case "3-5":
+      return { min: 3, max: 5 };
+    case "6-8":
+      return { min: 6, max: 8 };
+    case "9-12":
+      return { min: 9, max: 12 };
+    case "13+":
+      return { min: 13, max: null };
+    default:
+      return { min: null, max: null };
+  }
+};
+
+const deriveMinMaxFromBuckets = (
+  buckets: AgeBucket[]
+): { min: number | null; max: number | null } => {
+  if (!buckets.length) return { min: null, max: null };
+  if (buckets.includes("all")) return { min: null, max: null };
+
+  const mins: number[] = [];
+  const maxs: Array<number | null> = [];
+
+  for (const b of buckets) {
+    const { min, max } = ageBucketToMinMax(b);
+    if (min != null) mins.push(min);
+    maxs.push(max);
+  }
+
+  const min = mins.length ? Math.min(...mins) : null;
+
+  const hasOpenEnded = maxs.some((m) => m == null);
+  const finiteMaxs = maxs.filter((m): m is number => typeof m === "number");
+  const max = hasOpenEnded ? null : finiteMaxs.length ? Math.max(...finiteMaxs) : null;
+
+  return { min, max };
+};
+
+const MAX_PHOTOS = 9;
+
+const makeId = () => {
+  try {
+    // @ts-ignore
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  } catch {}
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+// Money helpers
+const parseMoneyToCents = (raw: string): number | null => {
+  const cleaned = raw.replace(/[^0-9.]/g, "");
+  if (!cleaned) return null;
+
+  const parts = cleaned.split(".");
+  const dollarsPart = parts[0] ?? "0";
+  const decimalsPart = (parts[1] ?? "").slice(0, 2);
+
+  const dollars = Number.parseInt(dollarsPart || "0", 10);
+  if (Number.isNaN(dollars)) return null;
+
+  const cents = Number.parseInt(decimalsPart.padEnd(2, "0") || "0", 10);
+  if (Number.isNaN(cents)) return null;
+
+  return dollars * 100 + cents;
+};
+
+const formatCentsToMoneyText = (cents: number): string => {
+  const value = (cents / 100).toFixed(2);
+  return value.replace(/\.00$/, "");
+};
+
+const sanitizeMoneyInput = (raw: string): string => {
+  let v = raw.replace(/[^0-9.]/g, "");
+  const firstDot = v.indexOf(".");
+  if (firstDot !== -1) {
+    v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+    const [a, b] = v.split(".");
+    v = `${a}.${(b ?? "").slice(0, 2)}`;
+  }
+  return v;
+};
+
+type UploadedImagesResult = {
+  heroUrl?: string | null;
+  galleryUrls?: Array<string | null | undefined> | null;
+};
+
+const CreateActivityPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // Support both /activities/:id/edit and /host/activities/:activityId/edit
   const params = useParams<{ id?: string; activityId?: string }>();
   const activityId = params.id ?? params.activityId ?? null;
   const isEditMode = Boolean(activityId);
@@ -178,25 +299,20 @@ const CreateActivityPage: React.FC = () => {
   const [location, setLocation] = useState("");
   const [isVirtual, setIsVirtual] = useState(false);
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState(""); // dollars as typed
 
-  // Guest age range + cancellation policy
-  const [minAge, setMinAge] = useState("");
-  const [maxAge, setMaxAge] = useState("");
+  // Money
+  const [priceText, setPriceText] = useState("");
+  const [priceCents, setPriceCents] = useState<number | null>(null);
+
+  // Age buckets + cancellation
+  const [ageBuckets, setAgeBuckets] = useState<AgeBucket[]>([]);
   const [cancellationPolicy, setCancellationPolicy] = useState<string>(
     CANCELLATION_OPTIONS[0]?.value ?? ""
   );
 
   // Photos
-  const [heroImage, setHeroImage] = useState<File | null>(null);
-  const [heroPreview, setHeroPreview] = useState<string | null>(null);
-
-  const [galleryImages, setGalleryImages] = useState<File[]>([]);
-  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
-
-  // Existing image URLs (for edit mode)
-  const [existingHeroUrl, setExistingHeroUrl] = useState<string | null>(null);
-  const [existingGalleryUrls, setExistingGalleryUrls] = useState<string[]>([]);
+  const [photoItems, setPhotoItems] = useState<PhotoItem[]>([]);
+  const [originalExistingUrls, setOriginalExistingUrls] = useState<string[]>([]);
 
   // Scheduling type
   const [activityType, setActivityType] = useState<ActivityType>("fixed");
@@ -204,8 +320,8 @@ const CreateActivityPage: React.FC = () => {
   // Fixed schedule
   const [fixedStartDate, setFixedStartDate] = useState("");
   const [fixedEndDate, setFixedEndDate] = useState("");
-  const [fixedStartTime, setFixedStartTime] = useState(""); // "HH:MM"
-  const [fixedEndTime, setFixedEndTime] = useState(""); // "HH:MM"
+  const [fixedStartTime, setFixedStartTime] = useState("");
+  const [fixedEndTime, setFixedEndTime] = useState("");
   const [fixedAllDay, setFixedAllDay] = useState(false);
   const [fixedRepeatRule, setFixedRepeatRule] = useState("none");
 
@@ -242,7 +358,7 @@ const CreateActivityPage: React.FC = () => {
   const [extendedDayStart, setExtendedDayStart] = useState("");
   const [extendedDayEnd, setExtendedDayEnd] = useState("");
 
-  // Sibling discount (checkbox + dropdown + value)
+  // Sibling discount
   const [offerSiblingDiscount, setOfferSiblingDiscount] = useState(false);
   const [siblingDiscountType, setSiblingDiscountType] = useState<SiblingDiscountType>("none");
   const [siblingDiscountValue, setSiblingDiscountValue] = useState("");
@@ -258,6 +374,20 @@ const CreateActivityPage: React.FC = () => {
     const found = CANCELLATION_OPTIONS.find((o) => o.value === cancellationPolicy);
     return found?.helper ?? "";
   }, [cancellationPolicy]);
+
+  // Cleanup object URLs for new items when unmounting
+  useEffect(() => {
+    return () => {
+      photoItems.forEach((it) => {
+        if (it.origin === "new" && it.src?.startsWith("blob:")) {
+          try {
+            URL.revokeObjectURL(it.src);
+          } catch {}
+        }
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load existing camp in edit mode
   useEffect(() => {
@@ -292,15 +422,36 @@ const CreateActivityPage: React.FC = () => {
       setTitle(data.name ?? "");
       setDescription(data.description ?? "");
       setLocation(data.location ?? "");
-      setPrice(data.price_cents != null ? (data.price_cents / 100).toString() : "");
+
+      if (data.price_cents != null) {
+        setPriceCents(data.price_cents);
+        setPriceText(formatCentsToMoneyText(data.price_cents));
+      } else {
+        setPriceCents(null);
+        setPriceText("");
+      }
 
       setVisibility(meta.visibility ?? (data.is_published ? "public" : "private"));
       setIsVirtual(Boolean(meta.isVirtual));
       setActivityType(meta.activityType ?? "fixed");
 
-      // Age + cancellation
-      setMinAge(meta.min_age != null && !Number.isNaN(meta.min_age) ? String(meta.min_age) : "");
-      setMaxAge(meta.max_age != null && !Number.isNaN(meta.max_age) ? String(meta.max_age) : "");
+      // Age buckets
+      if (Array.isArray(meta.age_buckets) && meta.age_buckets.length) {
+        setAgeBuckets(normalizeAgeBuckets(meta.age_buckets));
+      } else if (meta.age_bucket) {
+        setAgeBuckets(meta.age_bucket === "all" ? [] : [meta.age_bucket]);
+      } else {
+        const min = meta.min_age ?? null;
+        const max = meta.max_age ?? null;
+
+        if (min === 3 && max === 5) setAgeBuckets(["3-5"]);
+        else if (min === 6 && max === 8) setAgeBuckets(["6-8"]);
+        else if (min === 9 && max === 12) setAgeBuckets(["9-12"]);
+        else if (min === 13 && max == null) setAgeBuckets(["13+"]);
+        else setAgeBuckets([]);
+      }
+
+      // Cancellation
       setCancellationPolicy(
         (meta.cancellation_policy && String(meta.cancellation_policy)) ||
           (CANCELLATION_OPTIONS[0]?.value ?? "")
@@ -344,22 +495,29 @@ const CreateActivityPage: React.FC = () => {
       // Sibling discount loader (new + legacy)
       const legacyPrice = (sib as any).price as string | undefined;
       const loadedEnabled = Boolean(sib.enabled);
-
       const loadedType: SiblingDiscountType = sib.type ?? (loadedEnabled ? "amount" : "none");
 
       setOfferSiblingDiscount(loadedEnabled);
       setSiblingDiscountType(loadedEnabled ? loadedType : "none");
       setSiblingDiscountValue((sib.value ?? legacyPrice ?? "") as string);
 
-      // Existing images
+      // Photos -> single ordered list:
       const existingHero = data.hero_image_url ?? null;
       const existingGallery = (((data.image_urls as string[]) || []) as string[]) || [];
+      const allExisting = [...(existingHero ? [existingHero] : []), ...existingGallery].filter(
+        Boolean
+      ) as string[];
 
-      setExistingHeroUrl(existingHero);
-      setExistingGalleryUrls(existingGallery);
+      setOriginalExistingUrls(allExisting);
 
-      setHeroPreview(existingHero);
-      setGalleryPreviews(existingGallery);
+      setPhotoItems(
+        allExisting.slice(0, MAX_PHOTOS).map((url) => ({
+          id: `url:${url}`,
+          src: url,
+          origin: "existing",
+          url,
+        }))
+      );
 
       setInitialLoading(false);
     };
@@ -371,27 +529,6 @@ const CreateActivityPage: React.FC = () => {
     };
   }, [isEditMode, activityId]);
 
-  // Image handlers
-  const handleHeroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    if (file) {
-      setHeroImage(file);
-      setHeroPreview(URL.createObjectURL(file));
-    } else {
-      setHeroImage(null);
-      setHeroPreview(existingHeroUrl);
-    }
-  };
-
-  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const limited = files.slice(0, 8);
-
-    setGalleryImages(limited);
-    setGalleryPreviews(limited.map((file) => URL.createObjectURL(file)));
-  };
-
-  // Helpers
   const slugify = (value: string): string => {
     const base =
       value
@@ -404,21 +541,178 @@ const CreateActivityPage: React.FC = () => {
     return `${base}-${suffix}`;
   };
 
-  const normalizePriceToCents = (value: string): number | null => {
-    const cleaned = value.replace(/[^0-9.]/g, "");
-    if (!cleaned) return null;
-    const dollars = parseFloat(cleaned);
-    if (Number.isNaN(dollars)) return null;
-    return Math.round(dollars * 100);
+  const buildPayloadAndSave = async (hostId: string) => {
+    const { min, max } = deriveMinMaxFromBuckets(ageBuckets);
+
+    // Legacy: if only one selected bucket, store it. Otherwise store "all".
+    // NOTE: if ageBuckets is empty, legacyAgeBucket becomes "all" but min/max will be null/null.
+    const legacyAgeBucket: AgeBucket = ageBuckets.length === 1 ? ageBuckets[0] : "all";
+
+    const effectiveSiblingType: SiblingDiscountType = offerSiblingDiscount
+      ? siblingDiscountType === "none"
+        ? "percent"
+        : siblingDiscountType
+      : "none";
+
+    const meta: CampMeta = {
+      visibility,
+      isVirtual,
+      activityType,
+
+      cancellation_policy: cancellationPolicy || null,
+
+      age_buckets: ageBuckets,
+      age_bucket: legacyAgeBucket,
+      min_age: min,
+      max_age: max,
+
+      fixedSchedule: {
+        startDate: fixedStartDate || null,
+        endDate: fixedEndDate || null,
+        startTime: fixedAllDay ? null : fixedStartTime || null,
+        endTime: fixedAllDay ? null : fixedEndTime || null,
+        allDay: fixedAllDay,
+        repeatRule: fixedRepeatRule,
+      },
+
+      ongoingSchedule: {
+        startDate: ongoingStartDate || null,
+        endDate: ongoingEndDate || null,
+      },
+
+      weeklySchedule,
+
+      advanced: {
+        earlyDropoff: {
+          enabled: offerEarlyDropoff,
+          price: offerEarlyDropoff ? earlyDropoffPrice || null : null,
+          start: offerEarlyDropoff ? earlyDropoffStart || null : null,
+          end: offerEarlyDropoff ? earlyDropoffEnd || null : null,
+        },
+        extendedDay: {
+          enabled: offerExtendedDay,
+          price: offerExtendedDay ? extendedDayPrice || null : null,
+          start: offerExtendedDay ? extendedDayStart || null : null,
+          end: offerExtendedDay ? extendedDayEnd || null : null,
+        },
+        siblingDiscount: {
+          enabled: offerSiblingDiscount && effectiveSiblingType !== "none",
+          type: offerSiblingDiscount ? effectiveSiblingType : "none",
+          value:
+            offerSiblingDiscount && effectiveSiblingType !== "none"
+              ? siblingDiscountValue || null
+              : null,
+        },
+      },
+
+      pricing: {
+        price_cents: priceCents ?? null,
+        display: priceText || null,
+        currency: "USD",
+      },
+    };
+
+    const slug = existingSlug ?? slugify(title);
+
+    // Photos: ordered list; first is primary
+    const ordered = photoItems.slice(0, MAX_PHOTOS);
+    const primary = ordered[0] ?? null;
+
+    const primaryNewFile = primary?.origin === "new" ? (primary.file ?? null) : null;
+
+    const otherNewFiles: File[] = ordered
+      .slice(1)
+      .filter((x) => x.origin === "new" && x.file)
+      .map((x) => x.file!) as File[];
+
+    let uploadedHeroUrl: string | null = null;
+    let uploadedGalleryUrls: string[] = [];
+
+    if (primaryNewFile || otherNewFiles.length) {
+      const uploaded = (await uploadActivityImages({
+        bucket: "activity-images",
+        slug,
+        heroImage: primaryNewFile,
+        galleryImages: otherNewFiles,
+      })) as UploadedImagesResult;
+
+      uploadedHeroUrl = uploaded?.heroUrl ?? null;
+      uploadedGalleryUrls = Array.isArray(uploaded?.galleryUrls)
+        ? uploaded.galleryUrls.filter(isNonEmptyString)
+        : [];
+    }
+
+    // Replace new items with uploaded urls, preserving order
+    let galleryCursor = 0;
+
+    const orderedUrls: string[] = ordered
+      .map((item, idx) => {
+        if (item.origin === "existing") return item.url ?? item.src;
+
+        if (idx === 0) return uploadedHeroUrl;
+
+        const next = uploadedGalleryUrls[galleryCursor] ?? null;
+        galleryCursor += 1;
+        return next;
+      })
+      .filter(isNonEmptyString);
+
+    const heroUrl = orderedUrls[0] ?? null;
+    const galleryUrls = orderedUrls.slice(1);
+
+    const primaryCardUrl = heroUrl ?? galleryUrls[0] ?? null;
+
+    // Optional: infer removed existing urls (for future cleanup)
+    const currentExistingUrls = ordered
+      .filter((x) => x.origin === "existing")
+      .map((x) => x.url ?? x.src)
+      .filter(isNonEmptyString);
+
+    const removedExisting = originalExistingUrls.filter((u) => !currentExistingUrls.includes(u));
+    void removedExisting;
+
+    const payload = {
+      name: title.trim(),
+      slug,
+      description: description || null,
+      location: location || null,
+      price_cents: priceCents,
+      host_id: hostId,
+      is_published: visibility === "public",
+      is_active: true,
+      hero_image_url: heroUrl,
+      image_urls: galleryUrls.length ? galleryUrls : null,
+      image_url: primaryCardUrl,
+      meta,
+    };
+
+    let savedId = activityId ?? null;
+
+    if (isEditMode && activityId) {
+      const { data, error } = await supabase
+        .from("camps")
+        .update(payload)
+        .eq("id", activityId)
+        .select("id, slug")
+        .single();
+
+      if (error || !data) throw error ?? new Error("Update failed");
+      savedId = data.id;
+    } else {
+      const { data, error } = await supabase
+        .from("camps")
+        .insert(payload)
+        .select("id, slug")
+        .single();
+
+      if (error || !data) throw error ?? new Error("Insert failed");
+      savedId = data.id;
+    }
+
+    if (savedId) navigate(`/host/activities/${savedId}`);
+    else navigate("/host/listings");
   };
 
-  const parseIntOrNull = (value: string): number | null => {
-    if (!value.trim()) return null;
-    const n = Number.parseInt(value.trim(), 10);
-    return Number.isNaN(n) ? null : n;
-  };
-
-  // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -428,233 +722,21 @@ const CreateActivityPage: React.FC = () => {
       return;
     }
 
-    const priceCents = normalizePriceToCents(price);
-    if (price.trim() && priceCents === null) {
+    if (priceText.trim() && priceCents === null) {
       setSubmitError("Please enter a valid price (for example 450 or 450.00).");
       return;
     }
 
-    const minAgeValue = parseIntOrNull(minAge);
-    const maxAgeValue = parseIntOrNull(maxAge);
-
     setSubmitting(true);
 
     try {
-      // 1) Ensure we have a host / user
       const { data: userData, error: userError } = await supabase.auth.getUser();
-
       if (userError || !userData.user) {
         setSubmitError("You need to be signed in to save an activity.");
-        setSubmitting(false);
         return;
       }
 
-      const hostId = userData.user.id;
-
-      // 2) Build meta payload
-      const priceCentsMeta = priceCents ?? null;
-
-      // Sibling discount: if checkbox off, force none
-      const effectiveSiblingType: SiblingDiscountType = offerSiblingDiscount
-        ? siblingDiscountType === "none"
-          ? "percent"
-          : siblingDiscountType
-        : "none";
-
-      const meta: CampMeta = {
-        visibility,
-        isVirtual,
-        activityType,
-        cancellation_policy: cancellationPolicy || null,
-        min_age: minAgeValue,
-        max_age: maxAgeValue,
-
-        fixedSchedule: {
-          startDate: fixedStartDate || null,
-          endDate: fixedEndDate || null,
-          startTime: fixedAllDay ? null : fixedStartTime || null,
-          endTime: fixedAllDay ? null : fixedEndTime || null,
-          allDay: fixedAllDay,
-          repeatRule: fixedRepeatRule,
-        },
-
-        ongoingSchedule: {
-          startDate: ongoingStartDate || null,
-          endDate: ongoingEndDate || null,
-        },
-
-        weeklySchedule,
-
-        advanced: {
-          earlyDropoff: {
-            enabled: offerEarlyDropoff,
-            price: offerEarlyDropoff ? earlyDropoffPrice || null : null,
-            start: offerEarlyDropoff ? earlyDropoffStart || null : null,
-            end: offerEarlyDropoff ? earlyDropoffEnd || null : null,
-          },
-          extendedDay: {
-            enabled: offerExtendedDay,
-            price: offerExtendedDay ? extendedDayPrice || null : null,
-            start: offerExtendedDay ? extendedDayStart || null : null,
-            end: offerExtendedDay ? extendedDayEnd || null : null,
-          },
-          siblingDiscount: {
-            enabled: offerSiblingDiscount && effectiveSiblingType !== "none",
-            type: offerSiblingDiscount ? effectiveSiblingType : "none",
-            value:
-              offerSiblingDiscount && effectiveSiblingType !== "none"
-                ? siblingDiscountValue || null
-                : null,
-          },
-        },
-
-        pricing: {
-          price_cents: priceCentsMeta,
-          display: price || null,
-          currency: "USD",
-        },
-      };
-
-      // 3) Determine slug
-      const slug = existingSlug ?? slugify(title);
-
-      // 4) Upload resized images to storage
-      // Preserve existing images in edit mode if no new ones uploaded
-      let heroUrl: string | null = existingHeroUrl;
-      let galleryUrls: string[] = [...existingGalleryUrls];
-
-      const hasNewHero = Boolean(heroImage);
-      const hasNewGallery = galleryImages.length > 0;
-
-      if (hasNewHero || hasNewGallery) {
-        const uploaded = await uploadActivityImages({
-          bucket: "activity-images",
-          slug,
-          heroImage,
-          galleryImages,
-        });
-
-        if (uploaded.heroUrl) heroUrl = uploaded.heroUrl;
-
-        if (uploaded.galleryUrls.length) {
-          // append behavior (matches your previous behavior)
-          galleryUrls = [...galleryUrls, ...uploaded.galleryUrls];
-        }
-
-        // Keep a good card image (prefer card variant, else hero, else first gallery)
-        const primaryCardUrl = uploaded.heroUrl ?? uploaded.galleryUrls[0] ?? null;
-
-        const payload = {
-          name: title.trim(),
-          slug,
-          description: description || null,
-          location: location || null,
-          price_cents: priceCents,
-          host_id: hostId,
-          is_published: visibility === "public",
-          is_active: true,
-          hero_image_url: heroUrl,
-          image_urls: galleryUrls.length ? galleryUrls : null,
-          image_url: primaryCardUrl,
-          meta,
-        };
-
-        let savedId = activityId ?? null;
-
-        if (isEditMode && activityId) {
-          const { data, error } = await supabase
-            .from("camps")
-            .update(payload)
-            .eq("id", activityId)
-            .select("id, slug")
-            .single();
-
-          if (error || !data) {
-            console.error("Error updating camp:", error);
-            setSubmitError("We couldn’t save your changes. Please try again.");
-            setSubmitting(false);
-            return;
-          }
-
-          savedId = data.id;
-        } else {
-          const { data, error } = await supabase
-            .from("camps")
-            .insert(payload)
-            .select("id, slug")
-            .single();
-
-          if (error || !data) {
-            console.error("Error inserting camp:", error);
-            setSubmitError("We couldn’t save your activity. Please try again.");
-            setSubmitting(false);
-            return;
-          }
-
-          savedId = data.id;
-        }
-
-        if (savedId) navigate(`/host/activities/${savedId}`);
-        else navigate("/host/listings");
-
-        return;
-      }
-
-      // No new images uploaded, still save using existing URLs
-      const primaryCardUrl = heroUrl ?? galleryUrls[0] ?? null;
-
-      const payload = {
-        name: title.trim(),
-        slug,
-        description: description || null,
-        location: location || null,
-        price_cents: priceCents,
-        host_id: hostId,
-        is_published: visibility === "public",
-        is_active: true,
-        hero_image_url: heroUrl,
-        image_urls: galleryUrls.length ? galleryUrls : null,
-        image_url: primaryCardUrl,
-        meta,
-      };
-
-      let savedId = activityId ?? null;
-
-      if (isEditMode && activityId) {
-        const { data, error } = await supabase
-          .from("camps")
-          .update(payload)
-          .eq("id", activityId)
-          .select("id, slug")
-          .single();
-
-        if (error || !data) {
-          console.error("Error updating camp:", error);
-          setSubmitError("We couldn’t save your changes. Please try again.");
-          setSubmitting(false);
-          return;
-        }
-
-        savedId = data.id;
-      } else {
-        const { data, error } = await supabase
-          .from("camps")
-          .insert(payload)
-          .select("id, slug")
-          .single();
-
-        if (error || !data) {
-          console.error("Error inserting camp:", error);
-          setSubmitError("We couldn’t save your activity. Please try again.");
-          setSubmitting(false);
-          return;
-        }
-
-        savedId = data.id;
-      }
-
-      if (savedId) navigate(`/host/activities/${savedId}`);
-      else navigate("/host/listings");
+      await buildPayloadAndSave(userData.user.id);
     } catch (err) {
       console.error("Unexpected error saving activity:", err);
       setSubmitError("Something went wrong while saving your activity.");
@@ -663,16 +745,15 @@ const CreateActivityPage: React.FC = () => {
     }
   };
 
-  const handleSaveForLater = (e: React.FormEvent) => {
+  const handleSaveForLater = (e: React.MouseEvent) => {
     e.preventDefault();
     navigate("/host");
   };
 
-  // Render
   if (initialLoading) {
     return (
-      <main className="flex-1 bg-violet-50">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-10 lg:py-12 text-xs text-gray-500">
+      <main className="flex-1 min-h-screen bg-violet-50">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 lg:py-12 text-xs text-gray-500">
           Loading activity…
         </div>
       </main>
@@ -681,8 +762,8 @@ const CreateActivityPage: React.FC = () => {
 
   if (initialError) {
     return (
-      <main className="flex-1 bg-violet-50">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-10 lg:py-12">
+      <main className="flex-1 min-h-screen bg-violet-50">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 lg:py-12">
           <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
             {initialError}
           </div>
@@ -700,8 +781,8 @@ const CreateActivityPage: React.FC = () => {
   }
 
   return (
-    <main className="flex-1 bg-violet-50">
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-10 lg:py-12">
+    <main className="flex-1 min-h-screen bg-violet-50">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 lg:py-12">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">
             {isEditMode ? "Edit your activity" : "Let’s set up your activity"}
@@ -719,7 +800,7 @@ const CreateActivityPage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl" noValidate>
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           {/* BASICS */}
           <section className="rounded-2xl bg-white shadow-sm border border-black/5">
             <div className="border-b border-black/5 px-4 sm:px-6 py-3">
@@ -730,23 +811,24 @@ const CreateActivityPage: React.FC = () => {
               {/* Visibility */}
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-gray-700">Visibility</label>
-                <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  value={visibility}
-                  onChange={(e) => setVisibility(e.target.value as Visibility)}
-                >
-                  <option value="private">Private</option>
-                  <option value="public">Public</option>
-                </select>
-                <p className="text-[11px] text-gray-500">Unlisted. Only people with link can register.</p>
+                <Select value={visibility} onValueChange={(v) => setVisibility(v as Visibility)}>
+                  <SelectTrigger className="h-11 text-sm">
+                    <SelectValue placeholder="Select visibility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="private">Private</SelectItem>
+                    <SelectItem value="public">Public</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-gray-500">
+                  Private is unlisted. Only people with the link can register.
+                </p>
               </div>
 
               {/* Title */}
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-gray-700">Title</label>
-                <input
-                  type="text"
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Give your activity a clear name"
@@ -756,88 +838,89 @@ const CreateActivityPage: React.FC = () => {
               {/* Location + virtual toggle */}
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-gray-700">Location</label>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Address or general area"
                   />
                   <label className="flex items-center gap-2 text-xs text-gray-700 whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-violet-600"
+                    <Checkbox
                       checked={isVirtual}
-                      onChange={(e) => setIsVirtual(e.target.checked)}
+                      onCheckedChange={(checked) => setIsVirtual(Boolean(checked))}
                     />
                     This is a virtual event
                   </label>
                 </div>
               </div>
 
-              {/* Price */}
+              {/* Price per child */}
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-gray-700">Price per child</label>
+
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 z-10">
                     $
                   </span>
-                  <input
-                    type="text"
-                    className="block w-full rounded-md border border-gray-300 pl-6 pr-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+
+                  <Input
+                    value={priceText}
+                    onChange={(e) => {
+                      const nextText = sanitizeMoneyInput(e.target.value);
+                      setPriceText(nextText);
+                      setPriceCents(parseMoneyToCents(nextText));
+                    }}
+                    onBlur={() => {
+                      if (!priceText.trim()) return;
+                      if (priceCents == null) {
+                        setPriceText("");
+                        return;
+                      }
+                      setPriceText(formatCentsToMoneyText(priceCents));
+                    }}
                     placeholder="e.g. 450"
+                    className="pl-8 text-left"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    aria-label="Price per child"
                   />
                 </div>
-                <p className="text-[11px] text-gray-500">Total price for this camp or series in USD.</p>
               </div>
 
               {/* Age range */}
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <label className="block text-xs font-medium text-gray-700">Age range</label>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      min={0}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                      value={minAge}
-                      onChange={(e) => setMinAge(e.target.value)}
-                      placeholder="Min age (e.g. 6)"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      min={0}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                      value={maxAge}
-                      onChange={(e) => setMaxAge(e.target.value)}
-                      placeholder="Max age (e.g. 11)"
-                    />
-                  </div>
-                </div>
+
+                <MultiSelect
+                  options={AGE_BUCKETS.map((o) => ({ value: o.value, label: o.label }))}
+                  value={ageBuckets}
+                  onChange={(next: string[]) => {
+                    const cleaned = next.filter(isAgeBucket);
+                    setAgeBuckets(normalizeAgeBuckets(cleaned));
+                  }}
+                  placeholder="Select one or more"
+                />
+
                 <p className="text-[11px] text-gray-500">
-                  Families will see this on the listing and in “Guest requirements.”
+                  Select one or more. This should match the filters families use on the home page.
                 </p>
               </div>
 
-              {/* Cancellation policy */}
+              {/* Cancellation */}
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-gray-700">Cancellation policy</label>
-                <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  value={cancellationPolicy}
-                  onChange={(e) => setCancellationPolicy(e.target.value)}
-                >
-                  {CANCELLATION_OPTIONS.map((opt) => (
-                    <option key={opt.label} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                <Select value={cancellationPolicy} onValueChange={setCancellationPolicy}>
+                  <SelectTrigger className="h-11 text-sm">
+                    <SelectValue placeholder="Select a policy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CANCELLATION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.label} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {selectedCancellationHelper ? (
                   <p className="text-[11px] text-gray-500">{selectedCancellationHelper}</p>
                 ) : null}
@@ -846,116 +929,80 @@ const CreateActivityPage: React.FC = () => {
               {/* Description */}
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-gray-700">Description</label>
-                <textarea
-                  rows={4}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                <Textarea
+                  rows={5}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Share what makes this activity special, what kids will do, and what families should know."
                 />
               </div>
+            </div>
+          </section>
 
-              {/* PHOTOS */}
-              <div className="space-y-3 border-t border-black/5 pt-4">
-                <p className="text-xs font-medium text-gray-700">Photos</p>
-                <p className="text-[11px] text-gray-500 max-w-md">
-                  Add a cover photo and a few gallery images. We will automatically resize and convert images
-                  so the site loads fast.
-                </p>
+          {/* PHOTOS */}
+          <section className="rounded-2xl bg-white shadow-sm border border-black/5">
+            <div className="border-b border-black/5 px-4 sm:px-6 py-3">
+              <h2 className="text-sm font-semibold text-gray-900">Photos</h2>
+            </div>
 
-                {/* Hero / cover photo */}
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[180px,1fr] items-start">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-700">Cover photo</label>
-                    <div className="aspect-[4/3] w-full rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[11px] text-gray-500 overflow-hidden">
-                      {heroPreview || existingHeroUrl ? (
-                        <img
-                          src={heroPreview || existingHeroUrl || ""}
-                          alt="Cover preview"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span>Upload a clear, inviting photo</span>
-                      )}
-                    </div>
-                  </div>
+            <div className="px-4 sm:px-6 py-4">
+              <PhotoUploader
+                maxPhotos={MAX_PHOTOS}
+                items={photoItems}
+                onAddFiles={(files) => {
+                  const remaining = Math.max(0, MAX_PHOTOS - photoItems.length);
+                  const limited = files.slice(0, remaining);
+                  if (!limited.length) return;
 
-                  <div className="space-y-2 text-xs">
-                    <p className="text-gray-600">
-                      This will be the main image families see on your listing. Use a bright, welcoming shot
-                      that shows the space or kids in action.
-                    </p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleHeroChange}
-                      className="block w-full text-xs text-gray-700"
-                    />
-                  </div>
-                </div>
+                  const next = [
+                    ...photoItems,
+                    ...limited.map((file) => ({
+                      id: `file:${makeId()}`,
+                      src: URL.createObjectURL(file),
+                      origin: "new" as const,
+                      file,
+                    })),
+                  ] as PhotoItem[];
 
-                {/* Gallery images */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-gray-700">Gallery (optional)</label>
-                  <p className="text-[11px] text-gray-500">
-                    Add a few more photos to show different activities, spaces, or details. Up to 8 images.
-                  </p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleGalleryChange}
-                    className="block w-full text-xs text-gray-700"
-                  />
-
-                  {(galleryPreviews.length > 0 || existingGalleryUrls.length > 0) && (
-                    <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {(galleryPreviews.length ? galleryPreviews : existingGalleryUrls).map(
-                        (src, index) => (
-                          <div
-                            key={index}
-                            className="aspect-[4/3] rounded-lg overflow-hidden bg-gray-50"
-                          >
-                            <img
-                              src={src}
-                              alt={`Gallery preview ${index + 1}`}
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+                  setPhotoItems(next);
+                }}
+                onRemove={(id) => {
+                  setPhotoItems((prev) => {
+                    const item = prev.find((x) => x.id === id);
+                    if (item?.origin === "new" && item.src?.startsWith("blob:")) {
+                      try {
+                        URL.revokeObjectURL(item.src);
+                      } catch {}
+                    }
+                    return prev.filter((x) => x.id !== id);
+                  });
+                }}
+                onReorder={(next) => setPhotoItems(next)}
+              />
             </div>
           </section>
 
           {/* SCHEDULING */}
           <section className="rounded-2xl bg-white shadow-sm border border-black/5">
-            <div className="border-b border-black/5 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+            <div className="border-b border-black/5 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h2 className="text-sm font-semibold text-gray-900">Scheduling</h2>
               <div className="flex items-center gap-2 text-xs">
-                <label className="inline-flex items-center gap-1">
-                  <input
-                    type="radio"
-                    className="h-3.5 w-3.5 text-violet-600 border-gray-300"
-                    value="fixed"
-                    checked={activityType === "fixed"}
-                    onChange={() => setActivityType("fixed")}
-                  />
-                  <span>Fixed class or camp</span>
-                </label>
-                <label className="inline-flex items-center gap-1">
-                  <input
-                    type="radio"
-                    className="h-3.5 w-3.5 text-violet-600 border-gray-300"
-                    value="ongoing"
-                    checked={activityType === "ongoing"}
-                    onChange={() => setActivityType("ongoing")}
-                  />
-                  <span>Ongoing with bookable slots</span>
-                </label>
+                <Button
+                  type="button"
+                  variant={activityType === "fixed" ? "primary" : "subtle"}
+                  className="text-xs"
+                  onClick={() => setActivityType("fixed")}
+                >
+                  Fixed class or camp
+                </Button>
+                <Button
+                  type="button"
+                  variant={activityType === "ongoing" ? "primary" : "subtle"}
+                  className="text-xs"
+                  onClick={() => setActivityType("ongoing")}
+                >
+                  Ongoing
+                </Button>
               </div>
             </div>
 
@@ -968,18 +1015,14 @@ const CreateActivityPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="block text-xs font-medium text-gray-700">Start date</label>
-                    <input
-                      type="date"
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    <DateInput
                       value={fixedStartDate}
                       onChange={(e) => setFixedStartDate(e.target.value)}
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-medium text-gray-700">End date</label>
-                    <input
-                      type="date"
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    <DateInput
                       value={fixedEndDate}
                       onChange={(e) => setFixedEndDate(e.target.value)}
                     />
@@ -1009,14 +1052,12 @@ const CreateActivityPage: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-xs">
                   <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-violet-600"
+                    <Checkbox
                       checked={fixedAllDay}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setFixedAllDay(checked);
-                        if (checked) {
+                      onCheckedChange={(checked) => {
+                        const isChecked = Boolean(checked);
+                        setFixedAllDay(isChecked);
+                        if (isChecked) {
                           setFixedStartTime("");
                           setFixedEndTime("");
                         }
@@ -1026,16 +1067,17 @@ const CreateActivityPage: React.FC = () => {
                   </label>
 
                   <div className="flex-1 sm:max-w-xs">
-                    <select
-                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                      value={fixedRepeatRule}
-                      onChange={(e) => setFixedRepeatRule(e.target.value)}
-                    >
-                      <option value="none">Does not repeat</option>
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="weekdays">Every weekday</option>
-                    </select>
+                    <Select value={fixedRepeatRule} onValueChange={setFixedRepeatRule}>
+                      <SelectTrigger className="h-11 text-sm">
+                        <SelectValue placeholder="Repeat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Does not repeat</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="weekdays">Every weekday</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -1044,24 +1086,20 @@ const CreateActivityPage: React.FC = () => {
             {activityType === "ongoing" && (
               <div className="px-4 sm:px-6 py-4 space-y-4 text-sm">
                 <p className="text-xs text-gray-500">
-                  For activities that repeat weekly or monthly, like ongoing classes or lessons.
+                  For activities that repeat weekly, like ongoing classes or lessons.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="block text-xs font-medium text-gray-700">Start date</label>
-                    <input
-                      type="date"
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    <DateInput
                       value={ongoingStartDate}
                       onChange={(e) => setOngoingStartDate(e.target.value)}
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-medium text-gray-700">End date</label>
-                    <input
-                      type="date"
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    <DateInput
                       value={ongoingEndDate}
                       onChange={(e) => setOngoingEndDate(e.target.value)}
                     />
@@ -1071,12 +1109,10 @@ const CreateActivityPage: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-gray-800">Weekly availability</span>
-                    <label className="inline-flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        className="h-3.5 w-3.5 rounded border-gray-300 text-violet-600"
+                    <label className="inline-flex items-center gap-2">
+                      <Checkbox
                         checked={showAdvancedAvailability}
-                        onChange={(e) => setShowAdvancedAvailability(e.target.checked)}
+                        onCheckedChange={(checked) => setShowAdvancedAvailability(Boolean(checked))}
                       />
                       <span>Show advanced availability</span>
                     </label>
@@ -1123,14 +1159,11 @@ const CreateActivityPage: React.FC = () => {
             </div>
 
             <div className="px-4 sm:px-6 py-4 space-y-6 text-sm">
-              {/* Early dropoff */}
               <div className="space-y-3">
                 <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-800">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-violet-600"
+                  <Checkbox
                     checked={offerEarlyDropoff}
-                    onChange={(e) => setOfferEarlyDropoff(e.target.checked)}
+                    onCheckedChange={(checked) => setOfferEarlyDropoff(Boolean(checked))}
                   />
                   Offer Early Dropoff
                 </label>
@@ -1139,12 +1172,10 @@ const CreateActivityPage: React.FC = () => {
                   <>
                     <div className="space-y-1">
                       <label className="block text-xs font-medium text-gray-700">Price</label>
-                      <input
-                        type="text"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                        placeholder="Value"
+                      <Input
                         value={earlyDropoffPrice}
                         onChange={(e) => setEarlyDropoffPrice(e.target.value)}
+                        placeholder="Value"
                       />
                     </div>
 
@@ -1170,14 +1201,11 @@ const CreateActivityPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Extended day */}
               <div className="space-y-3 border-t border-black/5 pt-4">
                 <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-800">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-violet-600"
+                  <Checkbox
                     checked={offerExtendedDay}
-                    onChange={(e) => setOfferExtendedDay(e.target.checked)}
+                    onCheckedChange={(checked) => setOfferExtendedDay(Boolean(checked))}
                   />
                   Offer Extended Day
                 </label>
@@ -1186,12 +1214,10 @@ const CreateActivityPage: React.FC = () => {
                   <>
                     <div className="space-y-1">
                       <label className="block text-xs font-medium text-gray-700">Price</label>
-                      <input
-                        type="text"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                        placeholder="Value"
+                      <Input
                         value={extendedDayPrice}
                         onChange={(e) => setExtendedDayPrice(e.target.value)}
+                        placeholder="Value"
                       />
                     </div>
 
@@ -1217,18 +1243,15 @@ const CreateActivityPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Sibling discount */}
               <div className="space-y-3 border-t border-black/5 pt-4">
                 <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-800">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-violet-600"
+                  <Checkbox
                     checked={offerSiblingDiscount}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setOfferSiblingDiscount(checked);
+                    onCheckedChange={(checked) => {
+                      const isChecked = Boolean(checked);
+                      setOfferSiblingDiscount(isChecked);
 
-                      if (!checked) {
+                      if (!isChecked) {
                         setSiblingDiscountType("none");
                         setSiblingDiscountValue("");
                         return;
@@ -1244,15 +1267,21 @@ const CreateActivityPage: React.FC = () => {
                   <div className="space-y-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="block text-xs font-medium text-gray-700">Discount type</label>
-                        <select
-                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        <label className="block text-xs font-medium text-gray-700">
+                          Discount type
+                        </label>
+                        <Select
                           value={siblingDiscountType === "none" ? "percent" : siblingDiscountType}
-                          onChange={(e) => setSiblingDiscountType(e.target.value as SiblingDiscountType)}
+                          onValueChange={(v) => setSiblingDiscountType(v as SiblingDiscountType)}
                         >
-                          <option value="percent">% off each additional sibling</option>
-                          <option value="amount">$ off each additional sibling</option>
-                        </select>
+                          <SelectTrigger className="h-11 text-sm">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percent">% off each additional sibling</SelectItem>
+                            <SelectItem value="amount">$ off each additional sibling</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-1">
@@ -1264,18 +1293,14 @@ const CreateActivityPage: React.FC = () => {
                             </span>
                           )}
 
-                          <input
+                          <Input
                             type="number"
                             min={0}
                             max={siblingDiscountType === "percent" ? 100 : undefined}
-                            className={[
-                              "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm",
-                              "focus:outline-none focus:ring-2 focus:ring-violet-500",
-                              siblingDiscountType === "percent" ? "" : "pl-6",
-                            ].join(" ")}
-                            placeholder={siblingDiscountType === "percent" ? "e.g. 10" : "e.g. 25"}
                             value={siblingDiscountValue}
                             onChange={(e) => setSiblingDiscountValue(e.target.value)}
+                            placeholder={siblingDiscountType === "percent" ? "e.g. 10" : "e.g. 25"}
+                            className={siblingDiscountType === "percent" ? "" : "pl-6"}
                           />
                         </div>
                       </div>
@@ -1288,21 +1313,28 @@ const CreateActivityPage: React.FC = () => {
             </div>
           </section>
 
-          {/* ACTIONS */}
-          <div className="flex items-center gap-3 pt-2">
-            <Button
-              type="button"
-              variant="subtle"
-              className="text-sm"
-              onClick={handleSaveForLater}
-              disabled={submitting}
-            >
-              Save for later
-            </Button>
-            <Button type="submit" className="text-sm bg-gray-900 text-white" disabled={submitting}>
-              {submitting ? (isEditMode ? "Saving…" : "Creating…") : isEditMode ? "Save changes" : "Create event"}
-            </Button>
-          </div>
+{/* ACTIONS */}
+<div className="flex items-center gap-3 pt-2">
+  <Button
+    type="button"
+    variant="outline"
+    size="lg"
+    onClick={handleSaveForLater}
+    disabled={submitting}
+  >
+    Save for later
+  </Button>
+
+  <Button type="submit" variant="primary" size="lg" disabled={submitting}>
+    {submitting
+      ? isEditMode
+        ? "Saving…"
+        : "Creating…"
+      : isEditMode
+        ? "Save changes"
+        : "Create event"}
+  </Button>
+</div>
         </form>
       </div>
     </main>

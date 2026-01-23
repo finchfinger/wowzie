@@ -14,9 +14,11 @@ export type CampImageFields = {
 export type UploadActivityImagesArgs = {
   slug: string;
 
+  // New usage
   heroImage: File | null;
   galleryImages: File[];
 
+  // Legacy / optional
   existingHeroUrl?: string | null;
   existingGalleryUrls?: string[];
 
@@ -25,7 +27,7 @@ export type UploadActivityImagesArgs = {
 
 export type UploadActivityImagesResult = {
   heroUrl: string | null;
-  galleryUrls: string[];
+  galleryUrls: Array<string | null>; // IMPORTANT: preserves order
   anyFailed: boolean;
 };
 
@@ -41,9 +43,7 @@ const DEFAULT_BUCKET = "activity-images";
 
 function getExtension(file: File): string {
   const parts = file.name.split(".");
-  return parts.length > 1
-    ? parts[parts.length - 1].toLowerCase()
-    : "jpg";
+  return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "jpg";
 }
 
 /* ------------------------------------------------------------------ */
@@ -56,7 +56,7 @@ export async function uploadActivityImages(
   const bucket = args.bucket ?? DEFAULT_BUCKET;
 
   let heroUrl: string | null = args.existingHeroUrl ?? null;
-  let galleryUrls: string[] = Array.isArray(args.existingGalleryUrls)
+  let galleryUrls: Array<string | null> = Array.isArray(args.existingGalleryUrls)
     ? [...args.existingGalleryUrls]
     : [];
 
@@ -87,8 +87,12 @@ export async function uploadActivityImages(
   }
 
   /* ----------------------------- */
-  /* Gallery images                */
+  /* Gallery images (ORDER SAFE)   */
   /* ----------------------------- */
+
+  const uploadedGalleryUrls: Array<string | null> = new Array(
+    args.galleryImages.length
+  ).fill(null);
 
   for (let i = 0; i < args.galleryImages.length; i++) {
     const file = args.galleryImages[i];
@@ -110,16 +114,19 @@ export async function uploadActivityImages(
         error
       );
       anyFailed = true;
+      uploadedGalleryUrls[i] = null;
       continue;
     }
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    galleryUrls.push(data.publicUrl);
+    uploadedGalleryUrls[i] = data.publicUrl;
   }
 
   /* ----------------------------- */
-  /* Clean + de-dupe               */
+  /* Merge + de-dupe               */
   /* ----------------------------- */
+
+  galleryUrls = [...galleryUrls, ...uploadedGalleryUrls];
 
   galleryUrls = galleryUrls
     .filter((u): u is string => typeof u === "string" && u.trim().length > 0)
@@ -176,9 +183,7 @@ export function getGalleryImages(
 
   const hero = getHeroImage(camp);
 
-  const raw = Array.isArray(camp.image_urls)
-    ? camp.image_urls
-    : [];
+  const raw = Array.isArray(camp.image_urls) ? camp.image_urls : [];
 
   let images = raw
     .filter((u): u is string => typeof u === "string" && u.trim().length > 0)

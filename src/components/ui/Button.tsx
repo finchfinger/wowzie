@@ -1,56 +1,49 @@
 // src/components/ui/Button.tsx
-import type { ButtonHTMLAttributes } from "react";
-import clsx from "clsx";
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cn } from "../../lib/utils";
 
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
-export type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "subtle"
-  | "outline"
-  | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "subtle" | "outline" | "ghost";
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  asChild?: boolean;
 };
 
-export const Button = ({
-  children,
-  variant = "primary",
-  size = "md",
-  className,
-  disabled,
-  ...props
-}: ButtonProps) => {
-  const base =
-    "inline-flex shrink-0 items-center justify-center whitespace-nowrap leading-none rounded-lg font-medium transition focus:outline-none focus:ring-2 focus:ring-violet-200 focus:ring-offset-2";
+const base =
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg font-medium transition-colors " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200 focus-visible:ring-offset-2 " +
+  "disabled:pointer-events-none disabled:opacity-60";
 
-  const sizes: Record<ButtonSize, string> = {
-    xs: "text-xs px-2.5 py-1.5",
-    sm: "text-sm px-3 py-1.5",
-    md: "text-sm px-4 py-2",
-    lg: "text-base px-5 py-3",
-  };
-
-  const variants: Record<ButtonVariant, string> = {
-    primary: "bg-violet-600 text-white hover:bg-violet-700",
-    secondary: "bg-gray-900 text-white hover:bg-gray-800",
-    subtle: "bg-gray-100 text-gray-900 hover:bg-gray-200",
-    outline: "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50",
-    ghost: "bg-transparent text-gray-900 hover:bg-gray-100",
-  };
-
-  const disabledClasses =
-    "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:brightness-100";
-
-  return (
-    <button
-      disabled={disabled}
-      className={clsx(base, sizes[size], variants[variant], disabledClasses, className)}
-      {...props}
-    >
-      {children}
-    </button>
-  );
+const sizes: Record<ButtonSize, string> = {
+  xs: "h-8 px-3 text-xs",
+  sm: "h-9 px-3 text-sm",
+  md: "h-11 px-4 text-sm",
+  lg: "h-12 px-5 text-base",
 };
+
+const variants: Record<ButtonVariant, string> = {
+  primary: "bg-violet-600 text-white hover:bg-violet-700",
+  secondary: "bg-gray-900 text-white hover:bg-gray-800",
+  subtle: "bg-gray-100 text-gray-900 hover:bg-gray-200",
+  outline: "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50",
+  ghost: "bg-transparent text-gray-900 hover:bg-gray-100",
+};
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = "primary", size = "md", asChild, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+
+    return (
+      <Comp
+        ref={ref}
+        className={cn(base, sizes[size], variants[variant], className)}
+        {...props}
+      />
+    );
+  }
+);
+
+Button.displayName = "Button";

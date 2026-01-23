@@ -12,7 +12,11 @@ import {
   SelectContent,
   SelectItem,
 } from "../components/ui/Select";
-import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "../components/ui/popover";
 import { Calendar } from "../components/ui/calendar";
 import type { DateRange } from "react-day-picker";
 
@@ -246,6 +250,16 @@ const HomePage: React.FC = () => {
 
   const todayRef = useRef<Date>(new Date());
 
+  // Mobile detection (<= 640px)
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -296,6 +310,7 @@ const HomePage: React.FC = () => {
 
     if (ageSelect) params.set("age", ageSelect);
 
+    // Optional: carry grid state into /search
     if (activeCategory && activeCategory !== "all") params.set("category", activeCategory);
     if (sortMode) params.set("sort", sortMode);
 
@@ -421,25 +436,10 @@ const HomePage: React.FC = () => {
                   sideOffset={8}
                   className="w-[min(560px,calc(100vw-2rem))] p-3"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-gray-900">Dates</div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStartDate("");
-                        setEndDate("");
-                      }}
-                      className="text-sm font-medium text-gray-700 hover:underline"
-                    >
-                      Clear
-                    </button>
-                  </div>
-
-                  <div className="mt-2">
+                  <div className="mt-1">
                     <Calendar
                       mode="range"
-                      numberOfMonths={2}
+                      numberOfMonths={isMobile ? 1 : 2}
                       selected={selectedRange}
                       defaultMonth={selectedRange?.from ?? todayRef.current}
                       fromDate={todayRef.current}
@@ -453,10 +453,17 @@ const HomePage: React.FC = () => {
                     />
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      {startDate || endDate ? formatDatesLabel(startDate, endDate) : "Select a range"}
-                    </div>
+                  <div className="mt-3 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartDate("");
+                        setEndDate("");
+                      }}
+                      className="h-10 rounded-lg px-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Clear
+                    </button>
 
                     <Button
                       type="button"

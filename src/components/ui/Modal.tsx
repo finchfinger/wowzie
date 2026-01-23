@@ -1,80 +1,86 @@
-import React, { useEffect } from "react";
-import clsx from "clsx";
+import React from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { cn } from "../../lib/utils";
 
 type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  description?: string;
   size?: "sm" | "md" | "lg";
   children: React.ReactNode;
 };
 
-export const Modal: React.FC<ModalProps> = ({
+const sizeClasses: Record<NonNullable<ModalProps["size"]>, string> = {
+  sm: "sm:max-w-lg",
+  md: "sm:max-w-2xl",
+  lg: "sm:max-w-3xl",
+};
+
+const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
-  size = "sm",
+  description,
+  size = "md",
   children,
 }) => {
-  if (!isOpen) return null;
-
-  // Close on Escape
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
-  const sizeClasses: Record<NonNullable<ModalProps["size"]>, string> = {
-    sm: "max-w-sm",
-    md: "max-w-md",
-    lg: "max-w-lg",
-  };
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label={title || "Dialog"}
-    >
-      {/* Clickable backdrop */}
-      <button
-        type="button"
-        className="absolute inset-0 h-full w-full cursor-default"
-        onClick={onClose}
-        aria-label="Close dialog"
-      />
+    <Dialog.Root open={isOpen} onOpenChange={(open) => (!open ? onClose() : null)}>
+      <Dialog.Portal>
+        {/* Overlay */}
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
 
-      {/* Dialog card */}
-      <div
-        className={clsx(
-          "relative z-10 w-full rounded-2xl bg-white p-6 shadow-overlay ring-1 ring-black/10 sm:p-8",
-          sizeClasses[size]
-        )}
-      >
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
-          aria-label="Close"
+        {/* Dialog */}
+        <Dialog.Content
+          className={cn(
+            "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)]",
+            "-translate-x-1/2 -translate-y-1/2",
+            "rounded-2xl bg-white p-6 sm:p-8",
+            "shadow-2xl",
+            "text-sm leading-relaxed",
+            "focus:outline-none",
+            sizeClasses[size]
+          )}
         >
-          ✕
-        </button>
+          {/* Close button */}
+          <Dialog.Close asChild>
+            <button
+              type="button"
+              aria-label="Close"
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100"
+            >
+              ✕
+            </button>
+          </Dialog.Close>
 
-        {title && (
-          <h2 className="mb-2 text-lg font-semibold text-wowzie-text-primary sm:text-xl">
-            {title}
-          </h2>
-        )}
+          {/* Header */}
+          {(title || description) && (
+            <div className="mb-4 pr-10">
+              {title && (
+                <Dialog.Title className="text-base font-semibold text-wowzie-text-primary sm:text-lg">
+                  {title}
+                </Dialog.Title>
+              )}
 
-        {children}
-      </div>
-    </div>
+              {description && (
+                <Dialog.Description className="mt-1 text-xs text-gray-500">
+                  {description}
+                </Dialog.Description>
+              )}
+            </div>
+          )}
+
+          {/* Body */}
+          <div className="relative">{children}</div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 };
 
+// Export BOTH styles so existing imports won't break:
+// - import Modal from ".../Modal"
+// - import { Modal } from ".../Modal"
+export { Modal };
 export default Modal;
