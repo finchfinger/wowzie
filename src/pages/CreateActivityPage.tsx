@@ -156,7 +156,11 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
   );
 };
 
-const CANCELLATION_OPTIONS: Array<{ value: string; label: string; helper: string }> = [
+const CANCELLATION_OPTIONS: Array<{
+  value: string;
+  label: string;
+  helper: string;
+}> = [
   {
     value: "Cancel at least 1 day before the start time for a full refund.",
     label: "Flexible",
@@ -287,6 +291,19 @@ type UploadedImagesResult = {
   galleryUrls?: Array<string | null | undefined> | null;
 };
 
+// Combines YYYY-MM-DD + HH:MM into an ISO string using the browser's local timezone.
+// If you later need true America/Chicago handling independent of browser tz,
+// we can move this to a server-side function.
+const combineLocalDateAndTimeToISO = (
+  dateYYYYMMDD: string,
+  timeHHMM: string
+): string | null => {
+  if (!dateYYYYMMDD || !timeHHMM) return null;
+  const d = new Date(`${dateYYYYMMDD}T${timeHHMM}:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+};
+
 const CreateActivityPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -403,7 +420,7 @@ const CreateActivityPage: React.FC = () => {
       const { data, error } = await supabase
         .from("camps")
         .select(
-          "id, slug, name, description, location, price_cents, is_published, hero_image_url, image_urls, meta"
+          "id, slug, name, description, location, price_cents, is_published, hero_image_url, image_urls, meta, start_local, end_local, schedule_tz, start_time, end_time"
         )
         .eq("id", activityId)
         .single();
@@ -462,10 +479,15 @@ const CreateActivityPage: React.FC = () => {
       const fixed = meta.fixedSchedule || {};
       setFixedStartDate(fixed.startDate ?? "");
       setFixedEndDate(fixed.endDate ?? "");
-      setFixedStartTime(fixed.startTime ?? "");
-      setFixedEndTime(fixed.endTime ?? "");
       setFixedAllDay(Boolean(fixed.allDay));
       setFixedRepeatRule(fixed.repeatRule ?? "none");
+
+      // Prefer meta times, otherwise fall back to real DB columns
+      const dbStartLocal = (data as any).start_local as string | null;
+      const dbEndLocal = (data as any).end_local as string | null;
+
+      setFixedStartTime(fixed.startTime ?? dbStartLocal ?? "");
+      setFixedEndTime(fixed.endTime ?? dbEndLocal ?? "");
 
       const ongoing = meta.ongoingSchedule || {};
       setOngoingStartDate(ongoing.startDate ?? "");
@@ -502,7 +524,7 @@ const CreateActivityPage: React.FC = () => {
       setSiblingDiscountType(loadedEnabled ? loadedType : "none");
       setSiblingDiscountValue((sib.value ?? legacyPrice ?? "") as string);
 
-      // Photos -> single ordered list:
+      // Photos -> single ordered list
       const existingHero = data.hero_image_url ?? null;
       const existingGallery = (((data.image_urls as string[]) || []) as string[]) || [];
       const allExisting = [...(existingHero ? [existingHero] : []), ...existingGallery].filter(
@@ -546,7 +568,6 @@ const CreateActivityPage: React.FC = () => {
     const { min, max } = deriveMinMaxFromBuckets(ageBuckets);
 
     // Legacy: if only one selected bucket, store it. Otherwise store "all".
-    // NOTE: if ageBuckets is empty, legacyAgeBucket becomes "all" but min/max will be null/null.
     const legacyAgeBucket: AgeBucket = ageBuckets.length === 1 ? ageBuckets[0] : "all";
 
     const effectiveSiblingType: SiblingDiscountType = offerSiblingDiscount
@@ -672,6 +693,29 @@ const CreateActivityPage: React.FC = () => {
     const removedExisting = originalExistingUrls.filter((u) => !currentExistingUrls.includes(u));
     void removedExisting;
 
+    // Scheduling fields saved to real DB columns
+    const scheduleTz = "America/Chicago";
+
+    const startLocal =
+      activityType === "fixed" && fixedAllDay === false && fixedStartTime
+        ? fixedStartTime
+        : null;
+
+    const endLocal =
+      activityType === "fixed" && fixedAllDay === false && fixedEndTime ? fixedEndTime : null;
+
+    // Optional timestamptz fields (browser-local). Safe fallback is null.
+    const startTimeISO =
+      activityType === "fixed" && fixedAllDay === false && fixedStartDate && fixedStartTime
+        ? combineLocalDateAndTimeToISO(fixedStartDate, fixedStartTime)
+        : null;
+
+    const endTimeDate = fixedEndDate || fixedStartDate;
+    const endTimeISO =
+      activityType === "fixed" && fixedAllDay === false && endTimeDate && fixedEndTime
+        ? combineLocalDateAndTimeToISO(endTimeDate, fixedEndTime)
+        : null;
+
     const payload = {
       name: title.trim(),
       slug,
@@ -681,10 +725,19 @@ const CreateActivityPage: React.FC = () => {
       host_id: hostId,
       is_published: visibility === "public",
       is_active: true,
+
       hero_image_url: heroUrl,
       image_urls: galleryUrls.length ? galleryUrls : null,
       image_url: primaryCardUrl,
+
       meta,
+
+      // Real schedule columns (these are the ones your host Overview should rely on)
+      schedule_tz: scheduleTz,
+      start_local: startLocal,
+      end_local: endLocal,
+      start_time: startTimeISO,
+      end_time: endTimeISO,
     };
 
     let savedId = activityId ?? null;
@@ -726,6 +779,25 @@ const CreateActivityPage: React.FC = () => {
     if (priceText.trim() && priceCents === null) {
       setSubmitError("Please enter a valid price (for example 450 or 450.00).");
       return;
+    }
+
+    // Basic fixed schedule guardrails
+    if (activityType === "fixed") {
+      if (fixedStartDate && fixedEndDate) {
+        const a = new Date(fixedStartDate);
+        const b = new Date(fixedEndDate);
+        if (!Number.isNaN(a.getTime()) && !Number.isNaN(b.getTime()) && b < a) {
+          setSubmitError("End date must be on or after the start date.");
+          return;
+        }
+      }
+
+      if (fixedAllDay === false) {
+        if ((fixedStartTime && !fixedEndTime) || (!fixedStartTime && fixedEndTime)) {
+          setSubmitError("Please set both a start time and end time, or choose All day.");
+          return;
+        }
+      }
     }
 
     setSubmitting(true);
@@ -853,7 +925,7 @@ const CreateActivityPage: React.FC = () => {
                     <Checkbox
                       checked={isVirtual}
                       onCheckedChange={(checked) => {
-                        const next = Boolean(checked);
+                        const next = checked === true;
                         setIsVirtual(next);
 
                         if (next) {
@@ -1078,7 +1150,7 @@ const CreateActivityPage: React.FC = () => {
                     <Checkbox
                       checked={fixedAllDay}
                       onCheckedChange={(checked) => {
-                        const isChecked = Boolean(checked);
+                        const isChecked = checked === true;
                         setFixedAllDay(isChecked);
                         if (isChecked) {
                           setFixedStartTime("");
@@ -1135,7 +1207,7 @@ const CreateActivityPage: React.FC = () => {
                     <label className="inline-flex items-center gap-2">
                       <Checkbox
                         checked={showAdvancedAvailability}
-                        onCheckedChange={(checked) => setShowAdvancedAvailability(Boolean(checked))}
+                        onCheckedChange={(checked) => setShowAdvancedAvailability(checked === true)}
                       />
                       <span>Show advanced availability</span>
                     </label>
@@ -1186,7 +1258,7 @@ const CreateActivityPage: React.FC = () => {
                 <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-800">
                   <Checkbox
                     checked={offerEarlyDropoff}
-                    onCheckedChange={(checked) => setOfferEarlyDropoff(Boolean(checked))}
+                    onCheckedChange={(checked) => setOfferEarlyDropoff(checked === true)}
                   />
                   Offer Early Dropoff
                 </label>
@@ -1228,7 +1300,7 @@ const CreateActivityPage: React.FC = () => {
                 <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-800">
                   <Checkbox
                     checked={offerExtendedDay}
-                    onCheckedChange={(checked) => setOfferExtendedDay(Boolean(checked))}
+                    onCheckedChange={(checked) => setOfferExtendedDay(checked === true)}
                   />
                   Offer Extended Day
                 </label>
@@ -1271,7 +1343,7 @@ const CreateActivityPage: React.FC = () => {
                   <Checkbox
                     checked={offerSiblingDiscount}
                     onCheckedChange={(checked) => {
-                      const isChecked = Boolean(checked);
+                      const isChecked = checked === true;
                       setOfferSiblingDiscount(isChecked);
 
                       if (!isChecked) {
@@ -1349,13 +1421,7 @@ const CreateActivityPage: React.FC = () => {
             </Button>
 
             <Button type="submit" variant="primary" size="lg" disabled={submitting}>
-              {submitting
-                ? isEditMode
-                  ? "Saving…"
-                  : "Creating…"
-                : isEditMode
-                  ? "Save changes"
-                  : "Create event"}
+              {submitting ? (isEditMode ? "Saving…" : "Creating…") : isEditMode ? "Save changes" : "Create event"}
             </Button>
           </div>
         </form>

@@ -143,12 +143,34 @@ const mockMessages: Record<string, Message[]> = {
   ],
 };
 
+type BlastStatus = "all" | "pending" | "confirmed" | "declined" | "waitlisted";
+
+function asBlastStatus(v?: string | null): BlastStatus {
+  const s = String(v ?? "").trim().toLowerCase();
+  if (s === "pending") return "pending";
+  if (s === "confirmed") return "confirmed";
+  if (s === "declined") return "declined";
+  if (s === "waitlisted") return "waitlisted";
+  return "all";
+}
+
 export const MessagesPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const toProfileId = useMemo(() => useQueryParam(location.search, "to"), [location.search]);
   const cParam = useMemo(() => useQueryParam(location.search, "c"), [location.search]);
+
+  // NEW: blast mode params
+  const blastActivityId = useMemo(() => useQueryParam(location.search, "blast"), [location.search]);
+  const blastStatus = useMemo(
+    () => asBlastStatus(useQueryParam(location.search, "status")),
+    [location.search]
+  );
+  const blastMode = useMemo(
+    () => !!blastActivityId && isUuidish(blastActivityId),
+    [blastActivityId]
+  );
 
   const [authedUserId, setAuthedUserId] = useState<string | null>(null);
 
@@ -163,6 +185,14 @@ export const MessagesPage: React.FC = () => {
 
   const [draftText, setDraftText] = useState("");
   const [sending, setSending] = useState(false);
+
+  // NEW: blast result state (so the UI can confirm delivery)
+  const [blastSending, setBlastSending] = useState(false);
+  const [blastResult, setBlastResult] = useState<{
+    recipients: number;
+    sent: number;
+    failed: number;
+  } | null>(null);
 
   const [mobileView, setMobileView] = useState<"list" | "thread">("list");
 
@@ -248,7 +278,6 @@ export const MessagesPage: React.FC = () => {
         const myId = String(userRes.user.id);
         setAuthedUserId(myId);
 
-        // IMPORTANT: filter by user_id so we only see the authed user's conversation rows
         const { data: convData, error: convError } = await supabase
           .from("conversations")
           .select(
@@ -303,6 +332,15 @@ export const MessagesPage: React.FC = () => {
 
         let targetConversationId: string | null = null;
 
+        // NEW: if blast mode, stay in list on desktop, thread on mobile, but don't force a conversation id
+        if (blastMode) {
+          targetConversationId = convs[0]?.id ? String(convs[0].id) : null;
+          setActiveConversationId(targetConversationId);
+          setMobileView("thread"); // show composer immediately on mobile
+          setLoading(false);
+          return;
+        }
+
         if (cParam && isUuidish(cParam)) {
           targetConversationId = cParam;
         } else if (toProfileId) {
@@ -335,7 +373,7 @@ export const MessagesPage: React.FC = () => {
     subscriptionsReadyRef.current = false;
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toProfileId, cParam]);
+  }, [toProfileId, cParam, blastMode]);
 
   // Realtime subscriptions: messages inserts, conversations updates
   useEffect(() => {
@@ -374,10 +412,8 @@ export const MessagesPage: React.FC = () => {
         setMessagesByConversation((prev) => {
           const existing = prev[cid] ?? [];
 
-          // hard dedupe
           if (existing.some((m) => String(m.id) === String(incoming.id))) return prev;
 
-          // optimistic reconciliation: replace a recent local message
           const idxLocal = existing.findIndex((m) => {
             if (!String(m.id).startsWith("local-")) return false;
             if (m.sender !== incoming.sender) return false;
@@ -473,6 +509,8 @@ export const MessagesPage: React.FC = () => {
     if (!authedUserId) return;
     if (!activeConversationId) return;
     if (isMockConversationId(String(activeConversationId))) return;
+    // NEW: do not auto-mark anything in blast mode (no "active thread" concept)
+    if (blastMode) return;
 
     setConversations((prev) =>
       prev.map((c) => {
@@ -482,7 +520,7 @@ export const MessagesPage: React.FC = () => {
     );
 
     void supabase.from("conversations").update({ unread_count: 0 }).eq("id", activeConversationId);
-  }, [authedUserId, activeConversationId]);
+  }, [authedUserId, activeConversationId, blastMode]);
 
   const uploadAttachment = async (conversationId: string, file: File) => {
     const ext = file.name.split(".").pop() || "jpg";
@@ -588,6 +626,120 @@ export const MessagesPage: React.FC = () => {
     }
   };
 
+  // NEW: blast send handler
+  const handleSendBlast = async (e: React.FormEvent, attachment?: File | null) => {
+    e.preventDefault();
+    if (!blastActivityId || !isUuidish(blastActivityId)) return;
+
+    const body = draftText.trim();
+    const localImageUrl = attachment ? URL.createObjectURL(attachment) : null;
+
+    // very light optimistic UX: clear composer and show sending state.
+    setBlastResult(null);
+    setError(null);
+    setBlastSending(true);
+    setDraftText("");
+
+    if (!body && !attachment) {
+      setBlastSending(false);
+      if (localImageUrl) URL.revokeObjectURL(localImageUrl);
+      return;
+    }
+
+    try {
+      let imageUrl: string | null = null;
+      if (attachment) {
+        // store attachments under a stable blast folder so we don't require a conversation id
+        imageUrl = await uploadAttachment(`blast-${blastActivityId}`, attachment);
+      }
+
+      const { data, error: fnErr } = await supabase.functions.invoke("send-blast-message", {
+        body: {
+          activity_id: blastActivityId,
+          status_filter: blastStatus,
+          body: body || "",
+          image_url: imageUrl,
+        },
+      });
+
+      if (fnErr) throw new Error(fnErr.message || "Failed to send blast.");
+      if (!(data as any)?.ok) throw new Error((data as any)?.error || "Failed to send blast.");
+
+      setBlastResult({
+        recipients: Number((data as any)?.recipients ?? 0),
+        sent: Number((data as any)?.sent ?? 0),
+        failed: Number((data as any)?.failed ?? 0),
+      });
+
+      // After sending, kick the user back to the list so they can see updated threads
+      if (window.innerWidth < 1024) {
+        setMobileView("list");
+      }
+    } catch (err: any) {
+      setError(normalizeErr(err));
+    } finally {
+      setBlastSending(false);
+      if (localImageUrl) URL.revokeObjectURL(localImageUrl);
+    }
+  };
+
+  const desktopThread = (
+    <section className="flex flex-col rounded-3xl border border-black/5 bg-[#fff7f3] shadow-sm overflow-hidden">
+      {blastMode ? (
+        <>
+          <header className="px-5 py-4 border-b border-black/5 bg-[#fff7f3]">
+            <p className="text-sm font-semibold text-gray-900">Announcement</p>
+            <p className="mt-1 text-xs text-gray-600">
+              Write once, we’ll deliver it to all guests{blastStatus !== "all" ? ` (${blastStatus})` : ""}.
+            </p>
+
+            {blastResult ? (
+              <p className="mt-2 text-xs text-gray-700">
+                Sent to {blastResult.sent} households
+                {blastResult.failed ? `, ${blastResult.failed} failed` : ""}.
+              </p>
+            ) : null}
+          </header>
+
+          <div className="flex-1 px-5 py-4">
+            <div className="rounded-2xl border border-black/5 bg-white p-4">
+              <p className="text-xs font-medium text-gray-900">Tip</p>
+              <p className="mt-1 text-xs text-gray-600">
+                Keep it short and specific. Replies will come back as individual threads.
+              </p>
+            </div>
+          </div>
+
+          <MessageComposer
+            active
+            placeholder="Write an update to all guests…"
+            value={draftText}
+            sending={blastSending}
+            onChange={setDraftText}
+            onSend={handleSendBlast}
+          />
+        </>
+      ) : (
+        <>
+          <ConversationHeader conversation={activeConversation} />
+          <MessageList active={!!activeConversation} messages={activeMessages} />
+          <MessageComposer
+            active={!!activeConversation}
+            placeholder={
+              activeConversation
+                ? `Message ${activeConversation.participant_name}`
+                : "Select a conversation to start messaging"
+            }
+            value={draftText}
+            sending={sending}
+            onChange={setDraftText}
+            onSend={handleSend}
+          />
+        </>
+      )}
+    </section>
+  );
+
   return (
     <main className="flex-1">
       <Container className="py-6 lg:py-8">
@@ -602,22 +754,7 @@ export const MessagesPage: React.FC = () => {
               onSelect={setActiveConversationId}
             />
 
-            <section className="flex flex-col rounded-3xl border border-black/5 bg-[#fff7f3] shadow-sm overflow-hidden">
-              <ConversationHeader conversation={activeConversation} />
-              <MessageList active={!!activeConversation} messages={activeMessages} />
-              <MessageComposer
-                active={!!activeConversation}
-                placeholder={
-                  activeConversation
-                    ? `Message ${activeConversation.participant_name}`
-                    : "Select a conversation to start messaging"
-                }
-                value={draftText}
-                sending={sending}
-                onChange={setDraftText}
-                onSend={handleSend}
-              />
-            </section>
+            {desktopThread}
           </div>
 
           <div className="lg:hidden h-full">
@@ -639,7 +776,14 @@ export const MessagesPage: React.FC = () => {
                     Back
                   </button>
 
-                  {activeConversation ? (
+                  {blastMode ? (
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-gray-900">Announcement</p>
+                      <p className="truncate text-[11px] text-gray-500">
+                        Write once, deliver to all guests{blastStatus !== "all" ? ` (${blastStatus})` : ""}.
+                      </p>
+                    </div>
+                  ) : activeConversation ? (
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-gray-900">
                         {activeConversation.participant_name}
@@ -653,19 +797,53 @@ export const MessagesPage: React.FC = () => {
                   )}
                 </header>
 
-                <MessageList active={!!activeConversation} messages={activeMessages} />
-                <MessageComposer
-                  active={!!activeConversation}
-                  placeholder={
-                    activeConversation
-                      ? `Message ${activeConversation.participant_name}`
-                      : "Select a conversation to start messaging"
-                  }
-                  value={draftText}
-                  sending={sending}
-                  onChange={setDraftText}
-                  onSend={handleSend}
-                />
+                {blastMode ? (
+                  <>
+                    <div className="flex-1 px-4 py-4">
+                      {blastResult ? (
+                        <div className="rounded-2xl border border-black/5 bg-white p-4">
+                          <p className="text-xs font-medium text-gray-900">Sent</p>
+                          <p className="mt-1 text-xs text-gray-700">
+                            Delivered to {blastResult.sent} households
+                            {blastResult.failed ? `, ${blastResult.failed} failed` : ""}.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-black/5 bg-white p-4">
+                          <p className="text-xs font-medium text-gray-900">Announcement</p>
+                          <p className="mt-1 text-xs text-gray-600">
+                            Replies will come back as individual threads.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <MessageComposer
+                      active
+                      placeholder="Write an update to all guests…"
+                      value={draftText}
+                      sending={blastSending}
+                      onChange={setDraftText}
+                      onSend={handleSendBlast}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <MessageList active={!!activeConversation} messages={activeMessages} />
+                    <MessageComposer
+                      active={!!activeConversation}
+                      placeholder={
+                        activeConversation
+                          ? `Message ${activeConversation.participant_name}`
+                          : "Select a conversation to start messaging"
+                      }
+                      value={draftText}
+                      sending={sending}
+                      onChange={setDraftText}
+                      onSend={handleSend}
+                    />
+                  </>
+                )}
               </section>
             )}
           </div>

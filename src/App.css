@@ -2,3 +2,8 @@
 #root {
   min-height: 100vh;
 }
+
+/* Global “content area should never feel short” rule */
+#app-main {
+  min-height: 800px;
+}

@@ -13,7 +13,6 @@ type Props = {
   subtitle?: string;
   className?: string;
 
-  // NEW
   backLink?: BackLink;
   actions?: React.ReactNode;
 };
@@ -27,7 +26,6 @@ export const SectionHeader: React.FC<Props> = ({
 }) => {
   return (
     <header className={clsx("space-y-4", className)}>
-      {/* Back link row (optional) */}
       {backLink && (
         <NavLink
           to={backLink.to}
@@ -38,7 +36,6 @@ export const SectionHeader: React.FC<Props> = ({
         </NavLink>
       )}
 
-      {/* Title + actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2 min-w-0">
           <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">
@@ -50,9 +47,8 @@ export const SectionHeader: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Actions (optional, supports multiple buttons) */}
         {actions && (
-          <div className="flex flex-wrap gap-2 sm:justify-end">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {actions}
           </div>
         )}

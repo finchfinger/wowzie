@@ -348,7 +348,7 @@ const App: React.FC = () => {
         />
 
         {/* Main fills remaining height so footer stays below the fold */}
-        <main className="flex-1">
+        <main id="app-main" className="flex-1">
           <Suspense fallback={<LoadingShell />}>
             <Routes>
               {/* Core app */}
@@ -433,21 +433,19 @@ const App: React.FC = () => {
                 <Route path="activities/:activityId/edit" element={<CreateActivityPage />} />
               </Route>
 
-              {/* Activity detail (host) */}
+              {/* Activity detail (host) - shareable tab URLs */}
               <Route
                 path="/host/activities/:activityId"
                 element={<ActivityLayoutPage />}
               >
-                <Route index element={<ActivityOverviewPage />} />
+                {/* Base route redirects to a shareable Overview URL */}
+                <Route index element={<Navigate to="overview" replace />} />
+
                 <Route path="overview" element={<ActivityOverviewPage />} />
                 <Route path="guests" element={<ActivityGuestsPage />} />
+                <Route path="guests/:guestId" element={<ActivityGuestDetailPage />} />
                 <Route path="more" element={<ActivityMorePage />} />
               </Route>
-
-              <Route
-                path="/host/activities/:activityId/guests/:guestId"
-                element={<ActivityGuestDetailPage />}
-              />
 
               {/* Activity create + review (legacy routes) */}
               <Route path="/activities/new" element={<CreateActivityPage />} />

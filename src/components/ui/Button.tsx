@@ -4,12 +4,20 @@ import { Slot } from "@radix-ui/react-slot";
 import { cn } from "../../lib/utils";
 
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
-export type ButtonVariant = "primary" | "secondary" | "subtle" | "outline" | "ghost";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "subtle"
+  | "outline"
+  | "ghost";
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
   asChild?: boolean;
+
+  // NEW: icon button mode (square)
+  icon?: boolean;
 };
 
 const base =
@@ -24,6 +32,14 @@ const sizes: Record<ButtonSize, string> = {
   lg: "h-12 px-5 text-base",
 };
 
+// NEW: square padding for icon buttons (matches height)
+const iconSizes: Record<ButtonSize, string> = {
+  xs: "h-8 w-8 p-0",
+  sm: "h-9 w-9 p-0",
+  md: "h-11 w-11 p-0",
+  lg: "h-12 w-12 p-0",
+};
+
 const variants: Record<ButtonVariant, string> = {
   primary: "bg-violet-600 text-white hover:bg-violet-700",
   secondary: "bg-gray-900 text-white hover:bg-gray-800",
@@ -33,13 +49,23 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", asChild, ...props }, ref) => {
+  (
+    { className, variant = "primary", size = "md", icon = false, asChild, ...props },
+    ref
+  ) => {
     const Comp = asChild ? Slot : "button";
 
     return (
       <Comp
         ref={ref}
-        className={cn(base, sizes[size], variants[variant], className)}
+        className={cn(
+          base,
+          variants[variant],
+          icon ? iconSizes[size] : sizes[size],
+          // nicer icon alignment if you pass an svg
+          icon ? "shrink-0" : "",
+          className
+        )}
         {...props}
       />
     );
