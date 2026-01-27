@@ -59,7 +59,7 @@ function deriveDateRange(activity: Activity): { heading: string; value: string }
     if (start && end) {
       const startLabel = formatDate(start, tz);
       const endLabel = formatDate(end, tz);
-      if (startLabel !== endLabel) return { heading: "Dates", value: `${startLabel} – ${endLabel}` };
+      if (startLabel !== endLabel) return { heading: "Dates", value: `${startLabel} - ${endLabel}` };
       return { heading: "Date", value: startLabel };
     }
 
@@ -67,7 +67,7 @@ function deriveDateRange(activity: Activity): { heading: string; value: string }
     if (end) return { heading: "Date", value: formatDate(end, tz) };
   }
 
-  const fixed = activity.meta?.fixedSchedule || {};
+  const fixed = (activity as any)?.meta?.fixedSchedule || {};
   const startMeta = fixed.startDate as string | undefined;
   const endMeta = fixed.endDate as string | undefined;
 
@@ -79,7 +79,7 @@ function deriveDateRange(activity: Activity): { heading: string; value: string }
   if (start && end) {
     const startLabel = formatDate(start, tz);
     const endLabel = formatDate(end, tz);
-    if (startLabel !== endLabel) return { heading: "Dates", value: `${startLabel} – ${endLabel}` };
+    if (startLabel !== endLabel) return { heading: "Dates", value: `${startLabel} - ${endLabel}` };
     return { heading: "Date", value: startLabel };
   }
 
@@ -92,7 +92,7 @@ function deriveDateRange(activity: Activity): { heading: string; value: string }
 function deriveTimeLabel(activity: Activity): string {
   const tz = safeTimeZone(activity.schedule_tz);
 
-  const fixed = activity.meta?.fixedSchedule || {};
+  const fixed = (activity as any)?.meta?.fixedSchedule || {};
   const metaAllDay = Boolean(fixed.allDay);
   if (metaAllDay) return "All day";
 
@@ -100,7 +100,7 @@ function deriveTimeLabel(activity: Activity): string {
     const start = activity.start_time ? new Date(activity.start_time) : null;
     const end = activity.end_time ? new Date(activity.end_time) : null;
 
-    if (start && end) return `${formatTime(start, tz)} – ${formatTime(end, tz)}`;
+    if (start && end) return `${formatTime(start, tz)} - ${formatTime(end, tz)}`;
     if (start) return formatTime(start, tz);
     if (end) return formatTime(end, tz);
   }
@@ -114,7 +114,7 @@ function deriveTimeLabel(activity: Activity): string {
     if (sLocal) start.setHours(sLocal.h, sLocal.m, 0, 0);
     if (eLocal) end.setHours(eLocal.h, eLocal.m, 0, 0);
 
-    if (sLocal && eLocal) return `${formatTime(start)} – ${formatTime(end)}`;
+    if (sLocal && eLocal) return `${formatTime(start)} - ${formatTime(end)}`;
     if (sLocal) return formatTime(start);
     if (eLocal) return formatTime(end);
   }
@@ -132,7 +132,7 @@ function deriveTimeLabel(activity: Activity): string {
     return formatTime(d);
   };
 
-  if (startMeta && endMeta) return `${toPretty(startMeta)} – ${toPretty(endMeta)}`;
+  if (startMeta && endMeta) return `${toPretty(startMeta)} - ${toPretty(endMeta)}`;
   return toPretty(startMeta || endMeta);
 }
 
@@ -145,10 +145,16 @@ function formatPrice(activity: Activity): string {
 }
 
 function formatListingType(activity: Activity): string {
-  const visibility = activity.meta?.visibility as "public" | "private" | undefined;
+  const visibility = (activity as any)?.meta?.visibility as "public" | "private" | undefined;
   if (visibility === "public") return "Public";
   if (visibility === "private") return "Private";
   return activity.is_published ? "Public" : "Private";
+}
+
+function getCapacityMaybe(activity: Activity): number | null {
+  // Activity type (imported from Layout) may not include capacity, but runtime row might.
+  const raw = (activity as any)?.capacity;
+  return typeof raw === "number" ? raw : null;
 }
 
 export const ActivityOverviewPage: React.FC = () => {
@@ -198,7 +204,7 @@ export const ActivityOverviewPage: React.FC = () => {
   const listingType = formatListingType(activity);
   const location = activity.location || "Location to be announced";
 
-  const capacity = typeof activity.capacity === "number" ? activity.capacity : null;
+  const capacity = getCapacityMaybe(activity);
   const registrationsLabel = capacity != null ? `${registrations} of ${capacity}` : `${registrations}`;
 
   return (
