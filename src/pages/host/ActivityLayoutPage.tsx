@@ -14,6 +14,9 @@ export type Activity = {
   description: string | null;
   location: string | null;
 
+  // ✅ added back (ActivityOverviewPage expects this)
+  capacity: number | null;
+
   price_cents: number | null;
   price_unit: string | null;
 
@@ -65,6 +68,7 @@ const ACTIVITY_COLUMNS = `
   name,
   description,
   location,
+  capacity,
   price_cents,
   price_unit,
   is_published,
@@ -180,12 +184,7 @@ function DeleteEventModal({
         {error ? <p className="mt-3 text-xs text-red-600">{error}</p> : null}
 
         <div className="mt-5 flex items-center justify-end gap-2">
-          <Button
-            variant="subtle"
-            className="text-xs"
-            onClick={onClose}
-            disabled={deleting}
-          >
+          <Button variant="subtle" className="text-xs" onClick={onClose} disabled={deleting}>
             Cancel
           </Button>
 
@@ -293,6 +292,9 @@ export const ActivityLayoutPage: React.FC = () => {
         name: `(Copy) ${activity.name || "Activity"}`,
         description: activity.description,
         location: activity.location,
+
+        // ✅ copy capacity too
+        capacity: activity.capacity ?? null,
 
         price_cents: activity.price_cents,
         price_unit: activity.price_unit ?? undefined,
