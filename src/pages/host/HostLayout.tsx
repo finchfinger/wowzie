@@ -26,15 +26,6 @@ export const HostLayout: React.FC = () => {
   const [checking, setChecking] = useState(true);
   const [status, setStatus] = useState<HostStatus>("not_applied");
 
-  // Keep the whole page purple while in /host
-  useEffect(() => {
-    const previousBg = document.body.style.backgroundColor;
-    document.body.style.backgroundColor = "#F5F1FF";
-    return () => {
-      document.body.style.backgroundColor = previousBg;
-    };
-  }, []);
-
   // Which host routes are allowed BEFORE approval
   const isAllowedPreApprovalPath = useMemo(() => {
     const p = location.pathname;
@@ -117,7 +108,7 @@ export const HostLayout: React.FC = () => {
 
   if (checking) {
     return (
-      <main className="flex-1 bg-[#F5F1FF]">
+      <main className="flex-1 bg-[#FAF7F1]">
         <Container className="py-8 pb-16">
           <div className="text-sm text-gray-500">Loading…</div>
         </Container>
@@ -132,7 +123,7 @@ export const HostLayout: React.FC = () => {
     if (location.pathname === "/host") return <HostGatePage />;
 
     return (
-      <main className="flex-1 bg-[#F5F1FF]">
+      <main className="flex-1 bg-[#FAF7F1]">
         <Container className="py-8 pb-16">
           <Outlet />
         </Container>
@@ -144,7 +135,7 @@ export const HostLayout: React.FC = () => {
   // For host activities routes, render outlet only (no dashboard chrome)
   if (isHostActivitiesRoute) {
     return (
-      <main className="flex-1 bg-[#F5F1FF]">
+      <main className="flex-1 bg-[#FAF7F1]">
         <Container className="py-8 pb-16">
           <Outlet />
         </Container>
@@ -153,7 +144,7 @@ export const HostLayout: React.FC = () => {
   }
 
   return (
-    <main className="flex-1 bg-[#F5F1FF]">
+    <main className="flex-1 bg-[#FAF7F1]">
       <Container className="py-8 pb-16">
         <header className="mb-6 flex items-center justify-between">
           <div>
