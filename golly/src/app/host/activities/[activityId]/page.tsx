@@ -581,21 +581,24 @@ export default function ActivityDetailPage() {
                   const isPending = g.status === "pending";
 
                   return (
-                    <div key={g.id} className="flex w-full items-center justify-between rounded-2xl bg-card px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-7 w-7 rounded-full bg-amber-100 flex items-center justify-center text-[13px]">
+                    <div key={g.id} className="flex w-full items-center justify-between rounded-2xl bg-card px-4 py-3 hover:bg-muted/40 transition-colors">
+                      <Link
+                        href={`/host/activities/${activityId}/guests/${g.id}`}
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                      >
+                        <div className="h-7 w-7 rounded-full bg-amber-100 flex items-center justify-center text-[13px] shrink-0">
                           {emoji}
                         </div>
-                        <div className="text-left">
+                        <div className="text-left min-w-0">
                           <p className="text-xs font-medium text-foreground">{name}</p>
                           <p className="text-xs text-muted-foreground">{age != null ? `Age ${age}` : "Age —"}</p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
+                      </Link>
+                      <div className="flex items-center gap-4 shrink-0">
                         {isPending ? (
                           <div className="flex items-center gap-2">
-                            <button type="button" onClick={() => updateGuestStatus(g.id, "declined")} className="text-xs text-destructive hover:text-destructive/80">Decline</button>
-                            <button type="button" onClick={() => updateGuestStatus(g.id, "confirmed")} className="inline-flex items-center rounded-md bg-emerald-500 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-600">Approve</button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); updateGuestStatus(g.id, "declined"); }} className="text-xs text-destructive hover:text-destructive/80">Decline</button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); updateGuestStatus(g.id, "confirmed"); }} className="inline-flex items-center rounded-md bg-emerald-500 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-600">Approve</button>
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground capitalize">{g.status}</span>
