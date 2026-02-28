@@ -4,10 +4,12 @@ import type { User } from "@supabase/supabase-js";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 
+import { Card } from "../../components/ui/Card";
 import { Modal } from "../../components/ui/Modal";
 import { ToggleChip } from "../../components/ui/ToggleChip";
 import { Tag } from "../../components/ui/Tag";
 import { Snackbar } from "../../components/ui/Snackbar";
+import { Icon } from "../../components/ui/Icon";
 
 type Child = {
   id: string;
@@ -45,16 +47,12 @@ type AddChildMessage = {
 const cx = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(" ");
 
-// Safer age calculation (avoids UTC parsing edge cases)
 const getAgeLabel = (birthdateStr: string | null, ageYears?: number | null) => {
   if (typeof ageYears === "number" && ageYears >= 0 && ageYears <= 18) {
     return `Age ${ageYears}`;
   }
-
   if (!birthdateStr) return "";
 
-  // birthdateStr may come from Postgres date as "YYYY-MM-DD"
-  // Parse as local time to avoid timezone surprises.
   const parts = birthdateStr.split("-");
   if (parts.length === 3) {
     const year = Number(parts[0]);
@@ -63,19 +61,16 @@ const getAgeLabel = (birthdateStr: string | null, ageYears?: number | null) => {
     if (year && month && day) {
       const birth = new Date(year, month - 1, day);
       const today = new Date();
-
       let age = today.getFullYear() - birth.getFullYear();
       const hasHadBirthdayThisYear =
         today.getMonth() > birth.getMonth() ||
         (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
-
       if (!hasHadBirthdayThisYear) age -= 1;
       if (age < 0 || age > 120) return "";
       return `Age ${age}`;
     }
   }
 
-  // Fallback (if format is different)
   const d = new Date(birthdateStr);
   if (Number.isNaN(d.getTime())) return "";
   const now = new Date();
@@ -91,7 +86,6 @@ export const SettingsChildrenPage: React.FC = () => {
   const location = useLocation();
 
   const [user, setUser] = useState<User | null>(null);
-
   const [children, setChildren] = useState<Child[]>([]);
   const [loadingChildren, setLoadingChildren] = useState(true);
   const [childrenError, setChildrenError] = useState<string | null>(null);
@@ -100,7 +94,7 @@ export const SettingsChildrenPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
 
-  // Add child modal state
+  // Add child modal
   const [modalOpen, setModalOpen] = useState(false);
   const [childName, setChildName] = useState("");
   const [childBirthdate, setChildBirthdate] = useState<string>("");
@@ -111,18 +105,13 @@ export const SettingsChildrenPage: React.FC = () => {
   });
   const [addingChild, setAddingChild] = useState(false);
 
-  // ─────────────────────────────
   // Show toast from query param (one-time)
-  // ─────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const toast = params.get("toast");
-
     if (toast === "saved") {
       setSnackbarMessage("Your information has been saved.");
       setSnackbarOpen(true);
-
-      // Remove the query param so it doesn't replay on refresh
       params.delete("toast");
       navigate(
         { pathname: location.pathname, search: params.toString() },
@@ -131,9 +120,7 @@ export const SettingsChildrenPage: React.FC = () => {
     }
   }, [location.pathname, location.search, navigate]);
 
-  // ─────────────────────────────
   // Init user + load children
-  // ─────────────────────────────
   useEffect(() => {
     let isMounted = true;
 
@@ -142,7 +129,6 @@ export const SettingsChildrenPage: React.FC = () => {
       if (!isMounted) return;
 
       if (error) {
-        console.error("Error fetching user in settings (children):", error);
         setUser(null);
         setChildrenError("You need to be signed in to view your children.");
         setLoadingChildren(false);
@@ -159,17 +145,13 @@ export const SettingsChildrenPage: React.FC = () => {
     };
 
     void init();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadChildren = async (u: User) => {
     setLoadingChildren(true);
     setChildrenError(null);
-
     try {
       const { data, error } = await supabase
         .from("children")
@@ -178,21 +160,16 @@ export const SettingsChildrenPage: React.FC = () => {
         .order("created_at", { ascending: true });
 
       if (error) {
-        console.error("Error loading children:", error);
-        setChildrenError("We couldn’t load your children right now.");
+        setChildrenError("We couldn't load your children right now.");
         setChildren([]);
         return;
       }
-
       setChildren((data || []) as Child[]);
     } finally {
       setLoadingChildren(false);
     }
   };
 
-  // ─────────────────────────────
-  // Helpers
-  // ─────────────────────────────
   const resetModal = () => {
     setChildName("");
     setChildBirthdate("");
@@ -200,21 +177,12 @@ export const SettingsChildrenPage: React.FC = () => {
     setAddChildMessage({ tone: "info", text: "" });
   };
 
-  const openAddChild = () => {
-    resetModal();
-    setModalOpen(true);
-  };
-
-  const closeAddChild = () => {
-    if (addingChild) return;
-    setModalOpen(false);
-  };
+  const openAddChild = () => { resetModal(); setModalOpen(true); };
+  const closeAddChild = () => { if (addingChild) return; setModalOpen(false); };
 
   const toggleInterest = (interest: string) => {
     setSelectedInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
-        : [...prev, interest]
+      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
     );
   };
 
@@ -234,26 +202,17 @@ export const SettingsChildrenPage: React.FC = () => {
     return `${base} text-gray-500`;
   }, [addChildMessage]);
 
-  // ─────────────────────────────
-  // Submit
-  // ─────────────────────────────
   const handleAddChildSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!user) {
-      setAddChildMessage({
-        tone: "error",
-        text: "We couldn’t verify your account. Please sign in again.",
-      });
+      setAddChildMessage({ tone: "error", text: "We couldn't verify your account. Please sign in again." });
       return;
     }
 
     const legalName = childName.trim();
     if (!legalName) {
-      setAddChildMessage({
-        tone: "error",
-        text: "Please add your child’s name.",
-      });
+      setAddChildMessage({ tone: "error", text: "Please add your child's name." });
       return;
     }
 
@@ -264,8 +223,7 @@ export const SettingsChildrenPage: React.FC = () => {
 
     try {
       const avatarOptions = ["🧒", "👧", "🧑‍🎓", "🧑‍🚀", "🧑‍🎨", "🧑‍🔬"];
-      const avatar =
-        avatarOptions[Math.floor(Math.random() * avatarOptions.length)];
+      const avatar = avatarOptions[Math.floor(Math.random() * avatarOptions.length)];
 
       const { error } = await supabase.from("children").insert([
         {
@@ -283,35 +241,20 @@ export const SettingsChildrenPage: React.FC = () => {
       ]);
 
       if (error) {
-        console.error("Error inserting child:", error);
-        setAddChildMessage({
-          tone: "error",
-          text: "We couldn’t save this child. Please try again.",
-        });
+        setAddChildMessage({ tone: "error", text: "We couldn't save this child. Please try again." });
         return;
       }
 
       setAddChildMessage({ tone: "success", text: "Child added." });
       await loadChildren(user);
-
-      window.setTimeout(() => {
-        setModalOpen(false);
-        resetModal();
-      }, 250);
-    } catch (err) {
-      console.error("Unexpected error inserting child:", err);
-      setAddChildMessage({
-        tone: "error",
-        text: "We couldn’t save this child. Please try again.",
-      });
+      window.setTimeout(() => { setModalOpen(false); resetModal(); }, 250);
+    } catch {
+      setAddChildMessage({ tone: "error", text: "We couldn't save this child. Please try again." });
     } finally {
       setAddingChild(false);
     }
   };
 
-  // ─────────────────────────────
-  // Render
-  // ─────────────────────────────
   return (
     <>
       <Snackbar
@@ -321,28 +264,26 @@ export const SettingsChildrenPage: React.FC = () => {
       />
 
       <section className="space-y-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-gray-900">Children</h2>
+        {/* Header row */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Children</h2>
+            <p className="mt-0.5 text-[11px] text-gray-500">
+              Manage your kids' profiles, interests, and health info.
+            </p>
+          </div>
           <button
             type="button"
             onClick={openAddChild}
-            className="inline-flex items-center rounded-full bg-gray-900 px-4 py-2 text-xs font-medium text-white hover:bg-black"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2 text-xs font-medium text-white hover:bg-black"
           >
+            <Icon name="add" size={14} className="text-white" />
             Add child
           </button>
         </div>
 
-        <div className="flex items-center justify-between text-xs mb-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1.5 text-[11px] text-gray-700 hover:bg-gray-50"
-          >
-            <span>▾</span>
-            <span>Age</span>
-          </button>
-        </div>
-
-        <div className="rounded-2xl bg-white border border-black/5 shadow-sm divide-y divide-black/5 text-sm">
+        {/* Children list */}
+        <Card>
           {loadingChildren && (
             <div className="px-4 sm:px-5 py-4 text-xs text-gray-500">
               Loading children…
@@ -355,61 +296,76 @@ export const SettingsChildrenPage: React.FC = () => {
             </div>
           )}
 
-          {!loadingChildren &&
-            !childrenError &&
-            children.map((child) => {
-              const avatar = child.avatar_emoji || "🧒";
-              const name = child.preferred_name || child.legal_name || "Child";
-              const ageLabel = getAgeLabel(child.birthdate, child.age_years);
+          {!loadingChildren && !childrenError && children.length > 0 && (
+            <div className="divide-y divide-black/5">
+              {children.map((child) => {
+                const avatar = child.avatar_emoji || "🧒";
+                const name = child.preferred_name || child.legal_name || "Child";
+                const ageLabel = getAgeLabel(child.birthdate, child.age_years);
+                const interests = child.interests ?? [];
 
-              return (
-                <button
-                  key={child.id}
-                  type="button"
-                  onClick={() => handleChildClick(child.id)}
-                  className="w-full flex items-center justify-between px-4 sm:px-5 py-3 text-left hover:bg-lime-50"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{avatar}</span>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{name}</p>
-                      {ageLabel && (
-                        <p className="text-xs text-gray-500">{ageLabel}</p>
-                      )}
+                return (
+                  <button
+                    key={child.id}
+                    type="button"
+                    onClick={() => handleChildClick(child.id)}
+                    className="w-full flex items-center justify-between px-4 sm:px-5 py-3.5 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-lg">
+                        {avatar}
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{name}</p>
+                        <p className="text-xs text-gray-500">
+                          {[ageLabel, interests.length > 0 ? interests.slice(0, 2).join(", ") : null]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span>Yesterday</span>
-                    <span>⋮</span>
-                  </div>
-                </button>
-              );
-            })}
-        </div>
+                    <Icon name="chevron_right" size={18} className="text-gray-400 shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-        {!loadingChildren && !childrenError && children.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-black/10 bg-white/70 px-5 py-6 text-sm text-gray-600 text-center">
-            <p className="mb-3">You haven’t added any children yet.</p>
-            <button
-              type="button"
-              onClick={openAddChild}
-              className="inline-flex items-center rounded-full bg-gray-900 px-4 py-2 text-xs font-medium text-white hover:bg-black"
-            >
-              Add your first child
-            </button>
-          </div>
-        )}
+          {/* Empty state inside the card */}
+          {!loadingChildren && !childrenError && children.length === 0 && (
+            <div className="px-5 py-10 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-2xl">
+                🧒
+              </div>
+              <p className="text-sm font-medium text-gray-800 mb-1">No children yet</p>
+              <p className="text-xs text-gray-500 mb-4">
+                Add your kids to get age-appropriate recommendations.
+              </p>
+              <button
+                type="button"
+                onClick={openAddChild}
+                className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2 text-xs font-medium text-white hover:bg-black"
+              >
+                <Icon name="add" size={14} className="text-white" />
+                Add your first child
+              </button>
+            </div>
+          )}
+        </Card>
       </section>
 
-      <Modal isOpen={modalOpen} onClose={closeAddChild} title="Let’s add a child">
+      {/* Add child modal */}
+      <Modal isOpen={modalOpen} onClose={closeAddChild} title="Let's add a child">
         <form onSubmit={handleAddChildSubmit} className="space-y-6 text-sm">
           <div>
             <label
               htmlFor="childName"
               className="block text-xs font-medium text-gray-700 mb-1"
             >
-              What’s your child’s name?
+              What's your child's name?
             </label>
             <input
               id="childName"

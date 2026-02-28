@@ -1,9 +1,35 @@
 // src/pages/settings/SettingsNotificationsPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { Card } from "../../components/ui/Card";
 import { Modal } from "../../components/ui/Modal";
 import { NotificationEditPanel } from "../../components/settings/NotificationEditPanel";
 import { Snackbar } from "../../components/ui/Snackbar";
+import { SettingsRow } from "../../components/settings/SettingsRow";
+
+/** Map each category id to a Material Symbol icon name */
+const CATEGORY_ICONS: Record<string, string> = {
+  account_activity: "account_circle",
+  two_factor:        "security",
+  camper_policies:   "policy",
+  host_policies:     "gavel",
+  reminders:         "notifications",
+  messages:          "chat_bubble",
+  news_updates:      "newspaper",
+  feedback:          "rate_review",
+};
+
+/** Subtitle for each section group */
+const SECTION_SUBTITLES: Record<string, string> = {
+  "Account activity and policies":
+    "Confirm booking and account activity, and learn about important Wowzie policies.",
+  "Reminders":
+    "Get important reminders about your reservations, listings, and account activity.",
+  "Guest and Host messages":
+    "Keep in touch with your host or guests before and during your class.",
+  "Wowzie updates":
+    "Stay up to date on the latest news from Wowzie and let us know how we can improve.",
+};
 
 type CategoryId =
   | "account_activity"
@@ -350,62 +376,41 @@ export const SettingsNotificationsPage: React.FC = () => {
     <>
       <section className="space-y-4">
         {Object.entries(groupedCategories).map(([sectionName, categories]) => (
-          <div
-            key={sectionName}
-            className="rounded-2xl bg-white border border-black/5 shadow-sm overflow-hidden"
-          >
+          <Card key={sectionName}>
+            {/* Section header */}
             <div className="px-4 sm:px-5 py-3 border-b border-black/5">
-              <h2 className="text-sm font-semibold">{sectionName}</h2>
-
-              {sectionName === "Account activity and policies" && (
+              <h2 className="text-sm font-semibold text-gray-900">{sectionName}</h2>
+              {SECTION_SUBTITLES[sectionName] && (
                 <p className="mt-0.5 text-[11px] text-gray-500">
-                  Confirm your booking and account activity, and learn about important Wowzie policies.
-                </p>
-              )}
-              {sectionName === "Reminders" && (
-                <p className="mt-0.5 text-[11px] text-gray-500">
-                  Get important reminders about your reservations, listings, and account activity.
-                </p>
-              )}
-              {sectionName === "Guest and Host messages" && (
-                <p className="mt-0.5 text-[11px] text-gray-500">
-                  Keep in touch with your host or guests before and during your class.
-                </p>
-              )}
-              {sectionName === "Wowzie updates" && (
-                <p className="mt-0.5 text-[11px] text-gray-500">
-                  Stay up to date on the latest news from Wowzie and let us know how we can improve.
+                  {SECTION_SUBTITLES[sectionName]}
                 </p>
               )}
             </div>
 
-            <div className="divide-y divide-black/5 text-sm">
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex items-center justify-between px-4 sm:px-5 py-3"
-                >
-                  <div>
-                    <p className="text-sm text-gray-900">{category.label}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      {summarizeChannel(prefsByCategory, category)}
-                    </p>
-                  </div>
+            {/* Category rows */}
+            {categories.map((category) => (
+              <SettingsRow
+                key={category.id}
+                icon={CATEGORY_ICONS[category.id] ?? "notifications"}
+                label={category.label}
+                description={summarizeChannel(prefsByCategory, category)}
+                action={
                   <button
                     type="button"
-                    className="text-xs font-medium text-gray-700 hover:text-gray-900"
+                    className="text-xs font-medium text-violet-600 hover:text-violet-700"
                     onClick={() => openCategoryModal(category)}
                   >
                     Edit
                   </button>
-                </div>
-              ))}
-            </div>
-          </div>
+                }
+              />
+            ))}
+          </Card>
         ))}
 
-        <div className="rounded-2xl bg-white border border-black/5 shadow-sm overflow-hidden">
-          <div className="px-4 sm:px-5 py-3">
+        {/* Unsubscribe footer card */}
+        <Card>
+          <div className="px-4 sm:px-5 py-4">
             <button
               type="button"
               className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2 text-xs font-medium text-gray-900 hover:bg-gray-200 disabled:opacity-60"
@@ -413,24 +418,26 @@ export const SettingsNotificationsPage: React.FC = () => {
               disabled={savingUnsubscribe}
             >
               {savingUnsubscribe
-                ? "Updating your marketing preferences…"
+                ? "Updating preferences…"
                 : "Unsubscribe from all marketing messages"}
             </button>
 
             <p className="mt-3 text-[11px] text-gray-500 max-w-2xl">
-              By opting in to text messages, you agree to receive automated messaging from Wowzie at your saved phone number.
-              To receive messages at a different number, update your phone number settings on your personal info pages.
+              By opting in to text messages, you agree to receive automated messaging from
+              Wowzie at your saved phone number. To receive messages at a different number,
+              update your phone number in{" "}
+              <span className="font-medium text-gray-700">Account → Contact</span>.
             </p>
           </div>
-        </div>
+        </Card>
 
         {error && (
-          <div className="rounded-2xl bg-red-50 border border-red-200 px-4 sm:px-5 py-3 text-xs text-red-700">
+          <Card className="px-4 sm:px-5 py-3 text-xs text-red-700 !bg-red-50">
             {error}
-          </div>
+          </Card>
         )}
 
-        {/* Single source of truth modal */}
+        {/* Edit-preferences modal */}
         <Modal
           isOpen={!!editingCategory}
           onClose={closeCategoryModal}
@@ -452,7 +459,6 @@ export const SettingsNotificationsPage: React.FC = () => {
         </Modal>
       </section>
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbarOpen}
         message={snackbarMessage}

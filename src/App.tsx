@@ -344,6 +344,7 @@ const App: React.FC = () => {
         <Header
           user={user}
           onSignInClick={() => setLoginOpen(true)}
+          onSignUpClick={() => setSignupOpen(true)}
           onHostClick={handleHostClick}
         />
 

@@ -1,6 +1,7 @@
 // src/pages/settings/SettingsAccountPage.tsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { Card } from "../../components/ui/Card";
 import { EditableFieldRow } from "../../components/settings/EditableFieldRow";
 
 type Profile = {
@@ -17,6 +18,19 @@ type Profile = {
   country: string | null;
   about: string | null;
 };
+
+/** Thin card-section header */
+const SectionHeader: React.FC<{ title: string; subtitle?: string }> = ({
+  title,
+  subtitle,
+}) => (
+  <div className="px-4 sm:px-5 py-3 border-b border-black/5">
+    <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+    {subtitle && (
+      <p className="mt-0.5 text-[11px] text-gray-500">{subtitle}</p>
+    )}
+  </div>
+);
 
 export const SettingsAccountPage: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -54,15 +68,14 @@ export const SettingsAccountPage: React.FC = () => {
       if (!isMounted) return;
 
       if (profileError) {
-        console.error("Error loading profile:", profileError);
-        setError("We couldn’t load your profile right now.");
+        setError("We couldn't load your profile right now.");
         setLoading(false);
         return;
       }
 
       const withEmail: Profile = {
         ...(data as Profile),
-        email: (data as any)?.email ?? user.email,
+        email: (data as Profile)?.email ?? user.email ?? null,
       };
 
       setProfile(withEmail);
@@ -82,14 +95,13 @@ export const SettingsAccountPage: React.FC = () => {
   ) => {
     if (!profile) return;
 
-    const { error } = await supabase
+    const { error: saveError } = await supabase
       .from("profiles")
       .update({ [fieldKey]: newValue })
       .eq("id", profile.id);
 
-    if (error) {
-      console.error("Error updating profile field:", error);
-      // You could show a toast here later.
+    if (saveError) {
+      console.error("Error updating profile field:", saveError);
       return;
     }
 
@@ -107,9 +119,9 @@ export const SettingsAccountPage: React.FC = () => {
   if (error) {
     return (
       <section className="space-y-4">
-        <div className="rounded-2xl bg-red-50 border border-red-200 px-4 sm:px-5 py-3 text-xs text-red-700">
+        <Card className="px-4 sm:px-5 py-3 text-xs text-red-700 !bg-red-50">
           {error}
-        </div>
+        </Card>
       </section>
     );
   }
@@ -124,11 +136,13 @@ export const SettingsAccountPage: React.FC = () => {
 
   return (
     <section className="space-y-4">
-      {/* Personal info card */}
-      <div className="rounded-2xl bg-white border border-black/5 shadow-sm overflow-hidden">
-        <div className="px-4 sm:px-5 py-3 text-sm font-semibold border-b border-black/5">
-          Personal information
-        </div>
+
+      {/* ── Name ─────────────────────────────────────────────────── */}
+      <Card>
+        <SectionHeader
+          title="Name"
+          subtitle="Your legal name is used for bookings and identity verification. Your preferred name is how Wowzie addresses you."
+        />
 
         <EditableFieldRow
           label="Legal name"
@@ -142,17 +156,17 @@ export const SettingsAccountPage: React.FC = () => {
           label="Preferred first name"
           value={profile.preferred_first_name}
           fieldKey="preferred_first_name"
-          placeholder="Not set"
+          placeholder="Same as legal name"
+          helper="This is how we'll address you across Wowzie."
           onSave={handleFieldSave}
         />
+      </Card>
 
-        <EditableFieldRow
-          label="Phone"
-          value={profile.phone}
-          fieldKey="phone"
-          placeholder="Not added"
-          helper="Contact number for confirmed guests and Wowzie to get in touch."
-          onSave={handleFieldSave}
+      {/* ── Contact ──────────────────────────────────────────────── */}
+      <Card>
+        <SectionHeader
+          title="Contact"
+          subtitle="Used for booking confirmations and account alerts."
         />
 
         <EditableFieldRow
@@ -161,6 +175,23 @@ export const SettingsAccountPage: React.FC = () => {
           fieldKey="email"
           placeholder="Not added"
           onSave={handleFieldSave}
+        />
+
+        <EditableFieldRow
+          label="Phone"
+          value={profile.phone}
+          fieldKey="phone"
+          placeholder="Not added"
+          helper="Shared with confirmed guests and Wowzie for support."
+          onSave={handleFieldSave}
+        />
+      </Card>
+
+      {/* ── Address ──────────────────────────────────────────────── */}
+      <Card>
+        <SectionHeader
+          title="Address"
+          subtitle="Used to show you nearby activities and for billing."
         />
 
         <EditableFieldRow
@@ -206,27 +237,33 @@ export const SettingsAccountPage: React.FC = () => {
           fieldKey="country"
           onSave={handleFieldSave}
         />
+      </Card>
+
+      {/* ── About ────────────────────────────────────────────────── */}
+      <Card>
+        <SectionHeader
+          title="About"
+          subtitle="Shown on your public profile and to hosts when you book."
+        />
 
         <EditableFieldRow
-          label="About"
+          label="Bio"
           value={profile.about}
           fieldKey="about"
           multiline
-          placeholder="Tell families a bit about your background and experience."
+          placeholder="Tell families a bit about yourself."
           onSave={handleFieldSave}
         />
-      </div>
+      </Card>
 
-      {/* Deactivate account card – unchanged */}
-      <div className="rounded-2xl bg-white border border-black/5 shadow-sm overflow-hidden">
-        <div className="border-b border-black/5 px-4 sm:px-5 py-3 text-sm font-semibold">
-          Deactivate account
-        </div>
+      {/* ── Deactivate ───────────────────────────────────────────── */}
+      <Card>
+        <SectionHeader title="Deactivate account" />
         <div className="px-4 sm:px-5 py-4 text-xs text-gray-700 space-y-3">
           <p>
-            Deactivate and permanently delete your account. This action
-            cannot be undone. If you’re hosting any active events, they’ll
-            be cancelled and guests will be notified.
+            Permanently delete your account and all associated data. This
+            cannot be undone. Any active listings will be cancelled and guests
+            will be notified.
           </p>
           <button
             type="button"
@@ -235,7 +272,8 @@ export const SettingsAccountPage: React.FC = () => {
             Deactivate account
           </button>
         </div>
-      </div>
+      </Card>
+
     </section>
   );
 };

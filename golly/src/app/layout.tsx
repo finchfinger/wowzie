@@ -1,0 +1,50 @@
+import type { Metadata } from "next";
+import "./globals.css";
+import { Providers } from "./providers";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { PlayingWidget } from "@/components/PlayingWidget";
+
+export const metadata: Metadata = {
+  title: "Golly",
+  description: "Coordinate kids' activities",
+  icons: { icon: "/icon.svg" },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <head>
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;700&family=Google+Sans+Text:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body
+        className="antialiased"
+      >
+        <Providers>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </div>
+          <PlayingWidget />
+        </Providers>
+      </body>
+    </html>
+  );
+}

@@ -5,6 +5,41 @@ import { supabase } from "../../lib/supabase";
 import { AddressInput } from "../ui/AddressInput";
 import type { AddressSelection } from "../ui/AddressInput";
 
+/** Map raw Supabase signup errors to friendly copy. */
+function friendlySignupError(raw: string): string {
+  if (raw.includes("already registered") || raw.includes("User already registered")) {
+    return "An account with this email already exists. Try signing in instead.";
+  }
+  if (raw.includes("Password should be")) {
+    return "Password must be at least 6 characters.";
+  }
+  if (raw.includes("too many requests") || raw.includes("rate limit")) {
+    return "Too many attempts. Please wait a moment and try again.";
+  }
+  return raw || "Unable to create your account. Please try again.";
+}
+
+/** Simple eye / eye-off toggle button. */
+const PasswordToggle: React.FC<{ show: boolean; onToggle: () => void }> = ({ show, onToggle }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+    aria-label={show ? "Hide password" : "Show password"}
+  >
+    {show ? (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+      </svg>
+    ) : (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+    )}
+  </button>
+);
+
 type SignupModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -97,6 +132,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // Step 1: account
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [parentLoading, setParentLoading] = useState(false);
+  const [saveChildrenLoading, setSaveChildrenLoading] = useState(false);
 
   // Step 2: parent details
   const [firstName, setFirstName] = useState("");
@@ -117,7 +156,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // Collected children (not saved until Step 4 -> Save)
   const [children, setChildren] = useState<ChildDraft[]>([]);
 
-  const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
   // Reset when opened
@@ -128,6 +166,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     setEmail("");
     setPassword("");
+    setShowPassword(false);
+    setSignupLoading(false);
+    setParentLoading(false);
+    setSaveChildrenLoading(false);
 
     setFirstName("");
     setLastName("");
@@ -140,7 +182,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     setChildren([]);
 
-    setStatus("");
     setError("");
   }, [isOpen]);
 
@@ -175,25 +216,30 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setStatus("Creating your account…");
 
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail || !password) {
       setError("Please enter your email and password.");
-      setStatus("");
       return;
     }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setSignupLoading(true);
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: trimmedEmail,
       password,
     });
 
+    setSignupLoading(false);
+
     if (signUpError) {
-      console.error("signUp error:", signUpError);
-      setError(signUpError.message || "Unable to create your account.");
-      setStatus("");
+      setError(friendlySignupError(signUpError.message));
       return;
     }
 
@@ -205,7 +251,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       });
     }
 
-    setStatus("");
     setStep(2);
   };
 
@@ -219,33 +264,28 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       return;
     }
 
-    setStatus("Saving your profile…");
+    setParentLoading(true);
 
     try {
       const { data: userResult, error: userError } =
         await supabase.auth.getUser();
 
       if (userError || !userResult.user) {
-        console.error("Error getting user:", userError);
-        setStatus("");
-        setError("We couldn’t confirm your session. Please try again.");
+        setParentLoading(false);
+        setError("We couldn't confirm your session. Please try again.");
         return;
       }
 
       const user = userResult.user;
 
-      // Update auth metadata (optional)
-      const { error: updateError } = await supabase.auth.updateUser({
+      // Update auth metadata (best-effort)
+      await supabase.auth.updateUser({
         data: {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           location: location.trim() || null,
         },
       });
-
-      if (updateError) {
-        console.error("Error updating user metadata:", updateError);
-      }
 
       const legalName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
@@ -257,12 +297,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         city: locationCity.trim() || null,
       });
 
-      setStatus("");
+      setParentLoading(false);
       setStep(3);
-    } catch (err) {
-      console.error("Unexpected error updating profile:", err);
-      setStatus("");
-      setError("We couldn’t save your profile. Please try again.");
+    } catch {
+      setParentLoading(false);
+      setError("We couldn't save your profile. Please try again.");
     }
   };
 
@@ -315,16 +354,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // Step 4: save children to DB
   const handleSaveChildren = async () => {
     setError("");
-    setStatus("Saving your child’s details…");
+    setSaveChildrenLoading(true);
 
     try {
       const { data: userResult, error: userError } =
         await supabase.auth.getUser();
 
       if (userError || !userResult.user) {
-        console.error("No user found when saving children:", userError);
-        setStatus("");
-        setError("We couldn’t confirm your session. Please try again.");
+        setSaveChildrenLoading(false);
+        setError("We couldn't confirm your session. Please try again.");
         return;
       }
 
@@ -353,23 +391,21 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           .insert(rows);
 
         if (insertError) {
-          console.error("Error inserting children:", insertError);
-          setStatus("");
+          setSaveChildrenLoading(false);
           setError(
-            "We saved your account, but couldn’t save child details. You can add them later."
+            "We saved your account, but couldn't save child details. You can add them later."
           );
           setStep(5);
           return;
         }
       }
 
-      setStatus("");
+      setSaveChildrenLoading(false);
       setStep(5);
-    } catch (err) {
-      console.error("Unexpected error inserting children:", err);
-      setStatus("");
+    } catch {
+      setSaveChildrenLoading(false);
       setError(
-        "We saved your account, but couldn’t save child details. You can add them later."
+        "We saved your account, but couldn't save child details. You can add them later."
       );
       setStep(5);
     }
@@ -425,23 +461,27 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               >
                 Password
               </label>
-              <input
-                id="signup-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-                placeholder="Create a password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="signup-password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                  placeholder="Create a password (min. 6 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <PasswordToggle show={showPassword} onToggle={() => setShowPassword((v) => !v)} />
+              </div>
             </div>
 
             <button
               type="submit"
+              disabled={signupLoading}
               className="w-full inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Sign up
+              {signupLoading ? "Creating account…" : "Sign up"}
             </button>
 
             <button
@@ -552,9 +592,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
             <button
               type="submit"
-              className="w-full inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black"
+              disabled={parentLoading}
+              className="w-full inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Continue
+              {parentLoading ? "Saving…" : "Continue"}
             </button>
           </form>
         </>
@@ -695,9 +736,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             <button
               type="button"
               onClick={handleSaveChildren}
-              className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black"
+              disabled={saveChildrenLoading}
+              className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Save
+              {saveChildrenLoading ? "Saving…" : "Save"}
             </button>
           </div>
         </>
@@ -712,10 +754,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-800">
-              Registration created
+              You're in!
             </p>
             <p className="max-w-xs text-sm text-gray-600">
-              You’re all set. You can update details anytime from your account.
+              Your account is ready. Check your inbox — we sent a quick
+              verification email to <span className="font-medium">{email}</span>.
+            </p>
+            <p className="max-w-xs text-xs text-gray-500">
+              You can browse now and verify later. Some features may require a
+              verified email.
             </p>
           </div>
 
@@ -729,16 +776,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         </div>
       )}
 
-      {/* Shared status + error row */}
-      {(status || error) && (
-        <div className="mt-4 space-y-1">
-          {status && (
-            <p className="min-h-[1.25rem] text-xs text-gray-500">{status}</p>
-          )}
-          {error && (
-            <p className="min-h-[1.25rem] text-xs text-rose-600">{error}</p>
-          )}
-        </div>
+      {/* Shared error row */}
+      {error && step !== 5 && (
+        <p className="mt-4 text-xs text-rose-600">{error}</p>
       )}
     </Modal>
   );

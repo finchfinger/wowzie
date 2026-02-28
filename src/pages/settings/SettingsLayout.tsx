@@ -10,7 +10,7 @@ type SettingsTab = "account" | "children" | "login" | "notifications";
 const SETTINGS_TABS: TabItem[] = [
   { id: "account", label: "Account" },
   { id: "children", label: "Children" },
-  { id: "login", label: "Login and Security" },
+  { id: "login", label: "Security" },
   { id: "notifications", label: "Notifications" },
 ];
 
@@ -53,7 +53,7 @@ export const SettingsLayout: React.FC = () => {
 
   return (
     <main className="bg-gray-50 py-10">
-      <Container className="max-w-screen-xl">
+      <Container className="max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

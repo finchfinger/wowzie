@@ -10,12 +10,14 @@ import { Container } from "./Container";
 type HeaderProps = {
   user: User | null;
   onSignInClick?: () => void;
+  onSignUpClick?: () => void;
   onHostClick?: () => void;
 };
 
 export const Header: React.FC<HeaderProps> = ({
   user,
   onSignInClick,
+  onSignUpClick,
   onHostClick,
 }) => {
   const navigate = useNavigate();
@@ -167,6 +169,14 @@ export const Header: React.FC<HeaderProps> = ({
                   >
                     Sign in
                   </Button>
+
+                  <Button
+                    variant="primary"
+                    className="text-bodySm px-3 py-2 hidden sm:inline-flex"
+                    onClick={onSignUpClick}
+                  >
+                    Sign up
+                  </Button>
                 </>
               )}
 
@@ -240,8 +250,16 @@ export const Header: React.FC<HeaderProps> = ({
 
               <button
                 type="button"
-                onClick={onSignInClick}
+                onClick={onSignUpClick}
                 className="w-full text-left rounded-xl bg-wowzie-text-primary px-4 py-3 text-sm font-medium text-white hover:bg-wowzie-text-primary/90"
+              >
+                Sign up
+              </button>
+
+              <button
+                type="button"
+                onClick={onSignInClick}
+                className="w-full text-left rounded-xl border border-wowzie-borderSubtle bg-white px-4 py-3 text-sm font-medium text-wowzie-text hover:bg-wowzie-surfaceSubtle"
               >
                 Sign in
               </button>

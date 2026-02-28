@@ -8,15 +8,15 @@ type Body = {
 };
 
 const ALLOWED_ORIGINS = new Set([
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
 ]);
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("Origin") ?? "";
   const allowOrigin = ALLOWED_ORIGINS.has(origin)
     ? origin
-    : "http://localhost:5173";
+    : "http://localhost:3000";
 
   return {
     "Access-Control-Allow-Origin": allowOrigin,
@@ -59,9 +59,9 @@ Deno.serve(async (req: Request) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-    const RESEND_FROM = Deno.env.get("RESEND_FROM") ?? "Wowzie <onboarding@resend.dev>";
+    const RESEND_FROM = Deno.env.get("RESEND_FROM") ?? "Golly <onboarding@resend.dev>";
 
-    const APP_BASE_URL = ensureTrailingSlash(Deno.env.get("APP_BASE_URL") ?? "http://localhost:5173/");
+    const APP_BASE_URL = ensureTrailingSlash(Deno.env.get("APP_BASE_URL") ?? "http://localhost:3000/");
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
       return json(req, 500, { error: "Missing Supabase env vars." });
@@ -136,7 +136,7 @@ Deno.serve(async (req: Request) => {
         user_id: recipientUserId,
         type: "Calendar",
         title: "Calendar shared with you",
-        body: message || "Someone shared their Wowzie calendar with you. Open the invite to view.",
+        body: message || "Someone shared their Golly calendar with you. Open the invite to view.",
         is_read: false,
         meta: {
           share_id: shareRow.id,
@@ -162,12 +162,12 @@ Deno.serve(async (req: Request) => {
       return json(req, 500, { error: "Missing RESEND_API_KEY env var." });
     }
 
-    const subject = "You have a Wowzie calendar invite";
+    const subject = "You have a Golly calendar invite";
     const safeMessage = message ? `<p style="margin:0 0 12px 0;">${message}</p>` : "";
 
     const html = `
       <div style="font-family: ui-sans-serif, system-ui, -apple-system; line-height:1.4;">
-        <h2 style="margin:0 0 12px 0;">Wowzie calendar invite</h2>
+        <h2 style="margin:0 0 12px 0;">Golly calendar invite</h2>
         ${safeMessage}
         <p style="margin:0 0 12px 0;">Open this link to view:</p>
         <p style="margin:0 0 16px 0;">
