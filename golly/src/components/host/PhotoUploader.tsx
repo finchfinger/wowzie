@@ -201,7 +201,6 @@ export const PhotoUploader: React.FC<Props> = ({
   onReorder,
 }) => {
   const remaining = Math.max(0, maxPhotos - items.length);
-  const countLabel = `${Math.min(items.length, maxPhotos)}/${maxPhotos}`;
 
   const drop = useDropzone({
     accept,
@@ -251,33 +250,20 @@ export const PhotoUploader: React.FC<Props> = ({
     [items, onReorder],
   );
 
+  // Build slots: all filled tiles, then exactly ONE empty "+" tile (if under max)
   const slots = useMemo(() => {
     const out: Array<
       | { kind: "filled"; item: PhotoItem; index: number }
       | { kind: "empty"; index: number }
-    > = [];
-    for (let i = 0; i < maxPhotos; i += 1) {
-      const item = items[i];
-      if (item) out.push({ kind: "filled", item, index: i });
-      else out.push({ kind: "empty", index: i });
+    > = items.map((item, i) => ({ kind: "filled" as const, item, index: i }));
+    if (items.length < maxPhotos) {
+      out.push({ kind: "empty" as const, index: items.length });
     }
     return out;
   }, [items, maxPhotos]);
 
   return (
     <div className="space-y-2">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium text-foreground">Photos</p>
-          <p className="mt-1 text-[11px] text-muted-foreground max-w-md">
-            Add up to {maxPhotos} photos. Drag to reorder. The first photo
-            is the primary image.
-          </p>
-        </div>
-
-        <p className="text-[11px] text-muted-foreground">{countLabel}</p>
-      </div>
-
       <div
         {...drop.getRootProps({
           onClick: (e: React.MouseEvent) => {
@@ -328,9 +314,6 @@ export const PhotoUploader: React.FC<Props> = ({
               </SortableContext>
             </DndContext>
 
-            <div className="mt-3 text-[11px] text-muted-foreground">
-              Tip: Drag a photo to the first position to make it primary.
-            </div>
           </>
         )}
       </div>

@@ -26,6 +26,7 @@ import {
   PhotoUploader,
   type PhotoItem,
 } from "@/components/host/PhotoUploader";
+import { Tent, BookOpen, Lightbulb, CalendarDays } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -707,7 +708,7 @@ function ExpandableCheckboxCard({
 function Tip({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex gap-2.5 rounded-lg bg-blue-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-blue-800">
-      <span className="shrink-0 mt-0.5">💡</span>
+      <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5 text-blue-600" />
       <p>{children}</p>
     </div>
   );
@@ -765,8 +766,12 @@ export default function CreateActivityPage({
     [],
   );
 
-  /* Activities (description step) */
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  /* Activities (description step) — start with 3 open (mandatory minimum) */
+  const [activities, setActivities] = useState<ActivityItem[]>([
+    { id: makeId(), title: "", description: "" },
+    { id: makeId(), title: "", description: "" },
+    { id: makeId(), title: "", description: "" },
+  ]);
 
   /* Scheduling type */
   const [activityType, setActivityType] = useState<ActivityType>("fixed");
@@ -1579,12 +1584,12 @@ export default function CreateActivityPage({
       <FormCard title="What kind of activity is this?">
         <div className="grid grid-cols-2 gap-3">
           <RadioCard selected={activityKind === "camp"} onClick={() => setActivityKind("camp")}>
-            <div className="text-lg mb-1">🏕️</div>
+            <Tent className="h-5 w-5 mb-1 text-muted-foreground" />
             <div className="font-semibold">Camp</div>
             <div className="text-xs text-muted-foreground mt-0.5">Multi-day program with fixed dates</div>
           </RadioCard>
           <RadioCard selected={activityKind === "class"} onClick={() => setActivityKind("class")}>
-            <div className="text-lg mb-1">📚</div>
+            <BookOpen className="h-5 w-5 mb-1 text-muted-foreground" />
             <div className="font-semibold">Class</div>
             <div className="text-xs text-muted-foreground mt-0.5">Recurring lessons or one-time workshops</div>
           </RadioCard>
@@ -1924,7 +1929,7 @@ export default function CreateActivityPage({
     <div className="space-y-6">
       {/* Tip banner */}
       <div className="flex gap-3 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-900">
-        <span className="mt-0.5 shrink-0 text-base">💡</span>
+        <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
         <p>
           <span className="font-medium">New to scheduling?</span>{" "}
           Start with 2–3 availability blocks. You can always add more later
@@ -2036,7 +2041,7 @@ export default function CreateActivityPage({
           >
             {/* Purple tip banner */}
             <div className="mb-4 flex gap-2.5 rounded-lg bg-violet-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-violet-800">
-              <span className="shrink-0 mt-0.5">📅</span>
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 mt-0.5 text-violet-600" />
               <p>
                 You can add multiple time blocks within a day to accommodate
                 different schedules. Use the{" "}
@@ -2415,8 +2420,6 @@ export default function CreateActivityPage({
     "Sixth", "Seventh", "Eighth", "Ninth", "Tenth",
   ];
 
-  const DESC_MAX = 120;
-
   const renderDescription = () => (
     <div className="space-y-6">
       {/* Description */}
@@ -2428,19 +2431,9 @@ export default function CreateActivityPage({
           <Textarea
             rows={4}
             value={description}
-            onChange={(e) => setDescription(e.target.value.slice(0, DESC_MAX))}
+            onChange={(e) => setDescription(e.target.value)}
             placeholder="2–3 short paragraphs about what makes this camp special."
-            maxLength={DESC_MAX}
           />
-          <p
-            className={`text-[11px] text-right ${
-              description.length >= DESC_MAX
-                ? "text-destructive"
-                : "text-muted-foreground"
-            }`}
-          >
-            {description.length}/{DESC_MAX}
-          </p>
         </div>
       </FormCard>
 
@@ -2523,7 +2516,6 @@ export default function CreateActivityPage({
     <div className="space-y-6">
       <FormCard
         title="Photos"
-        subtitle="Add up to 9 photos. The first one is your cover image."
       >
         <PhotoUploader
           maxPhotos={MAX_PHOTOS}
