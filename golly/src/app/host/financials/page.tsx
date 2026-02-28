@@ -38,7 +38,7 @@ export default function HostFinancialsPage() {
         .limit(100);
 
       // Filter to only bookings for this host's camps
-      const mine = ((data || []) as BookingRow[]).filter(
+      const mine = ((data || []) as unknown as BookingRow[]).filter(
         (b) => b.camps?.host_id === user.id
       );
       setBookings(mine);
