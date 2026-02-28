@@ -4,6 +4,7 @@ import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PlayingWidget } from "@/components/PlayingWidget";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Golly",
@@ -43,6 +44,7 @@ export default function RootLayout({
             <Footer />
           </div>
           <PlayingWidget />
+          <Toaster position="bottom-center" richColors />
         </Providers>
       </body>
     </html>

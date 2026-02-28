@@ -118,6 +118,7 @@ export function Header() {
   const menuItems: Array<{ label: string; href: string; icon: LucideIcon }> = [
     { label: "Wishlists", href: "/wishlist", icon: Heart },
     { label: "My Activities", href: "/activities", icon: CalendarDays },
+    { label: "Calendars", href: "/calendars", icon: CalendarDays },
     { label: "My Friends", href: "/friends", icon: Users },
     { label: "Messages", href: "/messages", icon: MessageSquare },
     { label: "Notifications", href: "/notifications", icon: Bell },
