@@ -766,8 +766,10 @@ export default function CreateActivityPage({
     [],
   );
 
-  /* Activities (description step) — start with 3 open (mandatory minimum) */
-  const [activities, setActivities] = useState<ActivityItem[]>([
+  /* Activities (description step) — start with 3 open (mandatory minimum).
+     Use lazy initializer so makeId() runs once on the client, not on every
+     server render, avoiding hydration-ID mismatches. */
+  const [activities, setActivities] = useState<ActivityItem[]>(() => [
     { id: makeId(), title: "", description: "" },
     { id: makeId(), title: "", description: "" },
     { id: makeId(), title: "", description: "" },
