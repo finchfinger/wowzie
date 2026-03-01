@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Eye, EyeOff } from "lucide-react";
+import { AddressInput } from "@/components/ui/AddressInput";
 
 type SignupModalProps = {
   isOpen: boolean;
@@ -458,13 +459,19 @@ export function SignUpModal({
                 <label className="block text-sm font-medium text-foreground">
                   Where should we look for activities?
                 </label>
-                <input
-                  type="text"
-                  className={inputClass}
-                  placeholder="Neighbourhood, city, or zip code"
+                <AddressInput
+                  mode="city"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={setLocation}
+                  onSelect={(sel) => {
+                    const label = [sel.city, sel.state]
+                      .filter(Boolean)
+                      .join(", ");
+                    setLocation(label || sel.formattedAddress || location);
+                  }}
+                  placeholder="City, neighbourhood, or zip code"
                   disabled={parentLoading}
+                  className="h-10"
                 />
               </div>
 

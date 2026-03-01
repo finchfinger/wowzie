@@ -217,13 +217,17 @@ export function Header() {
 
               {isLoggedIn ? (
                 <>
-                  {/* Profile avatar */}
+                  {/* Profile avatar — prefer first name initial, fall back to email */}
                   <Link
                     href="/profile"
                     className="h-8 w-8 flex items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity ml-1.5"
                     aria-label="View profile"
                   >
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                    {(
+                      (user?.user_metadata?.first_name as string | undefined)?.charAt(0) ||
+                      user?.email?.charAt(0) ||
+                      "U"
+                    ).toUpperCase()}
                   </Link>
 
                   {/* Menu button */}
@@ -254,7 +258,15 @@ export function Header() {
                         <div className="absolute right-0 top-11 z-50 w-60 rounded-2xl bg-card shadow-xl border border-border/40 overflow-hidden">
                           {/* User info */}
                           <div className="px-4 py-3 border-b border-border/50">
-                            <p className="text-sm font-medium text-foreground truncate">
+                            {user?.user_metadata?.first_name && (
+                              <p className="text-sm font-semibold text-foreground truncate">
+                                {user.user_metadata.first_name as string}
+                                {user.user_metadata.last_name
+                                  ? ` ${user.user_metadata.last_name as string}`
+                                  : ""}
+                              </p>
+                            )}
+                            <p className={`truncate ${user?.user_metadata?.first_name ? "text-xs text-muted-foreground" : "text-sm font-medium text-foreground"}`}>
                               {user?.email}
                             </p>
                           </div>
