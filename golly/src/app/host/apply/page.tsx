@@ -8,8 +8,6 @@ import { useAuth } from "@/lib/auth-context";
 import { FormCard } from "@/components/ui/form-card";
 import { AddressInput } from "@/components/ui/AddressInput";
 import type { AddressSelection } from "@/components/ui/AddressInput";
-import { PhotoUploader } from "@/components/host/PhotoUploader";
-import type { PhotoItem } from "@/components/host/PhotoUploader";
 
 /* ── Static data ── */
 
@@ -213,22 +211,6 @@ export default function HostApplyPage() {
   const [agreeChildSafety, setAgreeChildSafety] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  const [photos, setPhotos] = useState<PhotoItem[]>([]);
-
-  const handleAddPhotos = (files: File[]) => {
-    const newItems: PhotoItem[] = files.map((file) => ({
-      id: `new-${Date.now()}-${Math.random()}`,
-      src: URL.createObjectURL(file),
-      origin: "new" as const,
-      file,
-    }));
-    setPhotos((prev) => [...prev, ...newItems].slice(0, 3));
-  };
-
-  const handleRemovePhoto = (id: string) => {
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
-  };
-
   const [termsOpen, setTermsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -329,22 +311,6 @@ export default function HostApplyPage() {
       lines.push("", accountType === "individual" ? "About:" : "About organization:");
       lines.push(accountType === "individual" ? aboutIndividual.trim() : aboutOrg.trim());
 
-      // Upload photos to Supabase storage
-      const photoUrls: string[] = [];
-      for (const photo of photos) {
-        if (photo.file) {
-          const ext = photo.file.name.split(".").pop() ?? "jpg";
-          const path = `host-profiles/${authUser.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-          const { error: uploadErr } = await supabase.storage
-            .from("host-photos")
-            .upload(path, photo.file, { upsert: true });
-          if (!uploadErr) {
-            const { data: urlData } = supabase.storage.from("host-photos").getPublicUrl(path);
-            if (urlData?.publicUrl) photoUrls.push(urlData.publicUrl);
-          }
-        }
-      }
-
       const nowIso = new Date().toISOString();
       const { error: upsertErr } = await supabase.from("host_profiles").upsert(
         {
@@ -353,7 +319,6 @@ export default function HostApplyPage() {
           host_status: "pending",
           applied_at: nowIso,
           updated_at: nowIso,
-          ...(photoUrls.length > 0 && { photo_urls: photoUrls }),
         },
         { onConflict: "user_id" },
       );
@@ -383,7 +348,7 @@ export default function HostApplyPage() {
           {/* Account type */}
           <FormCard title="Account type">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <RadioCard id="host-individual" name="account_type" title="Individual" description="I\u2019m teaching classes myself" value="individual" selectedValue={accountType} disabled={submitting} onChange={(v) => setAccountType(v as AccountType)} />
+              <RadioCard id="host-individual" name="account_type" title="Individual" description="I am teaching classes myself" value="individual" selectedValue={accountType} disabled={submitting} onChange={(v) => setAccountType(v as AccountType)} />
               <RadioCard id="host-organization" name="account_type" title="Organization" description="I represent a business, school, or nonprofit" value="organization" selectedValue={accountType} disabled={submitting} onChange={(v) => setAccountType(v as AccountType)} />
             </div>
           </FormCard>
@@ -392,14 +357,6 @@ export default function HostApplyPage() {
           {accountType === "organization" ? (
             <FormCard title="Organization information">
               <div className="space-y-5">
-                <PhotoUploader
-                  maxPhotos={3}
-                  items={photos}
-                  onAddFiles={handleAddPhotos}
-                  onRemove={handleRemovePhoto}
-                  onReorder={setPhotos}
-                />
-
                 <Field label="Organization name" required>
                   <TextInput value={orgName} onChange={setOrgName} disabled={submitting} placeholder="The official name of your business, school, or nonprofit" error={!req(orgName) && !!error} />
                 </Field>
@@ -463,14 +420,6 @@ export default function HostApplyPage() {
           ) : (
             <FormCard title="Personal information">
               <div className="space-y-5">
-                <PhotoUploader
-                  maxPhotos={3}
-                  items={photos}
-                  onAddFiles={handleAddPhotos}
-                  onRemove={handleRemovePhoto}
-                  onReorder={setPhotos}
-                />
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="First name" required>
                     <TextInput value={firstName} onChange={setFirstName} disabled={submitting} placeholder="First name" error={!req(firstName) && !!error} />
