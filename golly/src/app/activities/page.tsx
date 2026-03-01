@@ -106,6 +106,9 @@ export default function ActivitiesPage() {
   const [sharing, setSharing] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [copyDone, setCopyDone] = useState(false);
+  /* token + url generated client-side — no edge function needed */
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   /* data */
   const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
@@ -281,6 +284,15 @@ export default function ActivitiesPage() {
     void load();
   }, []);
 
+  /* ── generate share token whenever the modal opens ── */
+  useEffect(() => {
+    if (!shareOpen) return;
+    const token = crypto.randomUUID();
+    const url = `${window.location.origin}/calendars/shared?token=${encodeURIComponent(token)}`;
+    setShareToken(token);
+    setShareUrl(url);
+  }, [shareOpen]);
+
   /* ── child color mapping ── */
   const childColorMap = useMemo(() => {
     const map = new Map<string, (typeof CHILD_COLORS)[0]>();
@@ -356,38 +368,52 @@ export default function ActivitiesPage() {
     }));
   }, [allEvents]);
 
-  /* ── share handlers ── */
+  /* ── share handlers (direct Supabase — no edge function) ── */
   const handleShare = async () => {
     const email = shareEmail.trim();
     if (!email || !email.includes("@")) {
       setShareStatus("Please enter a valid email.");
       return;
     }
+    if (!shareToken || !shareUrl || !userId) {
+      setShareStatus("Could not send invite. Please try again.");
+      return;
+    }
     setSharing(true);
     setShareStatus(null);
     try {
-      const { error: fnErr } = await supabase.functions.invoke("share-calendar", {
-        body: { mode: "send", email, message: shareMessage.trim() || null },
-      });
-      if (fnErr) { setShareStatus("Could not send invite. Please try again."); return; }
+      const { error } = await supabase.from("calendar_shares").insert([{
+        email: email.toLowerCase(),
+        message: shareMessage.trim() || null,
+        token: shareToken,
+        share_url: shareUrl,
+        sender_id: userId,
+        status: "pending",
+        sent_at: new Date().toISOString(),
+      }]);
+      if (error) throw error;
       setShareStatus("Invite sent!");
       setShareEmail("");
       setShareMessage("");
-      setTimeout(() => { setShareOpen(false); setShareStatus(null); }, 1200);
+      /* rotate token so each invite is unique */
+      const nextToken = crypto.randomUUID();
+      setShareToken(nextToken);
+      setShareUrl(`${window.location.origin}/calendars/shared?token=${encodeURIComponent(nextToken)}`);
+      setTimeout(() => { setShareOpen(false); setShareStatus(null); }, 1400);
     } catch {
-      setShareStatus("Could not send invite.");
+      setShareStatus("Could not send invite. Please try again.");
     } finally {
       setSharing(false);
     }
   };
 
   const handleCopyLink = async () => {
+    if (!shareUrl) {
+      setShareStatus("Could not generate link.");
+      return;
+    }
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke("share-calendar", {
-        body: { mode: "link_only" },
-      });
-      if (fnErr || !data?.share_url) { setShareStatus("Could not generate link."); return; }
-      await navigator.clipboard.writeText(data.share_url);
+      await navigator.clipboard.writeText(shareUrl);
       setCopyDone(true);
       setTimeout(() => setCopyDone(false), 2000);
     } catch {
