@@ -18,7 +18,6 @@ import {
   Sunrise,
   Sunset,
   RefreshCcw,
-  ChevronRight,
   Tag,
   Video,
 } from "lucide-react";
@@ -648,27 +647,6 @@ export default function ActivityDetailPage() {
             </div>
           )}
 
-          {/* Quick actions */}
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <button type="button" onClick={handleEdit}
-              className="flex w-full items-center justify-between px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors border-b border-border/50">
-              Edit listing <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
-            <button type="button" onClick={() => setActiveTab("guests")}
-              className="flex w-full items-center justify-between px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors border-b border-border/50">
-              <span className="flex items-center gap-2">
-                View guests
-                {pendingCount > 0 && <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">{pendingCount}</span>}
-              </span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
-            {activity.slug && (
-              <button type="button" onClick={() => router.push(`/camp/${activity.slug}`)}
-                className="flex w-full items-center justify-between px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors">
-                View event page <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </button>
-            )}
-          </div>
         </div>
       )}
 
