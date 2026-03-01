@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { AddressInput } from "@/components/ui/AddressInput";
 
 /* ── types ──────────────────────────────────────────── */
 
@@ -50,7 +51,6 @@ export function PlayingWidget() {
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [customLocation, setCustomLocation] = useState("");
   const [showCustom, setShowCustom] = useState(false);
-  const customRef = useRef<HTMLInputElement>(null);
 
   /* loading */
   const [saving, setSaving] = useState(false);
@@ -291,7 +291,6 @@ export function PlayingWidget() {
                     onClick={() => {
                       setShowCustom(true);
                       setSelectedPreset(null);
-                      setTimeout(() => customRef.current?.focus(), 80);
                     }}
                     className={`
                       rounded-full px-4 py-2 text-sm font-medium border transition-colors
@@ -305,17 +304,28 @@ export function PlayingWidget() {
                   </button>
                 </div>
 
-                {/* Custom input */}
+                {/* Custom input — Google Places powered */}
                 {showCustom && (
                   <div>
-                    <input
-                      ref={customRef}
-                      type="text"
+                    <AddressInput
+                      mode="address"
                       value={customLocation}
-                      onChange={(e) => setCustomLocation(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") void handleStart(); }}
-                      placeholder="Type a location..."
-                      className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      onChange={setCustomLocation}
+                      onSelect={(sel) => {
+                        /* Prefer a short, human-readable label */
+                        const label =
+                          sel.line1 ||
+                          sel.city ||
+                          sel.formattedAddress ||
+                          customLocation;
+                        setCustomLocation(label);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") void handleStart();
+                      }}
+                      placeholder="Type a park, address, or place…"
+                      autoFocus
+                      className="rounded-xl"
                     />
                   </div>
                 )}

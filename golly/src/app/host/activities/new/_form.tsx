@@ -1661,6 +1661,15 @@ export default function CreateActivityPage({
                 <AddressInput
                   value={location}
                   onChange={setLocation}
+                  onSelect={(sel) => {
+                    /* Store full formatted address, stripping trailing country */
+                    const addr = sel.formattedAddress || sel.line1 || location;
+                    setLocation(
+                      addr
+                        .replace(/, USA$/, "")
+                        .replace(/, United States$/, ""),
+                    );
+                  }}
                   placeholder="Start typing an address"
                 />
               </div>
