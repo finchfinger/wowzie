@@ -500,39 +500,39 @@ export default function ActivitiesPage() {
           </div>
         )}
 
-        {/* Today + month nav */}
+        {/* Today + month nav — matches Google Calendar order: Today | ‹ | Label | › */}
         {viewMode === "calendar" && (
-          <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 ml-auto shrink-0">
             <button
               type="button"
               onClick={goToday}
-              className="rounded-lg border border-border bg-card px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-foreground hover:bg-accent transition-colors"
+              className="rounded-lg border border-border bg-card px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-foreground hover:bg-accent transition-colors mr-1 sm:mr-2"
             >
               Today
             </button>
             <button
               type="button"
               onClick={goPrev}
-              className="rounded-md hover:bg-accent h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center text-muted-foreground"
+              className="rounded-full hover:bg-accent h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center text-muted-foreground transition-colors"
               aria-label="Previous"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             </button>
+            {/* Label between the arrows */}
+            <span className="text-xs sm:text-sm font-semibold text-foreground min-w-[7rem] sm:min-w-[9rem] text-center hidden sm:inline">
+              {monthLabel}
+            </span>
+            <span className="text-[11px] font-semibold text-foreground min-w-[5.5rem] text-center sm:hidden">
+              {monthLabelShort}
+            </span>
             <button
               type="button"
               onClick={goNext}
-              className="rounded-md hover:bg-accent h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center text-muted-foreground"
+              className="rounded-full hover:bg-accent h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center text-muted-foreground transition-colors"
               aria-label="Next"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
             </button>
-            {/* Long label on sm+, short on mobile */}
-            <span className="text-xs sm:text-sm font-medium text-foreground hidden sm:inline">
-              {monthLabel}
-            </span>
-            <span className="text-xs font-medium text-foreground sm:hidden">
-              {monthLabelShort}
-            </span>
           </div>
         )}
       </div>

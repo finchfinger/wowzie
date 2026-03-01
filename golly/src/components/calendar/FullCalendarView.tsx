@@ -47,7 +47,7 @@ export function FullCalendarView({
   }, [viewMonth, calendarTab]);
 
   return (
-    <div className="golly-fc rounded-xl border border-border bg-card overflow-hidden">
+    <div className="golly-fc overflow-hidden rounded-xl bg-card border border-border/60">
       <FullCalendar
         ref={calRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -56,10 +56,11 @@ export function FullCalendarView({
         headerToolbar={false}
         events={events}
         height="auto"
+        fixedWeekCount={false}
         dayMaxEvents={3}
         eventDisplay="block"
         dateClick={(info) => onDateClick?.(info.dateStr)}
-        datesSet={(info) => onMonthChange?.(info.start)}
+        datesSet={(info) => onMonthChange?.(info.view.currentStart)}
         eventClassNames="!rounded-md !text-[11px] !font-medium !border-0 !px-1.5 !py-0.5 !leading-tight"
         dayCellClassNames="!border-border"
         dayHeaderClassNames="!text-xs !font-medium !text-muted-foreground !border-border !py-2"
