@@ -390,7 +390,15 @@ export default function ActivityDetailPage() {
   const meta = activity.meta ?? {};
   const dateRange = deriveDateRange(activity);
   const timeValue = deriveTimeLabel(activity);
-  const priceValue = formatMoney(activity.price_cents);
+  const cs = meta.classSchedule ?? {};
+  // For classes: prefer pricePerClass or pricePerMeeting stored in meta over price_cents
+  const classPriceLabel: string | null = (() => {
+    if (meta.activityKind !== "class") return null;
+    if (cs.pricePerClass) return `$${cs.pricePerClass} / class`;
+    if (cs.pricePerMeeting) return `$${cs.pricePerMeeting} / session`;
+    return null;
+  })();
+  const priceValue = classPriceLabel ?? formatMoney(activity.price_cents);
   const isPublished = meta.visibility === "public" || (meta.visibility == null && activity.is_published);
   const isVirtual = Boolean(meta.isVirtual);
   const capacityLabel = activity.capacity != null ? `${registrations} / ${activity.capacity}` : `${registrations}`;
@@ -475,7 +483,7 @@ export default function ActivityDetailPage() {
             <div className="rounded-2xl border border-border bg-card px-3 py-3 text-center">
               <p className="text-[11px] text-muted-foreground">Price</p>
               <p className="mt-0.5 text-lg font-semibold text-foreground">{priceValue ?? "—"}</p>
-              <p className="text-[11px] text-muted-foreground">per child</p>
+              <p className="text-[11px] text-muted-foreground">{classPriceLabel ? "per class" : "per child"}</p>
             </div>
             <div className="rounded-2xl border border-border bg-card px-3 py-3 text-center">
               <p className="text-[11px] text-muted-foreground">Registrations</p>

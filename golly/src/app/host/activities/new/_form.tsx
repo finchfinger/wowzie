@@ -504,7 +504,13 @@ const STEPS = [
 
 type StepKey = (typeof STEPS)[number]["key"];
 
-function Stepper({ currentIndex }: { currentIndex: number }) {
+function Stepper({
+  currentIndex,
+  onNavigate,
+}: {
+  currentIndex: number;
+  onNavigate: (index: number) => void;
+}) {
   return (
     <nav className="w-full" aria-label="Progress">
       {/* Line + dots row */}
@@ -515,24 +521,27 @@ function Stepper({ currentIndex }: { currentIndex: number }) {
         {currentIndex > 0 && (
           <div
             className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 bg-foreground transition-all"
-            style={{
-              width: `${(currentIndex / (STEPS.length - 1)) * 100}%`,
-            }}
+            style={{ width: `${(currentIndex / (STEPS.length - 1)) * 100}%` }}
           />
         )}
 
         {STEPS.map((step, i) => {
           const isActive = i === currentIndex;
           const isDone = i < currentIndex;
+          const isClickable = isDone; // can jump back to any completed step
           return (
             <div key={step.key} className="relative z-10 flex flex-col items-center">
-              <div
+              <button
+                type="button"
+                onClick={() => isClickable && onNavigate(i)}
+                disabled={!isClickable}
+                aria-current={isActive ? "step" : undefined}
                 className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
                   isDone
-                    ? "bg-foreground text-background"
+                    ? "bg-foreground text-background cursor-pointer hover:opacity-80"
                     : isActive
-                      ? "bg-foreground text-background"
-                      : "border-2 border-border bg-background text-muted-foreground"
+                      ? "bg-foreground text-background cursor-default"
+                      : "border-2 border-border bg-background text-muted-foreground cursor-default"
                 }`}
               >
                 {isDone ? (
@@ -542,7 +551,7 @@ function Stepper({ currentIndex }: { currentIndex: number }) {
                 ) : (
                   <span className="text-[11px] font-semibold">{i + 1}</span>
                 )}
-              </div>
+              </button>
             </div>
           );
         })}
@@ -554,14 +563,21 @@ function Stepper({ currentIndex }: { currentIndex: number }) {
           const isActive = i === currentIndex;
           const isDone = i < currentIndex;
           return (
-            <span
+            <button
               key={step.key}
-              className={`text-[11px] font-medium ${
-                isActive || isDone ? "text-foreground" : "text-muted-foreground"
+              type="button"
+              onClick={() => isDone && onNavigate(i)}
+              disabled={!isDone}
+              className={`text-[11px] font-medium transition-colors ${
+                isActive
+                  ? "text-foreground cursor-default"
+                  : isDone
+                    ? "text-foreground hover:text-primary cursor-pointer"
+                    : "text-muted-foreground cursor-default"
               }`}
             >
               {step.label}
-            </span>
+            </button>
           );
         })}
       </div>
@@ -739,7 +755,7 @@ export default function CreateActivityPage({
 
   /* Basics */
   const [activityKind, setActivityKind] = useState<ActivityKind>("camp");
-  const [visibility, setVisibility] = useState<Visibility>("private");
+  const [visibility, setVisibility] = useState<Visibility>("public");
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [locationType, setLocationType] = useState<LocationType>("in_person");
@@ -1943,7 +1959,7 @@ export default function CreateActivityPage({
       {/* Scheduling mode */}
       <FormCard title="Scheduling details" subtitle="Choose how students will book your classes.">
         <div className="grid grid-cols-2 gap-3">
-          <div className="relative">
+          <div className="relative flex flex-col">
             <RadioCard
               selected={classScheduleMode === "ongoing"}
               onClick={() => setClassScheduleMode("ongoing")}
@@ -1987,7 +2003,7 @@ export default function CreateActivityPage({
               </>
             )}
           </div>
-          <div className="relative">
+          <div className="relative flex flex-col">
             <RadioCard
               selected={classScheduleMode === "sessions"}
               onClick={() => setClassScheduleMode("sessions")}
@@ -2560,21 +2576,9 @@ export default function CreateActivityPage({
 
   const renderDetails = () => (
     <div className="space-y-8">
-      {/* Description + price + visibility */}
-      <FormCard
-        title="Tell families more"
-        subtitle="Share what makes your activity special."
-      >
+      {/* Pricing & visibility */}
+      <FormCard title="Pricing &amp; visibility">
         <div className="space-y-4">
-          <Field label="Description">
-            <Textarea
-              rows={5}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Share what makes this activity special, what kids will do, and what families should know."
-            />
-          </Field>
-
           <Field label="Price per child">
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
@@ -2622,19 +2626,6 @@ export default function CreateActivityPage({
             </Select>
           </Field>
         </div>
-      </FormCard>
-
-      {/* Additional details */}
-      <FormCard
-        title="Additional details"
-        subtitle="Anything else families should know before booking."
-      >
-        <Textarea
-          rows={3}
-          value={additionalDetails}
-          onChange={(e) => setAdditionalDetails(e.target.value)}
-          placeholder="What should students bring? Any special instructions?"
-        />
       </FormCard>
 
       {/* Add-on Services */}
@@ -3036,7 +3027,7 @@ export default function CreateActivityPage({
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 lg:py-10">
         {/* Stepper */}
         <div className="mb-8">
-          <Stepper currentIndex={stepIndex} />
+          <Stepper currentIndex={stepIndex} onNavigate={setStepIndex} />
         </div>
 
         {/* Step header */}
