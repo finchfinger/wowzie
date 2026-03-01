@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -38,6 +38,21 @@ const REFERRAL_SOURCES = [
 /* ── Helpers ── */
 
 const req = (s: string) => s.trim().length > 0;
+
+/** Format 10-digit US phone as (XXX) XXX-XXXX while the user types */
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  if (digits.length < 4) return digits;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+/** Format 9-digit EIN as XX-XXXXXXX while the user types */
+function formatEin(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 9);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+}
 
 function isAddressSelection(v: unknown): v is AddressSelection {
   if (!v || typeof v !== "object") return false;
@@ -215,6 +230,12 @@ export default function HostApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Pre-fill email from signed-in account on first load
+  useEffect(() => {
+    if (user?.email && !emailAddress) setEmailAddress(user.email);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
+
   const validation = useMemo(() => {
     const missing: string[] = [];
     if (!req(emailAddress)) missing.push("Email");
@@ -323,10 +344,10 @@ export default function HostApplyPage() {
         { onConflict: "user_id" },
       );
 
-      if (upsertErr) { setError("We couldn\u2019t submit your application. Please try again."); setSubmitting(false); return; }
+      if (upsertErr) { setError("We could not submit your application. Please try again."); setSubmitting(false); return; }
       router.push("/host/reviewing");
     } catch {
-      setError("We couldn\u2019t submit your application. Please try again.");
+      setError("We could not submit your application. Please try again.");
       setSubmitting(false);
     }
   };
@@ -362,7 +383,7 @@ export default function HostApplyPage() {
                 </Field>
 
                 <Field label="EIN (Employer Identification Number)" required>
-                  <TextInput value={ein} onChange={setEin} disabled={submitting} placeholder="XX-XXXXXXX" error={!req(ein) && !!error} />
+                  <TextInput value={ein} onChange={(v) => setEin(formatEin(v))} disabled={submitting} placeholder="XX-XXXXXXX" error={!req(ein) && !!error} />
                 </Field>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -379,12 +400,12 @@ export default function HostApplyPage() {
                     <TextInput type="email" value={emailAddress} onChange={setEmailAddress} disabled={submitting} placeholder="you@domain.com" error={!req(emailAddress) && !!error} />
                   </Field>
                   <Field label="Telephone number" required>
-                    <TextInput value={phone} onChange={setPhone} disabled={submitting} placeholder="(312) 555-0123" error={!req(phone) && !!error} />
+                    <TextInput value={phone} onChange={(v) => setPhone(formatPhone(v))} disabled={submitting} placeholder="(312) 555-0123" error={!req(phone) && !!error} />
                   </Field>
                 </div>
 
                 <Field label="Address" required>
-                  <AddressInput value={formattedAddress} onChange={(next) => { setFormattedAddress(next); setAddress1(next); }} disabled={submitting} placeholder="Your organization\u2019s physical address" error={!req(address1) && !!error} onSelect={handleAddressSelect} />
+                  <AddressInput value={formattedAddress} onChange={(next) => { setFormattedAddress(next); setAddress1(next); }} disabled={submitting} placeholder="Your organization's physical address" error={!req(address1) && !!error} onSelect={handleAddressSelect} />
                 </Field>
 
                 <Field label="Suite (if applicable)">
@@ -404,7 +425,7 @@ export default function HostApplyPage() {
                 </div>
 
                 <Field label="Tell families about your organization" required>
-                  <TextareaInput value={aboutOrg} onChange={setAboutOrg} disabled={submitting} placeholder="What you offer, who it\u2019s for, and what families should expect." error={!req(aboutOrg) && !!error} />
+                  <TextareaInput value={aboutOrg} onChange={setAboutOrg} disabled={submitting} placeholder="What you offer, who it's for, and what families should expect." error={!req(aboutOrg) && !!error} />
                 </Field>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -434,7 +455,7 @@ export default function HostApplyPage() {
                     <TextInput type="email" value={emailAddress} onChange={setEmailAddress} disabled={submitting} placeholder="you@domain.com" error={!req(emailAddress) && !!error} />
                   </Field>
                   <Field label="Telephone number" required>
-                    <TextInput value={phone} onChange={setPhone} disabled={submitting} placeholder="(312) 555-0123" error={!req(phone) && !!error} />
+                    <TextInput value={phone} onChange={(v) => setPhone(formatPhone(v))} disabled={submitting} placeholder="(312) 555-0123" error={!req(phone) && !!error} />
                   </Field>
                 </div>
 
@@ -496,7 +517,7 @@ export default function HostApplyPage() {
                 <CheckboxCard
                   id="agree-terms"
                   title="Terms of service"
-                  description="I agree to the platform\u2019s terms of service, privacy policy, and host guidelines."
+                  description="I agree to the platform's terms of service, privacy policy, and host guidelines."
                   checked={agreeTerms}
                   disabled={submitting}
                   onChange={setAgreeTerms}

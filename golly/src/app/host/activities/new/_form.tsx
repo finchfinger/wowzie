@@ -2481,14 +2481,18 @@ export default function CreateActivityPage({
                   >
                     <IconCopy className="h-4 w-4" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => removeActivity(activity.id)}
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive transition-colors"
-                    aria-label="Remove activity"
-                  >
-                    <IconTrash className="h-4 w-4" />
-                  </button>
+                  {/* Only show delete when there are more than 3 — the first
+                      three slots are the mandatory minimum */}
+                  {activities.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => removeActivity(activity.id)}
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive transition-colors"
+                      aria-label="Remove activity"
+                    >
+                      <IconTrash className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
