@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
-import { LoginModal } from "@/components/auth/LoginModal";
-import { SignUpModal } from "@/components/auth/SignUpModal";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { Button } from "@/components/ui/button";
 
 import {
   Heart,
@@ -28,12 +28,26 @@ export function Header() {
   const pathname = usePathname();
   const isLoggedIn = !!user;
 
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [signupOpen, setSignupOpen] = useState(false);
+  // Hide header search on homepage until hero is scrolled past
+  const isHomepage = pathname === "/";
+  const [heroPassed, setHeroPassed] = useState(false);
+  useEffect(() => {
+    if (!isHomepage) return;
+    setHeroPassed(false);
+    const onScroll = () => setHeroPassed(window.scrollY > 320);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isHomepage]);
+  const showHeaderSearch = !isHomepage || heroPassed;
+
+  const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isApprovedHost, setIsApprovedHost] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   // Close menu on route change
   useEffect(() => {
@@ -91,6 +105,63 @@ export function Header() {
     return () => window.removeEventListener("golly:play-changed", handler as EventListener);
   }, []);
 
+  // Load unread message count + subscribe to realtime updates
+  useEffect(() => {
+    if (!user?.id) { setUnreadCount(0); return; }
+
+    const fetchUnread = async () => {
+      const { data } = await supabase
+        .from("conversations")
+        .select("unread_count")
+        .eq("user_id", user.id);
+      const total = (data ?? []).reduce((sum, c) => sum + (Number(c.unread_count) || 0), 0);
+      setUnreadCount(total);
+    };
+    void fetchUnread();
+
+    const channel = supabase
+      .channel(`header-unread-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "conversations", filter: `user_id=eq.${user.id}` },
+        () => { void fetchUnread(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
+
+  // Load unread notification count + subscribe to realtime
+  useEffect(() => {
+    if (!user?.id) { setUnreadNotifCount(0); return; }
+
+    const fetchNotifUnread = async () => {
+      const { count } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+      setUnreadNotifCount(count ?? 0);
+    };
+    void fetchNotifUnread();
+
+    const channel = supabase
+      .channel(`header-notif-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => setUnreadNotifCount((n) => n + 1)
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => { void fetchNotifUnread(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
+
   const handlePlayClick = () => {
     window.dispatchEvent(new CustomEvent("golly:toggle-play"));
   };
@@ -105,7 +176,7 @@ export function Header() {
     if (isLoggedIn) {
       router.push(isApprovedHost ? "/host/listings" : "/host");
     } else {
-      setLoginOpen(true);
+      setAuthOpen(true);
     }
   };
 
@@ -118,7 +189,6 @@ export function Header() {
   const menuItems: Array<{ label: string; href: string; icon: LucideIcon }> = [
     { label: "Wishlists", href: "/wishlist", icon: Heart },
     { label: "My Activities", href: "/activities", icon: CalendarDays },
-    { label: "Calendars", href: "/calendars", icon: CalendarDays },
     { label: "My Friends", href: "/friends", icon: Users },
     { label: "Messages", href: "/messages", icon: MessageSquare },
     { label: "Notifications", href: "/notifications", icon: Bell },
@@ -131,7 +201,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/40">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto max-w-screen-2xl px-4 sm:px-6">
           <div className="h-14 flex items-center justify-between gap-3">
 
@@ -145,8 +215,8 @@ export function Header() {
               </span>
             </Link>
 
-            {/* Search */}
-            <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-sm mx-4">
+            {/* Search — hidden on homepage until hero is scrolled past */}
+            <form onSubmit={handleSearch} className={`hidden sm:flex flex-1 max-w-sm mx-4 transition-opacity duration-200 ${showHeaderSearch ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
               <div className="relative w-full">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                   <svg
@@ -203,17 +273,31 @@ export function Header() {
                       <circle cx="12" cy="3" r="1" fill="currentColor" stroke="none" />
                     </svg>
                   </Link>
+
+                  {/* Bell — notifications */}
+                  <Link
+                    href="/notifications"
+                    className="relative h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
+                    aria-label="Notifications"
+                    title="Notifications"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unreadNotifCount > 0 && (
+                      <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-background" />
+                    )}
+                  </Link>
                 </>
               )}
 
               {/* Host button */}
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleHostButton}
-                className="hidden md:inline-flex items-center rounded-full border border-foreground/20 px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors ml-1"
+                className="hidden md:inline-flex ml-1"
               >
                 {isLoggedIn ? hostLabel : "Become a Host"}
-              </button>
+              </Button>
 
               {isLoggedIn ? (
                 <>
@@ -248,6 +332,10 @@ export function Header() {
                         <line x1="4" y1="12" x2="20" y2="12" />
                         <line x1="4" y1="18" x2="20" y2="18" />
                       </svg>
+                      {/* Unread badge dot — messages or notifications */}
+                      {(unreadCount > 0 || unreadNotifCount > 0) && (
+                        <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-background" />
+                      )}
                     </button>
 
                     {/* Dropdown menu */}
@@ -301,6 +389,12 @@ export function Header() {
                             {menuItems.map((item) => {
                               const Icon = item.icon;
                               const isActive = pathname === item.href;
+                              const badge =
+                                item.href === "/messages" && unreadCount > 0
+                                  ? unreadCount
+                                  : item.href === "/notifications" && unreadNotifCount > 0
+                                  ? unreadNotifCount
+                                  : 0;
                               return (
                                 <Link
                                   key={item.href}
@@ -316,6 +410,11 @@ export function Header() {
                                     }`}
                                   />
                                   {item.label}
+                                  {badge > 0 && (
+                                    <span className="ml-auto h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
+                                      {badge > 99 ? "99+" : badge}
+                                    </span>
+                                  )}
                                 </Link>
                               );
                             })}
@@ -339,21 +438,10 @@ export function Header() {
                 </>
               ) : (
                 /* Signed out */
-                <div className="flex items-center gap-2 ml-1">
-                  <button
-                    type="button"
-                    onClick={() => setLoginOpen(true)}
-                    className="inline-flex items-center rounded-full border border-foreground/20 px-4 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-                  >
+                <div className="flex items-center ml-1">
+                  <Button size="sm" onClick={() => setAuthOpen(true)}>
                     Sign in
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSignupOpen(true)}
-                    className="hidden sm:inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                  >
-                    Sign up
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -361,15 +449,9 @@ export function Header() {
         </div>
       </header>
 
-      <LoginModal
-        isOpen={loginOpen}
-        onClose={() => setLoginOpen(false)}
-        onSwitchToSignup={() => setSignupOpen(true)}
-      />
-      <SignUpModal
-        isOpen={signupOpen}
-        onClose={() => setSignupOpen(false)}
-        onSwitchToLogin={() => setLoginOpen(true)}
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
       />
     </>
   );

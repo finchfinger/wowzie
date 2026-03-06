@@ -6,8 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { LoginModal } from "@/components/auth/LoginModal";
-import { SignUpModal } from "@/components/auth/SignUpModal";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 /* ── states ─────────────────────────────────────────── */
 
@@ -24,8 +23,7 @@ function AcceptShareInner() {
 
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState("");
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [signupOpen, setSignupOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -164,8 +162,8 @@ function AcceptShareInner() {
               </p>
             </div>
             <div className="flex flex-col gap-2 pt-2">
-              <Button onClick={() => setLoginOpen(true)}>Sign in</Button>
-              <Button variant="outline" onClick={() => setSignupOpen(true)}>
+              <Button onClick={() => setAuthOpen(true)}>Sign in</Button>
+              <Button variant="outline" onClick={() => setAuthOpen(true)}>
                 Create an account
               </Button>
             </div>
@@ -173,16 +171,10 @@ function AcceptShareInner() {
         )}
       </div>
 
-      {/* Auth modals */}
-      <LoginModal
-        isOpen={loginOpen}
-        onClose={() => setLoginOpen(false)}
-        onSwitchToSignup={() => setSignupOpen(true)}
-      />
-      <SignUpModal
-        isOpen={signupOpen}
-        onClose={() => setSignupOpen(false)}
-        onSwitchToLogin={() => setLoginOpen(true)}
+      {/* Auth modal */}
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
       />
     </main>
   );
