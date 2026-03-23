@@ -96,6 +96,7 @@ export default function ProfilePage() {
               email: authData.user.email ?? null,
               city: null,
               about: null,
+              avatar_url: null,
             };
             // Best-effort save to DB — don't block page load on this
             supabase.from("profiles").upsert(
