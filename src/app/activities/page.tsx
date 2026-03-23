@@ -782,60 +782,67 @@ export default function ActivitiesPage() {
 
           {/* Main area */}
           <div className="flex-1 min-w-0">
-            {/* List view */}
-            {viewMode === "list" && (
-              <CalendarEventList
-                events={listEvents}
-                loading={false}
-                error={null}
-                mode="list"
-              />
-            )}
-
-            {/* Calendar agenda (schedule) */}
-            {viewMode === "calendar" && calendarTab === "agenda" && (
-              <CalendarEventList
-                events={upcomingEvents}
-                loading={false}
-                error={null}
-                mode="agenda"
-              />
-            )}
-
-            {/* Calendar month / week (FullCalendar) */}
-            {viewMode === "calendar" &&
-              (calendarTab === "month" || calendarTab === "week") && (
-                <FullCalendarView
-                  events={fullCalendarEvents}
-                  viewMonth={viewMonth}
-                  calendarTab={calendarTab}
-                  firstUpcomingDate={firstUpcomingDate}
-                  onDateClick={(dateStr: string) => {
-                    /* on mobile clicking a day switches to agenda for that day */
-                    if (window.innerWidth < 640) {
-                      setCalendarTab("agenda");
-                    }
-                  }}
-                  onMonthChange={(d: Date) => {
-                    const next = monthStart(d);
-                    setViewMonth((prev) =>
-                      prev.getTime() === next.getTime() ? prev : next,
-                    );
-                  }}
-                />
-              )}
-
-            {/* Empty state */}
-            {allEvents.length === 0 && !loading && (
-              <div className="rounded-2xl bg-card p-6 sm:p-8 text-center mt-4">
-                <div className="text-3xl mb-2">📅</div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  No upcoming activities on your calendar yet.
+            {/* Empty state — shown instead of calendar/list when no events */}
+            {allEvents.length === 0 && !loading ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-8 py-16 text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-2xl">
+                  🏕️
+                </div>
+                <p className="text-base font-semibold text-foreground mb-1">
+                  No activities yet
                 </p>
-                <Button size="sm" onClick={() => router.push("/search")}>
+                <p className="text-sm text-muted-foreground max-w-xs mb-5">
+                  Browse camps and classes near you — once you book something it'll show up here.
+                </p>
+                <Button onClick={() => router.push("/search")}>
                   Find an activity
                 </Button>
               </div>
+            ) : (
+              <>
+                {/* List view */}
+                {viewMode === "list" && (
+                  <CalendarEventList
+                    events={listEvents}
+                    loading={false}
+                    error={null}
+                    mode="list"
+                  />
+                )}
+
+                {/* Calendar agenda (schedule) */}
+                {viewMode === "calendar" && calendarTab === "agenda" && (
+                  <CalendarEventList
+                    events={upcomingEvents}
+                    loading={false}
+                    error={null}
+                    mode="agenda"
+                  />
+                )}
+
+                {/* Calendar month / week (FullCalendar) */}
+                {viewMode === "calendar" &&
+                  (calendarTab === "month" || calendarTab === "week") && (
+                    <FullCalendarView
+                      events={fullCalendarEvents}
+                      viewMonth={viewMonth}
+                      calendarTab={calendarTab}
+                      firstUpcomingDate={firstUpcomingDate}
+                      onDateClick={(dateStr: string) => {
+                        /* on mobile clicking a day switches to agenda for that day */
+                        if (window.innerWidth < 640) {
+                          setCalendarTab("agenda");
+                        }
+                      }}
+                      onMonthChange={(d: Date) => {
+                        const next = monthStart(d);
+                        setViewMonth((prev) =>
+                          prev.getTime() === next.getTime() ? prev : next,
+                        );
+                      }}
+                    />
+                  )}
+              </>
             )}
           </div>
         </div>
