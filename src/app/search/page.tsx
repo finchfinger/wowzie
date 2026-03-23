@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { getPriceUnit } from "@/lib/pricing";
@@ -154,9 +155,9 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
   return (
     <div className="flex items-center gap-4 py-4 border-b border-border last:border-0">
       <Link href={`/camp/${camp.slug}`} className="shrink-0">
-        <div className="h-[72px] w-[72px] rounded-xl overflow-hidden bg-muted">
+        <div className="relative h-[72px] w-[72px] rounded-xl overflow-hidden bg-muted">
           {image
-            ? <img src={image} alt={camp.name} className="h-full w-full object-cover" />
+            ? <Image src={image} alt={camp.name} fill sizes="72px" className="object-cover" />
             : <div className="h-full w-full bg-muted" />}
         </div>
       </Link>

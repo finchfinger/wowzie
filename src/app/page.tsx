@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { CampCard, CampCardSkeleton } from "@/components/CampCard";
 import type { Camp } from "@/components/CampCard";
@@ -303,8 +304,9 @@ export default function HomePage() {
           .select(CAMP_CARD_COLUMNS)
           .eq("is_published", true)
           .eq("is_active", true)
+          .order("featured", { ascending: false })
           .order("created_at", { ascending: false })
-          .limit(220);
+          .limit(120);
 
         if (dbError) {
           setError("Could not load activities.");
@@ -696,13 +698,14 @@ export default function HomePage() {
         </div>
 
         <div className="relative">
-          <div className="aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted">
+            <Image
               src="/images/home-hero-kids.jpg"
               alt="Kids at camp having fun"
-              className="h-full w-full object-cover"
-              loading="eager"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+              priority
             />
           </div>
         </div>

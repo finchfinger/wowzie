@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { MoreVertical } from "lucide-react";
 
 export type ActivityListItemProps = {
@@ -30,10 +31,9 @@ export function ActivityListItem({
         className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
         {/* Thumbnail */}
-        <div className="h-11 w-11 rounded-xl overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+        <div className="relative h-11 w-11 rounded-xl overflow-hidden bg-muted shrink-0 flex items-center justify-center">
           {heroImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={heroImageUrl} alt={title} className="h-full w-full object-cover" />
+            <Image src={heroImageUrl} alt={title} fill sizes="44px" className="object-cover" />
           ) : (
             <span className="text-xl">🏕️</span>
           )}

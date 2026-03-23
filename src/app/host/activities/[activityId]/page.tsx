@@ -3,6 +3,7 @@
 import { useEffect, useRef, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { getHeroImage, getGalleryImages } from "@/lib/images";
 import { Button } from "@/components/ui/button";
@@ -1080,8 +1081,8 @@ export default function ActivityDetailPage() {
 
           {/* Hero image */}
           {heroUrl && (
-            <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
-              <img src={heroUrl} alt={activity.name} className="h-full w-full object-cover" />
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
+              <Image src={heroUrl} alt={activity.name} fill sizes="(max-width: 768px) 100vw, 700px" className="object-cover" />
             </div>
           )}
 
@@ -1242,7 +1243,7 @@ export default function ActivityDetailPage() {
               <div className="grid grid-cols-4 gap-2">
                 {allPhotos.slice(0, 8).map((url, i) => (
                   <div key={url} className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
-                    <img src={url} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                    <Image src={url} alt={`Photo ${i + 1}`} fill sizes="(max-width: 768px) 25vw, 160px" className="object-cover" />
                     {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">Cover</span>}
                   </div>
                 ))}

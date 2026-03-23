@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { WowziLogo } from "@/components/ui/WowziLogo";
 import { Button } from "@/components/ui/button";
 import {
@@ -203,12 +204,11 @@ export function HeaderBar({
                 {/* Profile avatar — 48 × 48 */}
                 <Link
                   href="/profile"
-                  className="h-12 w-12 rounded-full overflow-hidden flex items-center justify-center bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity ml-1 shrink-0"
+                  className="relative h-12 w-12 rounded-full overflow-hidden flex items-center justify-center bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity ml-1 shrink-0"
                   aria-label="View profile"
                 >
                   {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                    <Image src={avatarUrl} alt="Profile" fill sizes="48px" className="object-cover" />
                   ) : (
                     <span>{userInitial}</span>
                   )}

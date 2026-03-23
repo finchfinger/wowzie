@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { useCampFavorite } from "@/hooks/useCampFavorite";
@@ -208,7 +209,9 @@ export default function CampDetailPage() {
     const load = async () => {
       setLoadingCamp(true);
       setCampError(null);
-      const { data, error } = await supabase.from("camps").select("*").eq("slug", slug).maybeSingle();
+      const { data, error } = await supabase.from("camps")
+        .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, location_city, location_neighborhood, is_published")
+        .eq("slug", slug).maybeSingle();
       if (error || !data) { setCampError("We couldn't load this camp."); setLoadingCamp(false); return; }
       setCamp(data as FullCamp);
       setLoadingCamp(false);
@@ -228,28 +231,32 @@ export default function CampDetailPage() {
   useEffect(() => {
     if (!camp?.id) return;
     const loadBookingInfo = async () => {
-      const confirmedRes = await supabase
-        .from("bookings").select("*", { count: "exact", head: true })
-        .eq("camp_id", camp.id).eq("status", "confirmed");
-      if (!confirmedRes.error) setConfirmedCount(confirmedRes.count ?? null);
-      if (user?.id) {
-        const bookingRes = await supabase
-          .from("bookings").select("id, status")
-          .eq("camp_id", camp.id).eq("user_id", user.id)
-          .order("created_at", { ascending: false }).limit(1).maybeSingle();
-        setBooking(bookingRes.data ? (bookingRes.data as UserBooking) : null);
-      }
-
-      // Load published reviews
-      try {
-        const { data: reviewRows } = await supabase
-          .from("reviews")
+      // Run all independent queries in parallel
+      const [confirmedRes, bookingRes, reviewsRes, alreadyReviewedRes] = await Promise.all([
+        supabase
+          .from("bookings").select("*", { count: "exact", head: true })
+          .eq("camp_id", camp.id).eq("status", "confirmed"),
+        user?.id
+          ? supabase.from("bookings").select("id, status")
+              .eq("camp_id", camp.id).eq("user_id", user.id)
+              .order("created_at", { ascending: false }).limit(1).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        supabase.from("reviews")
           .select("id, rating, body, created_at, reviewer_id")
-          .eq("camp_id", camp.id)
-          .eq("is_published", true)
-          .order("created_at", { ascending: false })
-          .limit(20);
+          .eq("camp_id", camp.id).eq("is_published", true)
+          .order("created_at", { ascending: false }).limit(20),
+        user?.id
+          ? supabase.from("reviews").select("id", { count: "exact", head: true })
+              .eq("camp_id", camp.id).eq("reviewer_id", user.id)
+          : Promise.resolve({ count: 0, error: null }),
+      ]);
 
+      if (!confirmedRes.error) setConfirmedCount(confirmedRes.count ?? null);
+      setBooking(bookingRes.data ? (bookingRes.data as UserBooking) : null);
+
+      // Reviewer profiles still depend on reviews result — one extra hop, unavoidable
+      try {
+        const reviewRows = reviewsRes.data;
         if (reviewRows && reviewRows.length > 0) {
           const reviewerIds = [...new Set((reviewRows as any[]).map((r) => r.reviewer_id))];
           const { data: profileRows } = await supabase
@@ -273,16 +280,7 @@ export default function CampDetailPage() {
             }))
           );
         }
-
-        // Check if current user already reviewed this camp
-        if (user?.id) {
-          const { count } = await supabase
-            .from("reviews")
-            .select("id", { count: "exact", head: true })
-            .eq("camp_id", camp.id)
-            .eq("reviewer_id", user.id);
-          setAlreadyReviewed((count ?? 0) > 0);
-        }
+        setAlreadyReviewed(("count" in alreadyReviewedRes ? (alreadyReviewedRes.count ?? 0) : 0) > 0);
       } catch {
         // reviews table may not exist yet — silently skip
       }
@@ -594,12 +592,14 @@ export default function CampDetailPage() {
 
             {/* Main image */}
             <div className="relative overflow-hidden rounded-3xl bg-muted aspect-square">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={images[selectedIdx]}
                 alt={name}
-                className="w-full h-full object-cover cursor-zoom-in"
+                fill
+                sizes="(max-width: 1024px) 100vw, 360px"
+                className="object-cover cursor-zoom-in"
                 onClick={() => { setLightboxIdx(selectedIdx); setLightboxOpen(true); }}
+                priority
               />
               <div className="absolute top-3 right-3 flex gap-2">
                 <button
@@ -629,10 +629,9 @@ export default function CampDetailPage() {
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {images.map((src, i) => (
                   <button key={i} type="button" onClick={() => setSelectedIdx(i)}
-                    className={`flex-shrink-0 h-14 w-14 rounded-xl overflow-hidden border-2 transition-colors ${i === selectedIdx ? "border-primary" : "border-transparent hover:border-muted-foreground/30"}`}
+                    className={`relative flex-shrink-0 h-14 w-14 rounded-xl overflow-hidden border-2 transition-colors ${i === selectedIdx ? "border-primary" : "border-transparent hover:border-muted-foreground/30"}`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                    <Image src={src} alt={`Photo ${i + 1}`} fill sizes="56px" className="object-cover" />
                   </button>
                 ))}
               </div>

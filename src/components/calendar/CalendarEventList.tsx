@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import type { CalendarEvent } from "@/hooks/useMyCalendar";
 
 type Props = {
@@ -69,10 +70,9 @@ export function ActivityRow({ ev }: { ev: CalendarEvent }) {
       className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 hover:bg-accent/30 transition-colors cursor-pointer select-none"
     >
       {/* Thumbnail */}
-      <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted shrink-0">
+      <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-muted shrink-0">
         {ev.camp.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={ev.camp.image_url} alt={ev.camp.name} className="w-full h-full object-cover" />
+          <Image src={ev.camp.image_url} alt={ev.camp.name} fill sizes="48px" className="object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-xl">🏕️</div>
         )}

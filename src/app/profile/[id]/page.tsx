@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { ActivityListItem } from "@/components/ActivityListItem";
 
@@ -198,9 +199,9 @@ export default function ProfilePage() {
       {/* ── Profile header ── */}
       <div className="flex items-center gap-4">
         {/* Avatar */}
-        <div className="h-16 w-16 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center text-2xl font-semibold text-muted-foreground">
+        <div className="relative h-16 w-16 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center text-2xl font-semibold text-muted-foreground">
           {profile.avatar_url
-            ? <img src={profile.avatar_url} alt={displayName} className="h-full w-full object-cover" />
+            ? <Image src={profile.avatar_url} alt={displayName} fill sizes="64px" className="object-cover" />
             : displayName.charAt(0).toUpperCase()
           }
         </div>

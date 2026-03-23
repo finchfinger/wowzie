@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCampFavorite } from "@/hooks/useCampFavorite";
 import { getPriceUnit } from "@/lib/pricing";
 
@@ -137,13 +138,13 @@ export function CampCard({
         className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2"
         aria-label={`View ${name}`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-          <img
+          <Image
             src={images[safeIndex]}
             alt={name}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         </div>
 

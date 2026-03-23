@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 
 /* ------------------------------------------------------------------ */
@@ -211,8 +212,8 @@ export default function BookingDetailPage() {
 
       {/* Hero image */}
       {heroImage && (
-        <div className="overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
-          <img src={heroImage} alt={camp.name} className="h-full w-full object-cover" />
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
+          <Image src={heroImage} alt={camp.name} fill sizes="(max-width: 768px) 100vw, 700px" className="object-cover" />
         </div>
       )}
 
