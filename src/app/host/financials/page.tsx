@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,13 @@ type BookingRow = {
   camps: { name: string; host_id: string } | null;
 };
 
+type ConnectStatus =
+  | "loading"
+  | "not_configured"
+  | "not_connected"
+  | "pending"
+  | "connected";
+
 const fmt = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -23,9 +31,14 @@ const fmtDate = (iso: string) =>
 
 export default function HostFinancialsPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [connectStatus, setConnectStatus] = useState<ConnectStatus>("loading");
+  const [connectLoading, setConnectLoading] = useState(false);
 
+  // Load bookings
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -37,7 +50,6 @@ export default function HostFinancialsPage() {
         .order("created_at", { ascending: false })
         .limit(100);
 
-      // Filter to only bookings for this host's camps
       const mine = ((data || []) as unknown as BookingRow[]).filter(
         (b) => b.camps?.host_id === user.id
       );
@@ -46,6 +58,63 @@ export default function HostFinancialsPage() {
     };
     void load();
   }, [user]);
+
+  // Load Stripe Connect status
+  useEffect(() => {
+    if (!user) return;
+    const fetchStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch("/api/stripe/connect/status", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const json = await res.json() as { status: ConnectStatus };
+        setConnectStatus(json.status);
+      }
+    };
+    void fetchStatus();
+  }, [user]);
+
+  // Handle return from Stripe onboarding
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const refresh = searchParams.get("refresh");
+    if (connected === "true" || refresh === "true") {
+      // Re-fetch status after returning from Stripe
+      setConnectStatus("loading");
+      const refetch = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const res = await fetch("/api/stripe/connect/status", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = await res.json() as { status: ConnectStatus };
+          setConnectStatus(json.status);
+        }
+        // Clean up URL params
+        router.replace("/host/financials");
+      };
+      void refetch();
+    }
+  }, [searchParams, router]);
+
+  const handleConnectStripe = async () => {
+    setConnectLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch("/api/stripe/connect/onboard", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (res.ok) {
+      const json = await res.json() as { url: string };
+      window.location.href = json.url;
+    } else {
+      setConnectLoading(false);
+    }
+  };
 
   const totalGross = bookings.reduce((sum, b) => sum + (b.total_cents || 0), 0);
   const totalFee = Math.round(totalGross * FEE_RATE);
@@ -140,21 +209,53 @@ export default function HostFinancialsPage() {
         )}
       </div>
 
-      {/* Stripe connect */}
+      {/* Stripe Connect */}
       <div>
         <h2 className="text-sm font-semibold text-foreground mb-2">Payments</h2>
         <p className="text-xs text-muted-foreground max-w-xl mb-3">
           Wowzi charges a 5% host fee on each booking, automatically deducted from your payout.
           This covers payment processing, customer support, and platform maintenance.
         </p>
+
         <div className="flex items-center justify-between rounded-2xl bg-muted/50 px-4 py-3">
           <div>
             <p className="text-sm font-medium text-foreground">Stripe</p>
-            <p className="text-xs text-muted-foreground">
-              Connect your Stripe account to accept payments securely and get paid quickly.
-            </p>
+            {connectStatus === "connected" && (
+              <p className="text-xs text-emerald-600">Connected — payouts enabled</p>
+            )}
+            {connectStatus === "pending" && (
+              <p className="text-xs text-amber-600">Finish setting up your account to receive payouts</p>
+            )}
+            {(connectStatus === "not_connected" || connectStatus === "not_configured") && (
+              <p className="text-xs text-muted-foreground">
+                Connect your Stripe account to accept payments and get paid directly.
+              </p>
+            )}
           </div>
-          <Button size="sm">Get started</Button>
+
+          {connectStatus === "loading" && (
+            <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+          )}
+          {connectStatus === "connected" && (
+            <a
+              href="https://dashboard.stripe.com/express"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-foreground underline underline-offset-2"
+            >
+              Manage payouts →
+            </a>
+          )}
+          {connectStatus === "pending" && (
+            <Button size="sm" onClick={handleConnectStripe} disabled={connectLoading}>
+              {connectLoading ? "Redirecting…" : "Finish setup"}
+            </Button>
+          )}
+          {(connectStatus === "not_connected" || connectStatus === "not_configured") && (
+            <Button size="sm" onClick={handleConnectStripe} disabled={connectLoading || connectStatus === "not_configured"}>
+              {connectLoading ? "Redirecting…" : "Get started"}
+            </Button>
+          )}
         </div>
       </div>
     </div>

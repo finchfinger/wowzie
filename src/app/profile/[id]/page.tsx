@@ -15,6 +15,7 @@ type Profile = {
   email: string | null;
   city: string | null;
   about: string | null;
+  avatar_url: string | null;
 };
 
 type UpcomingActivity = {
@@ -75,7 +76,7 @@ export default function ProfilePage() {
 
         const { data: pRow, error: pErr } = await supabase
           .from("profiles")
-          .select("id, legal_name, preferred_first_name, email, city, about")
+          .select("id, legal_name, preferred_first_name, email, city, about, avatar_url")
           .eq("id", targetId)
           .maybeSingle();
 
@@ -197,7 +198,10 @@ export default function ProfilePage() {
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <div className="h-16 w-16 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center text-2xl font-semibold text-muted-foreground">
-          {displayName.charAt(0).toUpperCase()}
+          {profile.avatar_url
+            ? <img src={profile.avatar_url} alt={displayName} className="h-full w-full object-cover" />
+            : displayName.charAt(0).toUpperCase()
+          }
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">{displayName}</h1>
       </div>

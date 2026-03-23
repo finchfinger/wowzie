@@ -72,6 +72,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Notify the host that a new booking is pending
+    const { data: camp } = await supabase
+      .from("camps")
+      .select("host_id")
+      .eq("id", campId)
+      .single();
+
+    if (camp?.host_id) {
+      await supabase.from("notifications").insert({
+        user_id: camp.host_id,
+        type: "booking_pending",
+        title: "New booking request",
+        body: `${email} wants to book ${campName}.`,
+        meta: {
+          actorName: email,
+          campName,
+          campId,
+          bookingId: booking.id,
+        },
+      });
+    }
+
     const origin = req.headers.get("origin") || "http://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({

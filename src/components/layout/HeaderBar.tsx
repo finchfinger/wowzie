@@ -121,7 +121,7 @@ export function HeaderBar({
               showHeaderSearch ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
             }`}
           >
-            <div className="relative w-full flex items-center h-12 rounded-full bg-muted/70 shadow-sm hover:shadow-md focus-within:shadow-md focus-within:bg-muted/90 transition-all">
+            <div className="relative w-full flex items-center h-12 rounded-full bg-white transition-colors">
               <div className="pointer-events-none absolute left-4 flex items-center">
                 <svg
                   width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -143,46 +143,56 @@ export function HeaderBar({
           </form>
 
           {/* Right side */}
-          <div className="flex items-center gap-0.5 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
 
             {isLoggedIn && (
               <>
-                {/* Playing toggle icon button */}
-                <button
-                  type="button"
+                {/* Playing status — desktop only, uses Button so corners match */}
+                <Button
+                  variant="outline"
                   role="switch"
                   aria-checked={isPlaying}
                   onClick={onPlayToggle}
                   aria-label={isPlaying ? "Playing — tap to stop" : "Not playing — tap to start"}
-                  title={isPlaying ? "Playing" : "Not playing"}
-                  className={`${iconBtn} transition-colors ${
-                    isPlaying ? "text-green-500" : "text-muted-foreground"
-                  }`}
+                  className={`hidden md:inline-flex h-12 px-4 gap-2 ${isPlaying ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100" : ""}`}
                 >
-                  <span className="material-symbols-rounded" style={{ fontSize: "26px" }}>
-                    {isPlaying ? "toggle_on" : "toggle_off"}
-                  </span>
-                </button>
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${isPlaying ? "bg-green-500" : "bg-red-500"}`} />
+                  {isPlaying ? "Playing" : "Not Playing"}
+                </Button>
 
-                {/* AI Chat */}
+                {/* AI Chat — robot_2 with light purple bg */}
                 <button
                   type="button"
                   onClick={onAIChatClick}
-                  className={`${iconBtn} text-muted-foreground`}
                   aria-label="AI Chat"
                   title="AI Chat"
+                  className="h-12 w-12 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors shrink-0"
                 >
-                  <span className="material-symbols-rounded" style={{ fontSize: "24px" }}>smart_toy</span>
+                  <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <mask id="robot-mask" style={{ maskType: "alpha" as const }} maskUnits="userSpaceOnUse" x="0" y="0" width="20" height="20">
+                      <rect width="20" height="20" fill="#D9D9D9"/>
+                    </mask>
+                    <g mask="url(#robot-mask)">
+                      <path d="M4.16667 17.5C3.70833 17.5 3.31597 17.3368 2.98958 17.0104C2.66319 16.684 2.5 16.2917 2.5 15.8333V7.5C2.5 6.11111 2.98611 4.93056 3.95833 3.95833C4.93056 2.98611 6.11111 2.5 7.5 2.5H12.5C13.8889 2.5 15.0694 2.98611 16.0417 3.95833C17.0139 4.93056 17.5 6.11111 17.5 7.5V15.8333C17.5 16.2917 17.3368 16.684 17.0104 17.0104C16.684 17.3368 16.2917 17.5 15.8333 17.5H4.16667ZM4.16667 15.8333H15.8333V7.5C15.8333 6.58333 15.5069 5.79861 14.8542 5.14583C14.2014 4.49306 13.4167 4.16667 12.5 4.16667H7.5C6.58333 4.16667 5.79861 4.49306 5.14583 5.14583C4.49306 5.79861 4.16667 6.58333 4.16667 7.5V15.8333ZM6.32292 9.51042C5.99653 9.18403 5.83333 8.79167 5.83333 8.33333C5.83333 7.875 5.99653 7.48264 6.32292 7.15625C6.64931 6.82986 7.04167 6.66667 7.5 6.66667C7.95833 6.66667 8.35069 6.82986 8.67708 7.15625C9.00347 7.48264 9.16667 7.875 9.16667 8.33333C9.16667 8.79167 9.00347 9.18403 8.67708 9.51042C8.35069 9.83681 7.95833 10 7.5 10C7.04167 10 6.64931 9.83681 6.32292 9.51042ZM11.3229 9.51042C10.9965 9.18403 10.8333 8.79167 10.8333 8.33333C10.8333 7.875 10.9965 7.48264 11.3229 7.15625C11.6493 6.82986 12.0417 6.66667 12.5 6.66667C12.9583 6.66667 13.3507 6.82986 13.6771 7.15625C14.0035 7.48264 14.1667 7.875 14.1667 8.33333C14.1667 8.79167 14.0035 9.18403 13.6771 9.51042C13.3507 9.83681 12.9583 10 12.5 10C12.0417 10 11.6493 9.83681 11.3229 9.51042ZM5.83333 15.8333V14.1667C5.83333 13.7083 5.99653 13.316 6.32292 12.9896C6.64931 12.6632 7.04167 12.5 7.5 12.5H12.5C12.9583 12.5 13.3507 12.6632 13.6771 12.9896C14.0035 13.316 14.1667 13.7083 14.1667 14.1667V15.8333H12.5V14.1667H10.8333V15.8333H9.16667V14.1667H7.5V15.8333H5.83333Z" fill="currentColor"/>
+                    </g>
+                  </svg>
                 </button>
               </>
             )}
 
-            {/* Host button — desktop only for non-approved hosts */}
-            {!isApprovedHost && (
+            {/* Host button — desktop only */}
+            {isApprovedHost ? (
+              <Button
+                onClick={onHostClick}
+                className="hidden md:inline-flex h-12 px-5"
+              >
+                Host Basecamp
+              </Button>
+            ) : (
               <Button
                 variant="outline"
                 onClick={onHostClick}
-                className="hidden md:inline-flex h-12 px-5 ml-1"
+                className="hidden md:inline-flex h-12 px-5"
               >
                 Become a Host
               </Button>
@@ -250,7 +260,7 @@ export function HeaderBar({
 
                         {/* Nav links */}
                         <nav className="py-1.5">
-                          <div className={isApprovedHost ? "" : "md:hidden"}>
+                          <div className="md:hidden">
                             <button
                               type="button"
                               onClick={() => { onHostClick?.(); setMenuOpen(false); }}

@@ -12,54 +12,33 @@ type Message = {
   text: string;
 };
 
-/* ── stub responses (replace with real API call later) ── */
+/* ── API call with streaming ── */
 
-const STUB_RESPONSES: Record<string, string> = {
-  default: [
-    "I\u2019m Wowzi AI \uD83E\uDD16 \u2014 I can help you plan activities, find summer camps, or build a schedule for a day off. Try asking something like:",
-    "\u2022 \u201CPlan a week of summer camps for my 7-year-old\u201D",
-    "\u2022 \u201CWhat\u2019s a good class for a snow day?\u201D",
-    "\u2022 \u201CFind something creative near me\u201D",
-  ].join("\n\n"),
-  summer: [
-    "Here\u2019s a sample summer plan for a 7\u201310 year old:",
-    "Week 1\u20132: Art & Creativity Camp \u2014 great for building confidence",
-    "Week 3\u20134: Science Explorers \u2014 hands-on STEM experiments",
-    "Week 5\u20136: Sports Fundamentals \u2014 team-building & fitness",
-    "Week 7\u20138: Theater & Performance \u2014 a fun finale!",
-    "Want me to search Wowzi for real camps that match this?",
-  ].join("\n"),
-  snow: [
-    "Perfect snow day picks:",
-    "\uD83C\uDFA8 Drawing & Painting Workshop \u2014 drop-in, all ages",
-    "\uD83E\uDDEA Kitchen Science Club \u2014 fun experiments at home",
-    "\uD83C\uDFAD Improv for Kids \u2014 builds confidence & creativity",
-    "\uD83D\uDCDA Book Club Afternoon \u2014 cozy reading + discussion",
-    "Should I look up which of these are available this week?",
-  ].join("\n"),
-  creative: [
-    "Some popular creative classes on Wowzi:",
-    "\uD83D\uDD8C\uFE0F Watercolor for Kids",
-    "\uD83C\uDFB8 Intro to Guitar (ages 6+)",
-    "\uD83E\uDDF5 Beginner Sewing",
-    "\uD83C\uDFAC Stop-Motion Animation",
-    "Want me to filter by age or location?",
-  ].join("\n"),
-};
+type ApiMessage = { role: "user" | "assistant"; content: string };
 
-function getStubResponse(input: string): string {
-  const lower = input.toLowerCase();
-  if (lower.includes("summer")) return STUB_RESPONSES.summer;
-  if (lower.includes("snow") || lower.includes("day off") || lower.includes("holiday"))
-    return STUB_RESPONSES.snow;
-  if (
-    lower.includes("creative") ||
-    lower.includes("art") ||
-    lower.includes("music") ||
-    lower.includes("class")
-  )
-    return STUB_RESPONSES.creative;
-  return STUB_RESPONSES.default;
+async function streamReply(
+  messages: ApiMessage[],
+  onChunk: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch("/api/ai/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+    signal,
+  });
+
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  if (!res.body) throw new Error("No response body");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onChunk(decoder.decode(value, { stream: true }));
+  }
 }
 
 /* ── component ───────────────────────────────────────── */
@@ -81,6 +60,7 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
   const [thinking, setThinking] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   /* scroll to bottom on new message */
   useEffect(() => {
@@ -112,18 +92,48 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
     setInput("");
 
     const userMsg: Message = { id: newId(), role: "user", text };
+
+    // Build API history (exclude welcome message, map to API shape)
+    const history: ApiMessage[] = [
+      ...messages
+        .filter((m) => m.id !== "welcome")
+        .map((m) => ({ role: m.role, content: m.text })),
+      { role: "user" as const, content: text },
+    ];
+
     setMessages((prev) => [...prev, userMsg]);
     setThinking(true);
 
-    /* stub: simulate a short delay then reply */
-    await new Promise((r) => setTimeout(r, 900));
-    const reply: Message = {
-      id: newId(),
-      role: "assistant",
-      text: getStubResponse(text),
-    };
-    setMessages((prev) => [...prev, reply]);
-    setThinking(false);
+    // Create placeholder for streaming reply
+    const replyId = newId();
+    setMessages((prev) => [...prev, { id: replyId, role: "assistant", text: "" }]);
+
+    abortRef.current = new AbortController();
+
+    try {
+      await streamReply(
+        history,
+        (chunk) => {
+          setMessages((prev) =>
+            prev.map((m) => m.id === replyId ? { ...m, text: m.text + chunk } : m)
+          );
+        },
+        abortRef.current.signal,
+      );
+    } catch (err: unknown) {
+      if ((err as Error)?.name !== "AbortError") {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === replyId
+              ? { ...m, text: "Sorry, something went wrong. Please try again." }
+              : m
+          )
+        );
+      }
+    } finally {
+      setThinking(false);
+      abortRef.current = null;
+    }
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {

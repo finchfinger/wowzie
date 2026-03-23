@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getHeroImage, getGalleryImages } from "@/lib/images";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   MoreHorizontal,
   Calendar,
@@ -21,6 +22,12 @@ import {
   Tag,
   Video,
   MessageSquare,
+  Search,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  UserPlus,
+  Send,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -51,6 +58,8 @@ type Activity = {
 
 type BookingStatus = "pending" | "confirmed" | "declined" | "waitlisted";
 
+type ChildInfo = { id: string; name: string; age: number | null; emoji: string | null; };
+
 type CampBookingRow = {
   id: string;
   camp_id: string;
@@ -59,10 +68,22 @@ type CampBookingRow = {
   created_at: string;
   guests_count: number;
   contact_email: string | null;
-  /* hydrated client-side from profiles */
+  /* hydrated client-side */
   parentName?: string | null;
   parentEmail?: string | null;
+  children?: ChildInfo[];
 };
+
+function calcAge(birthdate: string | null): number | null {
+  if (!birthdate) return null;
+  const d = new Date(birthdate + "T12:00:00");
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 && age <= 25 ? age : null;
+}
 
 const ACTIVITY_COLUMNS = `
   id, slug, name, description, location, capacity,
@@ -206,6 +227,8 @@ type RosterEntry = {
   attendanceRecord: AttendanceRecord | null;
 };
 
+const DOW_MAP: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+
 function deriveCampDays(activity: Activity): string[] {
   const meta = activity.meta ?? {};
   const sessions: any[] = Array.isArray(meta.campSessions) ? meta.campSessions : [];
@@ -224,6 +247,26 @@ function deriveCampDays(activity: Activity): string[] {
   if (activity.start_time) {
     addRange(activity.start_time.slice(0, 10), activity.end_time?.slice(0, 10));
     return Array.from(days).sort();
+  }
+  // Weekly recurring class schedule (ongoing or with explicit start/end)
+  const cs = meta.classSchedule ?? {};
+  const weekly = cs.weekly ?? {};
+  const activeDows = Object.entries(weekly)
+    .filter(([, v]: [string, any]) => v?.available && Array.isArray(v.blocks) && v.blocks.length > 0)
+    .map(([k]) => DOW_MAP[k])
+    .filter((d) => d !== undefined) as number[];
+  if (activeDows.length > 0) {
+    const os = meta.ongoingSchedule ?? {};
+    const rangeStart = os.startDate ? new Date(os.startDate + "T12:00:00") : new Date();
+    const rangeEnd = os.endDate
+      ? new Date(os.endDate + "T12:00:00")
+      : new Date(rangeStart.getTime() + 12 * 7 * 24 * 60 * 60 * 1000); // 12 weeks
+    const cur = new Date(rangeStart);
+    while (cur <= rangeEnd) {
+      if (activeDows.includes(cur.getDay())) days.add(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (days.size > 0) return Array.from(days).sort();
   }
   return [];
 }
@@ -325,38 +368,199 @@ function DeleteModal({ open, title, deleting, error, onClose, onConfirm }: { ope
 /* Attendance Tab                                                     */
 /* ------------------------------------------------------------------ */
 
+const AVATAR_PALETTE = [
+  "bg-blue-400 text-white",
+  "bg-yellow-400 text-gray-900",
+  "bg-green-500 text-white",
+  "bg-pink-400 text-white",
+  "bg-purple-400 text-white",
+  "bg-orange-400 text-white",
+  "bg-red-500 text-white",
+  "bg-teal-400 text-white",
+  "bg-indigo-400 text-white",
+  "bg-emerald-400 text-white",
+];
+
+function avatarColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
+}
+
+function formatDateOption(day: string, todayStr: string): string {
+  if (day === todayStr) return "Today";
+  const d = new Date(day + "T12:00:00");
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+/* ------------------------------------------------------------------ */
+/* MiniCalendar                                                       */
+/* ------------------------------------------------------------------ */
+
+const DOW_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+function MiniCalendar({
+  campDays,
+  datesWithData,
+  selectedDate,
+  onSelect,
+  todayStr,
+}: {
+  campDays: string[];
+  datesWithData: Set<string>;
+  selectedDate: string;
+  onSelect: (day: string) => void;
+  todayStr: string;
+}) {
+  const campDaySet = useMemo(() => new Set(campDays), [campDays]);
+
+  const seed = selectedDate || todayStr;
+  const seedDate = new Date(seed + "T12:00:00");
+  const [viewYear, setViewYear] = useState(seedDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(seedDate.getMonth());
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
+    else setViewMonth(m => m + 1);
+  };
+
+  // Build cells: leading nulls + date strings + trailing nulls
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const cells: (string | null)[] = [
+    ...Array(firstDow).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => {
+      const d = i + 1;
+      return `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", {
+    month: "long", year: "numeric",
+  });
+
+  return (
+    <div className="select-none">
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={prevMonth}
+          className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <span className="text-sm font-medium text-foreground">{monthLabel}</span>
+        <button type="button" onClick={nextMonth}
+          className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors">
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Day-of-week headers */}
+      <div className="grid grid-cols-7 mb-1">
+        {DOW_LABELS.map((l, i) => (
+          <div key={i} className="text-center text-[11px] font-medium text-muted-foreground py-1">{l}</div>
+        ))}
+      </div>
+
+      {/* Day grid */}
+      <div className="grid grid-cols-7 gap-y-0.5">
+        {cells.map((dateStr, i) => {
+          if (!dateStr) return <div key={i} />;
+          const day = new Date(dateStr + "T12:00:00").getDate();
+          const isSession = campDaySet.has(dateStr);
+          const isSelected = dateStr === selectedDate;
+          const isToday = dateStr === todayStr;
+          const hasData = datesWithData.has(dateStr);
+
+          return (
+            <div key={dateStr} className="flex flex-col items-center">
+              <button
+                type="button"
+                disabled={!isSession}
+                onClick={() => onSelect(dateStr)}
+                className={[
+                  "relative h-8 w-8 rounded-full text-sm transition-colors flex items-center justify-center",
+                  isSelected
+                    ? "bg-foreground text-background font-semibold"
+                    : isToday
+                    ? "text-blue-600 font-bold hover:bg-blue-50"
+                    : isSession
+                    ? "text-foreground hover:bg-muted font-medium cursor-pointer"
+                    : "text-muted-foreground/35 cursor-default font-normal",
+                ].join(" ")}
+              >
+                {/* Today ring (when not selected) */}
+                {isToday && !isSelected && (
+                  <span className="absolute inset-0 rounded-full ring-2 ring-blue-500" />
+                )}
+                {day}
+              </button>
+              {/* Dot for days with attendance data */}
+              {hasData && (
+                <span className={`h-1 w-1 rounded-full -mt-0.5 ${isSelected ? "bg-background/50" : "bg-emerald-500"}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function entryKey(e: RosterEntry) { return `${e.bookingId}-${e.childId ?? "null"}`; }
+
 function AttendanceTab({ activity }: { activity: Activity }) {
   const campId = activity.id;
   const campDays = useMemo(() => deriveCampDays(activity), [activity]);
   const todayStr = new Date().toISOString().slice(0, 10);
-  const defaultDay = campDays.includes(todayStr) ? todayStr : (campDays[0] ?? "");
+
+  // Pick the most relevant date: today if it's a session day, else most recent past session, else next upcoming
+  const defaultDay = useMemo(() => {
+    if (campDays.includes(todayStr)) return todayStr;
+    const past = campDays.filter(d => d < todayStr);
+    if (past.length > 0) return past[past.length - 1];
+    return campDays[0] ?? "";
+  }, [campDays, todayStr]);
 
   const [selectedDate, setSelectedDate] = useState(defaultDay);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [rosterLoading, setRosterLoading] = useState(false);
-  const [busyIdx, setBusyIdx] = useState<number | null>(null);
+  const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [datesWithAttendance, setDatesWithAttendance] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
+
+  const markBusy = (k: string) => setBusyKeys(prev => new Set([...prev, k]));
+  const clearBusy = (k: string) => setBusyKeys(prev => { const s = new Set(prev); s.delete(k); return s; });
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
   }, []);
 
+  // Load all dates that have at least one check-in (for calendar dots)
   useEffect(() => {
     if (!campId) return;
-    void supabase
-      .from("attendance").select("date").eq("camp_id", campId).not("checked_in_at", "is", null)
-      .then(({ data }) => setDatesWithAttendance(new Set((data ?? []).map((r: any) => r.date as string))));
+    void supabase.from("attendance").select("date").eq("camp_id", campId)
+      .not("checked_in_at", "is", null)
+      .then(({ data }) => setDatesWithData(new Set((data ?? []).map((r: any) => r.date as string))));
   }, [campId]);
 
+  // Load roster when date changes
   useEffect(() => {
     if (!campId || !selectedDate) return;
     let alive = true;
     setRosterLoading(true);
     void (async () => {
-      const { data: bookings } = await supabase
-        .from("bookings").select("id, user_id, guests_count, contact_email")
-        .eq("camp_id", campId).eq("status", "confirmed");
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? "";
+      const res = await fetch(`/api/host/camp-bookings?campId=${campId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const bookings: any[] | null = res.ok ? await res.json() : null;
       if (!alive) return;
       if (!bookings?.length) { setRoster([]); setRosterLoading(false); return; }
 
@@ -402,148 +606,230 @@ function AttendanceTab({ activity }: { activity: Activity }) {
     return () => { alive = false; };
   }, [campId, selectedDate]);
 
-  const handleCheckIn = async (entry: RosterEntry, idx: number) => {
-    setBusyIdx(idx);
+  // Realtime: keep attendance in sync across devices
+  useEffect(() => {
+    if (!campId || !selectedDate) return;
+    const channel = supabase
+      .channel(`attendance-${campId}-${selectedDate}`)
+      .on("postgres_changes" as any, {
+        event: "*", schema: "public", table: "attendance",
+        filter: `camp_id=eq.${campId}`,
+      }, (payload: any) => {
+        const rec = (payload.new ?? payload.old) as AttendanceRecord;
+        if (!rec || rec.date !== selectedDate) return;
+        setRoster(prev => prev.map(r => {
+          // Match by id (update/delete) or by booking+child key (insert)
+          if (r.attendanceRecord?.id === rec.id || entryKey(r) === `${rec.booking_id}-${rec.child_id ?? "null"}`) {
+            const next = payload.eventType === "DELETE" ? null
+              : payload.new?.checked_in_at === null && payload.new?.checked_out_at === null ? { ...rec, checked_in_at: null, checked_out_at: null }
+              : rec as AttendanceRecord;
+            return { ...r, attendanceRecord: next };
+          }
+          return r;
+        }));
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [campId, selectedDate]);
+
+  const handleCheckIn = async (entry: RosterEntry) => {
+    const k = entryKey(entry);
+    markBusy(k);
     const now = new Date().toISOString();
     if (entry.attendanceRecord?.id) {
       await supabase.from("attendance").update({ checked_in_at: now, marked_by: currentUserId }).eq("id", entry.attendanceRecord.id);
-      setRoster(prev => prev.map((r, i) => i === idx ? { ...r, attendanceRecord: { ...r.attendanceRecord!, checked_in_at: now } } : r));
+      setRoster(prev => prev.map(r => entryKey(r) === k ? { ...r, attendanceRecord: { ...r.attendanceRecord!, checked_in_at: now } } : r));
     } else {
       const { data: newRec } = await supabase.from("attendance").insert({
         camp_id: campId, booking_id: entry.bookingId, child_id: entry.childId,
         child_name: entry.childName, date: selectedDate, checked_in_at: now, marked_by: currentUserId,
       }).select("id, booking_id, child_id, child_name, date, checked_in_at, checked_out_at").single();
-      if (newRec) setRoster(prev => prev.map((r, i) => i === idx ? { ...r, attendanceRecord: newRec as AttendanceRecord } : r));
-      setDatesWithAttendance(prev => new Set([...prev, selectedDate]));
+      if (newRec) {
+        setRoster(prev => prev.map(r => entryKey(r) === k ? { ...r, attendanceRecord: newRec as AttendanceRecord } : r));
+        setDatesWithData(prev => new Set([...prev, selectedDate]));
+      }
     }
-    setBusyIdx(null);
+    clearBusy(k);
   };
 
-  const handleCheckOut = async (entry: RosterEntry, idx: number) => {
+  const handleCheckOut = async (entry: RosterEntry) => {
     if (!entry.attendanceRecord?.id) return;
-    setBusyIdx(idx);
+    const k = entryKey(entry);
+    markBusy(k);
     const now = new Date().toISOString();
     await supabase.from("attendance").update({ checked_out_at: now, marked_by: currentUserId }).eq("id", entry.attendanceRecord.id);
-    setRoster(prev => prev.map((r, i) => i === idx ? { ...r, attendanceRecord: { ...r.attendanceRecord!, checked_out_at: now } } : r));
-    setBusyIdx(null);
+    setRoster(prev => prev.map(r => entryKey(r) === k ? { ...r, attendanceRecord: { ...r.attendanceRecord!, checked_out_at: now } } : r));
+    clearBusy(k);
   };
 
-  const handleUndo = async (entry: RosterEntry, idx: number) => {
+  const handleUndo = async (entry: RosterEntry) => {
     if (!entry.attendanceRecord?.id) return;
-    setBusyIdx(idx);
+    const k = entryKey(entry);
+    markBusy(k);
     await supabase.from("attendance").update({ checked_in_at: null, checked_out_at: null, marked_by: null }).eq("id", entry.attendanceRecord.id);
-    setRoster(prev => prev.map((r, i) => i === idx ? { ...r, attendanceRecord: { ...r.attendanceRecord!, checked_in_at: null, checked_out_at: null } } : r));
-    setBusyIdx(null);
+    setRoster(prev => prev.map(r => entryKey(r) === k ? { ...r, attendanceRecord: { ...r.attendanceRecord!, checked_in_at: null, checked_out_at: null } } : r));
+    clearBusy(k);
   };
+
+  // Sort: pending → checked-in → done; alphabetical within each group
+  const filteredRoster = useMemo(() => {
+    let filtered = roster;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = roster.filter(r =>
+        r.childName.toLowerCase().includes(q) || r.parentName.toLowerCase().includes(q)
+      );
+    }
+    return [...filtered].sort((a, b) => {
+      const rank = (r: RosterEntry) =>
+        r.attendanceRecord?.checked_out_at ? 2 : r.attendanceRecord?.checked_in_at ? 1 : 0;
+      const dr = rank(a) - rank(b);
+      return dr !== 0 ? dr : a.childName.localeCompare(b.childName);
+    });
+  }, [roster, search]);
 
   if (campDays.length === 0) {
     return (
-      <div className="py-12 text-center">
-        <p className="text-sm text-muted-foreground">No dates configured for this camp yet.</p>
-        <p className="text-xs text-muted-foreground mt-1">Add session dates in the camp editor.</p>
+      <div className="bg-white rounded-2xl border border-border/50 p-8 text-center">
+        <p className="text-sm text-muted-foreground">No dates configured for this activity yet.</p>
+        <p className="text-xs text-muted-foreground mt-1">Add session dates in the activity editor.</p>
       </div>
     );
   }
 
   const checkedInCount = roster.filter(r => r.attendanceRecord?.checked_in_at).length;
+  const pct = roster.length > 0 ? Math.round((checkedInCount / roster.length) * 100) : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="bg-white rounded-2xl border border-border/50">
+      {/* Header */}
+      <div className="px-6 pt-6 pb-4 border-b border-border/40 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground">Attendance</h2>
+          {!rosterLoading && roster.length > 0 && (
+            <span className="text-xs text-muted-foreground tabular-nums">{checkedInCount} / {roster.length} checked in</span>
+          )}
+        </div>
 
-      {/* Date strip */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-        {campDays.map(day => {
-          const d = new Date(day + "T12:00:00");
-          const isSelected = day === selectedDate;
-          const isToday = day === todayStr;
-          const hasData = datesWithAttendance.has(day);
-          return (
-            <button key={day} type="button" onClick={() => setSelectedDate(day)}
-              className={`relative flex-shrink-0 flex flex-col items-center rounded-xl px-3 py-2 min-w-[52px] border transition-colors
-                ${isSelected ? "bg-foreground text-background border-foreground"
-                  : isToday ? "border-primary/60 text-primary"
-                  : "border-border text-foreground hover:bg-muted"}`}>
-              <span className="text-[11px] font-medium">{d.toLocaleDateString("en-US", { weekday: "short" })}</span>
-              <span className="text-sm font-semibold leading-tight">{d.getDate()}</span>
-              <span className={`text-[10px] ${isSelected ? "text-background/70" : "text-muted-foreground"}`}>
-                {d.toLocaleDateString("en-US", { month: "short" })}
-              </span>
-              {hasData && !isSelected && (
-                <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-500" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Date heading + count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-foreground">
-          {new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-        </p>
+        {/* Progress bar */}
         {!rosterLoading && roster.length > 0 && (
-          <p className="text-xs text-muted-foreground">{checkedInCount} / {roster.length} checked in</p>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
         )}
+
+        {/* Mini calendar */}
+        <MiniCalendar
+          campDays={campDays}
+          datesWithData={datesWithData}
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+          todayStr={todayStr}
+        />
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input className="pl-9" placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
       </div>
 
       {/* Roster */}
-      {rosterLoading ? (
-        <div className="py-10 text-center text-xs text-muted-foreground">Loading roster…</div>
-      ) : roster.length === 0 ? (
-        <div className="py-10 text-center text-xs text-muted-foreground">No confirmed registrations yet.</div>
-      ) : (
-        <div className="space-y-1.5">
-          {roster.map((entry, idx) => {
-            const busy = busyIdx === idx;
+      <div className="divide-y divide-border/40">
+        {rosterLoading ? (
+          /* Skeleton rows */
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-6 py-4">
+              <div className="h-10 w-10 shrink-0 rounded-full bg-muted animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-32 rounded bg-muted animate-pulse" />
+                <div className="h-2.5 w-20 rounded bg-muted animate-pulse" />
+              </div>
+              <div className="h-8 w-20 rounded-lg bg-muted animate-pulse" />
+            </div>
+          ))
+        ) : filteredRoster.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            {search ? "No kids match your search." : "No confirmed registrations yet."}
+          </div>
+        ) : (
+          filteredRoster.map((entry) => {
+            const k = entryKey(entry);
+            const busy = busyKeys.has(k);
             const att = entry.attendanceRecord;
             const isIn = Boolean(att?.checked_in_at);
             const isOut = Boolean(att?.checked_out_at);
+            const colorClass = avatarColor(entry.childName);
+
             return (
-              <div key={idx} className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card px-4 py-3">
-                <div className={`h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-xl
-                  ${isIn ? "bg-emerald-50 ring-2 ring-emerald-200" : "bg-muted"}`}>
-                  {entry.emoji
-                    ? entry.emoji
-                    : <span className="text-base font-semibold text-muted-foreground">{entry.childName.charAt(0).toUpperCase()}</span>}
+              <div key={k} className={`flex items-center gap-4 px-6 py-4 transition-colors ${isOut ? "opacity-60" : isIn ? "bg-emerald-50/40" : ""}`}>
+                {/* Avatar with status dot */}
+                <div className="relative shrink-0">
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold ${colorClass} ${isIn ? "ring-2 ring-emerald-400 ring-offset-1" : ""}`}>
+                    {entry.emoji
+                      ? <span className="text-lg">{entry.emoji}</span>
+                      : entry.childName.charAt(0).toUpperCase()}
+                  </div>
+                  {isIn && !isOut && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+                  )}
+                  {isOut && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-gray-400 border-2 border-white" />
+                  )}
                 </div>
+
+                {/* Name + parent + timestamps */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{entry.childName}</p>
-                  <p className="text-xs text-muted-foreground truncate">{entry.parentName}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{entry.childName}</p>
                   {isIn && (
-                    <p className="text-xs text-emerald-600 mt-0.5">
-                      In {formatTime(new Date(att!.checked_in_at!))}
-                      {isOut && <span className="text-muted-foreground"> · Out {formatTime(new Date(att!.checked_out_at!))}</span>}
+                    <p className="text-xs text-muted-foreground truncate">
+                      In {formatTime(new Date(att!.checked_in_at!))}{isOut && <> · Out {formatTime(new Date(att!.checked_out_at!))}</>}
                     </p>
                   )}
                 </div>
-                <div className="shrink-0 flex items-center gap-1.5">
+
+                {/* Action button */}
+                <div className="shrink-0 flex items-center gap-2">
                   {!isIn && (
-                    <button type="button" disabled={busy} onClick={() => void handleCheckIn(entry, idx)}
-                      className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-40 transition-colors">
+                    <Button variant="outline" size="sm" disabled={busy} onClick={() => void handleCheckIn(entry)}>
                       {busy ? "…" : "Check in"}
-                    </button>
+                    </Button>
                   )}
                   {isIn && !isOut && (
-                    <>
-                      <button type="button" disabled={busy} onClick={() => void handleCheckOut(entry, idx)}
-                        className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs hover:bg-muted disabled:opacity-40 transition-colors">
-                        {busy ? "…" : "Check out"}
-                      </button>
-                      <button type="button" disabled={busy} onClick={() => void handleUndo(entry, idx)} title="Undo check-in"
-                        className="h-7 w-7 flex items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted disabled:opacity-40 text-xs transition-colors">
-                        ↩
-                      </button>
-                    </>
+                    <Button size="sm" disabled={busy} onClick={() => void handleCheckOut(entry)}>
+                      {busy ? "…" : "Check out"}
+                    </Button>
                   )}
                   {isIn && isOut && (
-                    <span className="text-xs font-medium text-muted-foreground">Done ✓</span>
+                    <span className="text-xs font-medium text-muted-foreground px-2">Done ✓</span>
                   )}
+
+                  <ActionsMenu items={[
+                    {
+                      label: "Undo check-in",
+                      onSelect: () => void handleUndo(entry),
+                      disabled: !isIn || busy,
+                    },
+                    {
+                      label: "Undo check-out",
+                      onSelect: () => {
+                        if (!entry.attendanceRecord?.id) return;
+                        void supabase.from("attendance").update({ checked_out_at: null }).eq("id", entry.attendanceRecord.id).then(() => {
+                          setRoster(prev => prev.map(r => entryKey(r) === k ? { ...r, attendanceRecord: { ...r.attendanceRecord!, checked_out_at: null } } : r));
+                        });
+                      },
+                      disabled: !isOut || busy,
+                    },
+                  ]} />
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   );
 }
@@ -572,6 +858,7 @@ export default function ActivityDetailPage() {
   const [guestsLoading, setGuestsLoading] = useState(true);
   const [registrations, setRegistrations] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [guestSearch, setGuestSearch] = useState("");
 
   const [busyAction, setBusyAction] = useState<"duplicate" | "delete" | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -596,26 +883,36 @@ export default function ActivityDetailPage() {
     let alive = true;
     const loadGuests = async () => {
       setGuestsLoading(true);
-      const { data: bookingRows } = await supabase
-        .from("bookings")
-        .select("id, camp_id, user_id, status, created_at, guests_count, contact_email")
-        .eq("camp_id", activity.id)
-        .not("status", "in", "(cancelled,expired)")
-        .order("created_at", { ascending: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? "";
+      const res = await fetch(`/api/host/camp-bookings?campId=${activity.id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const bookingRows = res.ok ? await res.json() : [];
       if (!alive) return;
 
       const rows: CampBookingRow[] = (bookingRows ?? []) as CampBookingRow[];
 
-      /* hydrate parent names from profiles */
+      /* hydrate parent names + children */
       const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
       if (userIds.length > 0) {
-        const { data: profileRows } = await supabase
-          .from("profiles")
-          .select("id, legal_name, preferred_first_name, email")
-          .in("id", userIds);
-        const profileMap = new Map(
-          ((profileRows ?? []) as any[]).map((p) => [p.id, p])
-        );
+        const [{ data: profileRows }, { data: childRows }] = await Promise.all([
+          supabase.from("profiles").select("id, legal_name, preferred_first_name, email").in("id", userIds),
+          supabase.from("children").select("id, legal_name, preferred_name, avatar_emoji, birthdate, parent_id").in("parent_id", userIds),
+        ]);
+        const profileMap = new Map(((profileRows ?? []) as any[]).map((p) => [p.id, p]));
+        const childrenByParent = new Map<string, ChildInfo[]>();
+        for (const c of (childRows ?? []) as any[]) {
+          const info: ChildInfo = {
+            id: c.id,
+            name: c.preferred_name || c.legal_name || "Child",
+            age: calcAge(c.birthdate),
+            emoji: c.avatar_emoji ?? null,
+          };
+          const arr = childrenByParent.get(c.parent_id) ?? [];
+          arr.push(info);
+          childrenByParent.set(c.parent_id, arr);
+        }
         for (const row of rows) {
           const p = profileMap.get(row.user_id) as any;
           if (p) {
@@ -626,25 +923,33 @@ export default function ActivityDetailPage() {
           } else {
             row.parentEmail = row.contact_email ?? null;
           }
+          row.children = childrenByParent.get(row.user_id) ?? [];
         }
       }
 
       setGuests(rows);
+      setRegistrations(rows.filter(r => r.status === "confirmed" || r.status === "pending").length);
       setGuestsLoading(false);
     };
-    const loadCount = async () => {
-      const { count } = await supabase
-        .from("bookings")
-        .select("id", { count: "exact", head: true })
-        .eq("camp_id", activity.id)
-        .in("status", ["confirmed", "pending"]);
-      if (alive) setRegistrations(count ?? 0);
-    };
-    void loadGuests(); void loadCount();
+    void loadGuests();
     return () => { alive = false; };
   }, [activity?.id]);
 
-  const filteredGuests = useMemo(() => statusFilter === "all" ? guests : guests.filter(g => g.status === statusFilter), [guests, statusFilter]);
+  const filteredGuests = useMemo(() => {
+    let list = statusFilter === "all" ? guests : guests.filter(g => g.status === statusFilter);
+    if (guestSearch.trim()) {
+      const q = guestSearch.toLowerCase();
+      list = list.filter(g => {
+        const names = [g.parentName, g.parentEmail, ...(g.children ?? []).map(c => c.name)].filter(Boolean).join(" ").toLowerCase();
+        return names.includes(q);
+      });
+    }
+    return list.slice().sort((a, b) => {
+      const an = (a.children?.[0]?.name ?? a.parentName ?? "").toLowerCase();
+      const bn = (b.children?.[0]?.name ?? b.parentName ?? "").toLowerCase();
+      return an.localeCompare(bn);
+    });
+  }, [guests, statusFilter, guestSearch]);
 
   const handleEdit = () => router.push(`/host/activities/${activityId}/edit`);
 
@@ -724,7 +1029,9 @@ export default function ActivityDetailPage() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
+    <div className="page-container py-6 lg:py-8">
+      <div className="page-grid">
+      <div className="span-8-center">
 
       {/* Header */}
       <div className="mb-5">
@@ -779,32 +1086,40 @@ export default function ActivityDetailPage() {
           )}
 
           {/* Quick stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-2xl border border-border bg-card px-3 py-3 text-center">
-              <p className="text-[11px] text-muted-foreground">Price</p>
-              <p className="mt-0.5 text-lg font-semibold text-foreground">{priceValue ?? "—"}</p>
-              <p className="text-[11px] text-muted-foreground">{classPriceLabel ? "per class" : "per child"}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-border bg-card px-4 py-3">
+              <p className="text-[11px] text-muted-foreground mb-0.5">Price</p>
+              <p className="text-lg font-semibold text-foreground leading-none">{priceValue ?? "—"}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{classPriceLabel ? "per class" : "per child"}</p>
             </div>
-            <div className="rounded-2xl border border-border bg-card px-3 py-3 text-center">
-              <p className="text-[11px] text-muted-foreground">Registrations</p>
-              <p className="mt-0.5 text-lg font-semibold text-foreground">{capacityLabel}</p>
-              <p className="text-[11px] text-muted-foreground">{activity.capacity != null ? "filled" : "signed up"}</p>
+            <div className="rounded-2xl border border-border bg-card px-4 py-3">
+              <p className="text-[11px] text-muted-foreground mb-0.5">Registrations</p>
+              <p className="text-lg font-semibold text-foreground leading-none">{capacityLabel}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{activity.capacity != null ? "filled" : "signed up"}</p>
             </div>
-            {pendingCount > 0 ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-center">
-                <p className="text-[11px] text-amber-700">Pending</p>
-                <p className="mt-0.5 text-lg font-semibold text-amber-900">{pendingCount}</p>
-                <p className="text-[11px] text-amber-700">need review</p>
+            {dateRange && (
+              <div className="rounded-2xl border border-border bg-card px-4 py-3">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                  <p className="text-[11px] text-muted-foreground">{dateRange.heading}</p>
+                </div>
+                <p className="text-sm font-semibold text-foreground">{dateRange.value}</p>
               </div>
-            ) : ageLabel ? (
-              <div className="rounded-2xl border border-border bg-card px-3 py-3 text-center">
-                <p className="text-[11px] text-muted-foreground">Ages</p>
-                <p className="mt-0.5 text-lg font-semibold text-foreground">{ageLabel}</p>
+            )}
+            {timeValue && (
+              <div className="rounded-2xl border border-border bg-card px-4 py-3">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                  <p className="text-[11px] text-muted-foreground">Time</p>
+                </div>
+                <p className="text-sm font-semibold text-foreground">{timeValue}</p>
               </div>
-            ) : (
-              <div className="rounded-2xl border border-border bg-card px-3 py-3 text-center">
-                <p className="text-[11px] text-muted-foreground">Status</p>
-                <p className="mt-0.5 text-sm font-semibold text-foreground">{isPublished ? "Live" : "Draft"}</p>
+            )}
+            {pendingCount > 0 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-[11px] text-amber-700 mb-0.5">Pending</p>
+                <p className="text-lg font-semibold text-amber-900 leading-none">{pendingCount}</p>
+                <p className="text-[11px] text-amber-700 mt-0.5">need review</p>
               </div>
             )}
           </div>
@@ -953,56 +1268,109 @@ export default function ActivityDetailPage() {
 
       {/* ===== GUESTS ===== */}
       {activeTab === "guests" && (
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              {["all", "pending", "confirmed", "declined"].map(s => (
-                <button key={s} type="button" onClick={() => setStatusFilter(s)}
-                  className={`rounded-md px-3 py-1.5 text-xs border ${statusFilter === s ? "bg-foreground text-background border-foreground" : "bg-transparent text-muted-foreground border-input hover:bg-muted"}`}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}{s === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
-                </button>
-              ))}
+        <div className="rounded-2xl border border-border bg-card p-5">
+          {/* Card header */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-foreground">Guests</h2>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <UserPlus className="h-3.5 w-3.5" />
+                Add guest
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Send className="h-3.5 w-3.5" />
+                Send update
+              </Button>
             </div>
           </div>
-          <div className="space-y-1">
-            {guestsLoading ? <div className="py-8 text-xs text-muted-foreground">Loading guests…</div>
-              : filteredGuests.length === 0 ? <div className="py-8 text-xs text-muted-foreground">No guests yet.</div>
-              : filteredGuests.map(g => {
-                const name = g.parentName || g.parentEmail || g.contact_email || "Guest";
-                const guestsLabel = (g.guests_count ?? 1) > 1 ? `${g.guests_count} guests` : "1 guest";
-                const isPending = g.status === "pending";
-                return (
-                  <div key={g.id} className="flex w-full items-center justify-between rounded-2xl bg-card px-4 py-3 hover:bg-muted/40 transition-colors">
-                    <Link href={`/host/activities/${activityId}/guests/${g.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="h-7 w-7 rounded-full bg-violet-100 flex items-center justify-center text-[13px] font-semibold text-violet-700 shrink-0">
-                        {(name?.[0] ?? "G").toUpperCase()}
-                      </div>
-                      <div className="text-left min-w-0">
-                        <p className="text-xs font-medium text-foreground truncate">{name}</p>
-                        <p className="text-xs text-muted-foreground">{guestsLabel} · {whenLabel(g.created_at)}</p>
-                      </div>
-                    </Link>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {isPending ? (
-                        <div className="flex items-center gap-2">
-                          <button type="button" onClick={e => { e.preventDefault(); void updateGuestStatus(g.id, "declined"); }} className="text-xs text-destructive hover:text-destructive/80">Decline</button>
-                          <button type="button" onClick={e => { e.preventDefault(); void updateGuestStatus(g.id, "confirmed"); }} className="inline-flex items-center rounded-md bg-emerald-500 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-600">Approve</button>
-                        </div>
-                      ) : <span className={`text-xs capitalize font-medium ${g.status === "confirmed" ? "text-emerald-600" : g.status === "declined" ? "text-destructive" : "text-muted-foreground"}`}>{g.status}</span>}
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/messages?to=${g.user_id}`)}
-                        className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
-                        aria-label="Message parent"
-                        title="Message parent"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+
+          {/* Search + sort */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Search"
+                value={guestSearch}
+                onChange={e => setGuestSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+              <span>Alphabetical</span>
+              <ChevronDown className="h-3.5 w-3.5" />
+            </div>
           </div>
+
+          {/* Status filter pills */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {["all", "pending", "confirmed", "declined"].map(s => (
+              <button key={s} type="button" onClick={() => setStatusFilter(s)}
+                className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${statusFilter === s ? "bg-foreground text-background border-foreground" : "bg-transparent text-muted-foreground border-input hover:bg-muted"}`}>
+                {s.charAt(0).toUpperCase() + s.slice(1)}{s === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
+              </button>
+            ))}
+          </div>
+
+          {/* Guest rows */}
+          {guestsLoading ? (
+            <div className="py-10 text-center text-xs text-muted-foreground">Loading guests…</div>
+          ) : filteredGuests.length === 0 ? (
+            <div className="py-10 text-center text-xs text-muted-foreground">No guests yet.</div>
+          ) : (
+            <div className="divide-y divide-border">
+              {filteredGuests.flatMap(g => {
+                const isPending = g.status === "pending";
+                const when = whenLabel(g.created_at);
+                // Show a row per child, or one row for the parent if no children
+                const kids = g.children && g.children.length > 0 ? g.children : null;
+                const rows = kids
+                  ? kids.map(child => ({ key: `${g.id}-${child.id}`, name: child.name, sub: child.age != null ? `Age ${child.age}` : null, emoji: child.emoji }))
+                  : [{ key: g.id, name: g.parentName || g.parentEmail || g.contact_email || "Guest", sub: null, emoji: null }];
+
+                return rows.map(({ key, name, sub, emoji }, ri) => {
+                  const initials = name.slice(0, 1).toUpperCase();
+                  const colors = ["bg-blue-100 text-blue-700", "bg-yellow-100 text-yellow-700", "bg-pink-100 text-pink-700", "bg-green-100 text-green-700", "bg-orange-100 text-orange-700", "bg-violet-100 text-violet-700", "bg-teal-100 text-teal-700"];
+                  const colorClass = colors[(name.charCodeAt(0) ?? 0) % colors.length];
+                  return (
+                    <div key={key} className="flex items-center gap-3 py-3">
+                      <Link href={`/host/activities/${activityId}/guests/${g.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${colorClass}`}>
+                          {emoji ?? initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{name}</p>
+                          {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+                        </div>
+                      </Link>
+                      <div className="flex items-center gap-2 shrink-0 ml-auto">
+                        {isPending && ri === 0 ? (
+                          <>
+                            <button type="button" onClick={() => void updateGuestStatus(g.id, "declined")}
+                              className="inline-flex items-center gap-1 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors">
+                              Decline ×
+                            </button>
+                            <button type="button" onClick={() => void updateGuestStatus(g.id, "confirmed")}
+                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
+                              Approve ✓
+                            </button>
+                          </>
+                        ) : ri === 0 ? (
+                          <span className="text-xs text-muted-foreground">{when}</span>
+                        ) : null}
+                        {ri === 0 && (
+                          <button type="button" onClick={() => router.push(`/host/activities/${activityId}/guests/${g.id}`)}
+                            className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -1037,6 +1405,8 @@ export default function ActivityDetailPage() {
       )}
 
       <DeleteModal open={deleteOpen} title={activity.name} deleting={busyAction === "delete"} error={deleteError} onClose={() => { if (busyAction !== "delete") setDeleteOpen(false); }} onConfirm={confirmDelete} />
+      </div>
+      </div>
     </div>
   );
 }

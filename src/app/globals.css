@@ -137,6 +137,80 @@
   }
 }
 
+/* ─────────────────────────────────────────────
+   12-Column Layout System
+   ─────────────────────────────────────────────
+   Variables
+   --grid-cols    : 12
+   --grid-gutter  : 24px          (between columns)
+   --page-margin  : 80px          (left + right edge)
+
+   Centered span widths (within the 12-col grid):
+   span-6-center  → 6 cols  (narrow)
+   span-8-center  → 8 cols  (default)
+   span-10-center → 10 cols (wide)
+   span-12        → 12 cols (full)
+───────────────────────────────────────────── */
+@layer utilities {
+
+  /* 1 ── Page container ─────────────────────── */
+  .page-container {
+    width: 100%;
+    padding-inline: 80px;   /* desktop: 80px margins */
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
+
+  /* 2 ── 12-column grid ─────────────────────── */
+  .page-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: 24px;
+  }
+
+  /* 3 ── Centered span utilities ────────────── */
+  /*
+    Math: centering N cols inside 12 = start at (12 - N) / 2 + 1
+    span-6  → start col 4  (3 cols of margin each side)
+    span-8  → start col 3  (2 cols of margin each side)
+    span-10 → start col 2  (1 col  of margin each side)
+    span-12 → start col 1  (no margin)
+  */
+  .span-6-center  { grid-column: 4 / span 6;  }
+  .span-8-center  { grid-column: 3 / span 8;  }
+  .span-10-center { grid-column: 2 / span 10; }
+  .span-12        { grid-column: 1 / -1;       }
+
+  /* 4 ── Tablet (≤ 1024px): 40px margins ─────── */
+  @media (max-width: 1024px) {
+    .page-container {
+      padding-inline: 40px;
+    }
+    /* Widen spans one step so content doesn't get too cramped */
+    .span-6-center  { grid-column: 3 / span 8;  }
+    .span-8-center  { grid-column: 2 / span 10; }
+    .span-10-center { grid-column: 1 / -1;       }
+  }
+
+  /* 5 ── Mobile (≤ 640px): 16px margins, single col ── */
+  @media (max-width: 640px) {
+    .page-container {
+      padding-inline: 16px;
+    }
+    .page-grid {
+      grid-template-columns: 1fr;
+      column-gap: 0;
+      row-gap: 16px;
+    }
+    .span-6-center,
+    .span-8-center,
+    .span-10-center,
+    .span-12 {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
 /* ── FullCalendar overrides — Google-Calendar-inspired theme ── */
 
 .wowzi-fc {
