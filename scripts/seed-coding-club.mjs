@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 
 const SUPABASE_URL = "https://fzdhexysoleaegzwtryf.supabase.co";
 const SERVICE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZGhleHlzb2xlYWVnend0cnlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjUzMTYwNiwiZXhwIjoyMDc4MTA3NjA2fQ.4OENHB-IyF-HveV8AShMnP2RaMNuPqcs6dnnVuWX6uI";
+  "process.env.SUPABASE_SERVICE_ROLE_KEY";
 
 const CAMP_ID = "2f50ca9a-01aa-4de9-8df1-9525e3727d2e"; // Saturday Coding Club
 

@@ -4,7 +4,7 @@
  */
 
 const SUPABASE_URL = "https://fzdhexysoleaegzwtryf.supabase.co";
-const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZGhleHlzb2xlYWVnend0cnlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjUzMTYwNiwiZXhwIjoyMDc4MTA3NjA2fQ.4OENHB-IyF-HveV8AShMnP2RaMNuPqcs6dnnVuWX6uI";
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const sql = `
 -- Attendance log: one row per child per session date
