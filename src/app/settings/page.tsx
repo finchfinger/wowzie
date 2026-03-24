@@ -91,6 +91,122 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: "notifications", label: "Notifications" },
 ];
 
+/* ─── Two-field name row ─── */
+function NameRow({
+  legalName,
+  onSave,
+}: {
+  legalName: string;
+  onSave: (firstName: string, lastName: string) => Promise<void>;
+}) {
+  const spaceIdx = legalName.indexOf(" ");
+  const initFirst = spaceIdx >= 0 ? legalName.slice(0, spaceIdx) : legalName;
+  const initLast = spaceIdx >= 0 ? legalName.slice(spaceIdx + 1) : "";
+
+  const [editing, setEditing] = useState(false);
+  const [firstName, setFirstName] = useState(initFirst);
+  const [lastName, setLastName] = useState(initLast);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleEdit = () => {
+    const si = legalName.indexOf(" ");
+    setFirstName(si >= 0 ? legalName.slice(0, si) : legalName);
+    setLastName(si >= 0 ? legalName.slice(si + 1) : "");
+    setError(null);
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(firstName.trim(), lastName.trim());
+      setEditing(false);
+    } catch {
+      setError("Couldn't save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const displayFirst = spaceIdx >= 0 ? legalName.slice(0, spaceIdx) : legalName;
+  const displayLast = spaceIdx >= 0 ? legalName.slice(spaceIdx + 1) : "";
+
+  return (
+    <div className="flex items-start justify-between px-5 py-3.5 gap-4">
+      <div className="flex-1 min-w-0">
+        {editing ? (
+          <div className="space-y-2 mt-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1">First name</p>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="block w-full rounded-lg border border-input bg-white px-3 py-2 text-sm outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 hover:bg-gray-50"
+                  disabled={saving}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1">Last name</p>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="block w-full rounded-lg border border-input bg-white px-3 py-2 text-sm outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 hover:bg-gray-50"
+                  disabled={saving}
+                />
+              </div>
+            </div>
+            {error && <p className="text-[11px] text-destructive">{error}</p>}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:opacity-60"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                disabled={saving}
+                className="inline-flex items-center rounded-full border border-input bg-transparent px-4 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5">First name</p>
+              <p className="text-sm text-foreground">{displayFirst || <span className="text-muted-foreground italic">Not set</span>}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5">Last name</p>
+              <p className="text-sm text-foreground">{displayLast || <span className="text-muted-foreground italic">Not set</span>}</p>
+            </div>
+          </div>
+        )}
+      </div>
+      {!editing && (
+        <button
+          type="button"
+          onClick={handleEdit}
+          className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mt-0.5"
+        >
+          Edit
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ─── Editable field row ─── */
 type EditableRowProps = {
   label: string;
@@ -472,7 +588,6 @@ function SettingsPageInner({
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <span className="text-xl">🍓</span>
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Settings
             </h1>
@@ -502,16 +617,13 @@ function SettingsPageInner({
                 <p className="text-[11px] text-muted-foreground">Your name as it appears to hosts and guests.</p>
               </CardHeader>
               <CardContent className="p-0 divide-y divide-black/5">
-                <EditableRow
-                  label="Full name"
-                  value={profile?.legal_name || ""}
-                  onSave={(v) => saveProfileField("legal_name", v)}
-                />
-                <EditableRow
-                  label="Preferred first name"
-                  value={profile?.preferred_first_name || ""}
-                  helper="This is how your name appears to others on Wowzi."
-                  onSave={(v) => saveProfileField("preferred_first_name", v)}
+                <NameRow
+                  legalName={profile?.legal_name || ""}
+                  onSave={async (firstName, lastName) => {
+                    const full = [firstName, lastName].filter(Boolean).join(" ");
+                    await saveProfileField("legal_name", full);
+                    await saveProfileField("preferred_first_name", firstName);
+                  }}
                 />
               </CardContent>
             </Card>
