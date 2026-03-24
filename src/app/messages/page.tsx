@@ -580,8 +580,21 @@ function MessagesPageInner() {
           </div>
         )}
         {!loading && conversations.length === 0 && (
-          <div className="px-4 py-12 text-center">
-            <p className="text-sm text-gray-400">No conversations yet.</p>
+          <div className="flex flex-col items-center justify-center h-full px-6 py-12 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-2xl">
+              💬
+            </div>
+            <p className="text-sm font-semibold text-gray-800 mb-1">No messages yet</p>
+            <p className="text-xs text-gray-400 max-w-[200px] leading-relaxed mb-4">
+              Message a host after browsing a camp or class.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/search")}
+              className="rounded-lg bg-gray-900 px-4 py-1.5 text-xs font-medium text-white hover:bg-gray-700 transition-colors"
+            >
+              Find a camp
+            </button>
           </div>
         )}
         {conversations.map((c) => (
@@ -676,17 +689,26 @@ function MessagesPageInner() {
             </button>
           </>
         ) : (
-          <p className="text-sm text-gray-400">Select a conversation</p>
+          <p className="text-sm text-gray-400">Select a conversation to start messaging</p>
         )}
       </div>
 
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {activeMessages.length === 0 && !loading && (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-sm text-gray-400 text-center">
-              {activeConv ? "No messages yet. Say hello! 👋" : "Select a conversation to start messaging"}
-            </p>
+          <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+            {activeConv ? (
+              <>
+                <span className="text-3xl">👋</span>
+                <p className="text-sm font-medium text-gray-700">Start the conversation</p>
+                <p className="text-xs text-gray-400">Say hello to {activeConv.participant_name ?? "them"}!</p>
+              </>
+            ) : (
+              <>
+                <span className="text-3xl">💬</span>
+                <p className="text-sm text-gray-400">Select a conversation to start messaging</p>
+              </>
+            )}
           </div>
         )}
 

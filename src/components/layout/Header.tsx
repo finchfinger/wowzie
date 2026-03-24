@@ -6,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { AuthModal } from "@/components/auth/AuthModal";
-import { AIChatWidget } from "@/components/AIChatWidget";
 import { HeaderBar } from "./HeaderBar";
 
 export function Header() {
@@ -29,7 +28,6 @@ export function Header() {
   const showHeaderSearch = !isHomepage || heroPassed;
 
   const [authOpen, setAuthOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
   const [isApprovedHost, setIsApprovedHost] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -146,12 +144,10 @@ export function Header() {
           else { setAuthOpen(true); }
         }}
         onSignOut={async () => { await supabase.auth.signOut(); router.refresh(); }}
-        onAIChatClick={() => setChatOpen(true)}
         onSearchSubmit={(q) => router.push(`/search?q=${encodeURIComponent(q)}`)}
       />
 
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
-      <AIChatWidget open={chatOpen} onClose={() => setChatOpen(false)} />
     </>
   );
 }

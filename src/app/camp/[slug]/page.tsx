@@ -210,7 +210,7 @@ export default function CampDetailPage() {
       setLoadingCamp(true);
       setCampError(null);
       const { data, error } = await supabase.from("camps")
-        .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, location_city, location_neighborhood, is_published")
+        .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, is_published")
         .eq("slug", slug).maybeSingle();
       if (error || !data) { setCampError("We couldn't load this camp."); setLoadingCamp(false); return; }
       setCamp(data as FullCamp);
