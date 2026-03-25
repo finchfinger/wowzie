@@ -74,7 +74,7 @@ export function ActivityRow({ ev }: { ev: CalendarEvent }) {
         {ev.camp.image_url ? (
           <Image src={ev.camp.image_url} alt={ev.camp.name} fill sizes="48px" className="object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-xl">🏕️</div>
+          <div className="w-full h-full flex items-center justify-center text-xl"></div>
         )}
       </div>
 

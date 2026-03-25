@@ -35,7 +35,7 @@ export function ActivityListItem({
           {heroImageUrl ? (
             <Image src={heroImageUrl} alt={title} fill sizes="44px" className="object-cover" />
           ) : (
-            <span className="text-xl">🏕️</span>
+            <span className="text-xl"></span>
           )}
         </div>
 

@@ -607,7 +607,7 @@ export default function ActivitiesPage() {
       {!loading && pendingReviews.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-4 space-y-3">
           <p className="text-sm font-semibold text-amber-800">
-            ⭐{" "}
+            ★{" "}
             {pendingReviews.length === 1
               ? "How was your recent activity?"
               : `How were your ${pendingReviews.length} recent activities?`}
@@ -623,8 +623,7 @@ export default function ActivitiesPage() {
                     className="h-9 w-9 rounded-xl object-cover shrink-0"
                   />
                 ) : (
-                  <div className="h-9 w-9 rounded-xl bg-amber-200/60 flex items-center justify-center text-base shrink-0">
-                    🏕️
+                  <div className="h-9 w-9 rounded-xl bg-amber-200/60 shrink-0">
                   </div>
                 )}
                 <p className="flex-1 min-w-0 truncate text-sm font-medium text-amber-900">
@@ -785,8 +784,7 @@ export default function ActivitiesPage() {
             {/* Empty state — shown instead of calendar/list when no events */}
             {allEvents.length === 0 && !loading ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-8 py-16 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-2xl">
-                  🏕️
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
                 </div>
                 <p className="text-base font-semibold text-foreground mb-1">
                   No activities yet

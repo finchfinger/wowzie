@@ -6,8 +6,10 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { NavTabs } from "@/components/ui/nav-tabs";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import {
   Lock,
   ShieldCheck,
@@ -163,22 +165,12 @@ function NameRow({
             </div>
             {error && <p className="text-[11px] text-destructive">{error}</p>}
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="inline-flex items-center rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:opacity-60"
-              >
+              <Button type="button" onClick={handleSave} disabled={saving} size="xs">
                 {saving ? "Saving…" : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                disabled={saving}
-                className="inline-flex items-center rounded-full border border-input bg-transparent px-4 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
-              >
+              </Button>
+              <Button type="button" onClick={() => setEditing(false)} disabled={saving} variant="outline" size="xs">
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -195,13 +187,15 @@ function NameRow({
         )}
       </div>
       {!editing && (
-        <button
+        <Button
           type="button"
           onClick={handleEdit}
-          className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mt-0.5"
+          variant="ghost"
+          size="xs"
+          className="shrink-0 mt-0.5 text-muted-foreground"
         >
           Edit
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -273,22 +267,12 @@ function EditableRow({ label, value, helper, multiline, onSave }: EditableRowPro
             )}
             {error && <p className="text-[11px] text-destructive">{error}</p>}
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="inline-flex items-center rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:opacity-60"
-              >
+              <Button type="button" onClick={handleSave} disabled={saving} size="xs">
                 {saving ? "Saving…" : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={saving}
-                className="inline-flex items-center rounded-full border border-input bg-transparent px-4 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
-              >
+              </Button>
+              <Button type="button" onClick={handleCancel} disabled={saving} variant="outline" size="xs">
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -299,13 +283,15 @@ function EditableRow({ label, value, helper, multiline, onSave }: EditableRowPro
         )}
       </div>
       {!editing && (
-        <button
+        <Button
           type="button"
           onClick={handleEdit}
-          className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mt-0.5"
+          variant="ghost"
+          size="xs"
+          className="shrink-0 mt-0.5 text-muted-foreground"
         >
           Edit
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -592,12 +578,9 @@ function SettingsPageInner({
               Settings
             </h1>
           </div>
-          <Link
-            href="/profile"
-            className="inline-flex items-center rounded-full border border-input bg-transparent px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            See Profile
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/profile">See Profile</Link>
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -693,12 +676,9 @@ function SettingsPageInner({
                   Permanently delete your account. This action cannot be undone.
                   If you&apos;re hosting active events, they&apos;ll be cancelled and guests will be notified.
                 </p>
-                <button
-                  type="button"
-                  className="inline-flex items-center rounded-full bg-destructive px-4 py-2 text-xs font-medium text-white hover:bg-destructive/90 transition-colors"
-                >
+                <Button type="button" variant="destructive" size="sm">
                   Deactivate account
-                </button>
+                </Button>
               </CardContent>
             </Card>
           </section>
@@ -714,14 +694,14 @@ function SettingsPageInner({
                   Manage your kids&apos; profiles, interests, and health info.
                 </p>
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={() => { resetModal(); setModalOpen(true); }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:opacity-90 transition-opacity"
+                size="sm"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add child
-              </button>
+              </Button>
             </div>
 
             <Card className="overflow-hidden py-0 gap-0">
@@ -775,14 +755,14 @@ function SettingsPageInner({
                   <p className="text-xs text-muted-foreground mb-4">
                     Add your kids to get age-appropriate recommendations.
                   </p>
-                  <button
+                  <Button
                     type="button"
                     onClick={() => { resetModal(); setModalOpen(true); }}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:opacity-90 transition-opacity"
+                    size="sm"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Add your first child
-                  </button>
+                  </Button>
                 </div>
               )}
             </Card>
@@ -809,13 +789,15 @@ function SettingsPageInner({
           }}
         >
           <div className="relative w-full max-w-lg rounded-3xl bg-card shadow-xl max-h-[90vh] overflow-y-auto">
-            <button
+            <Button
               type="button"
               onClick={() => { if (!addingChild) { setModalOpen(false); } }}
-              className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-4"
             >
               ✕
-            </button>
+            </Button>
 
             <form className="px-6 pt-8 pb-6 space-y-6 text-sm" onSubmit={handleAddChildSubmit}>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -917,21 +899,22 @@ function SettingsPageInner({
               </div>
 
               <div className="flex gap-2 pt-1">
-                <button
+                <Button
                   type="button"
                   onClick={() => { if (!addingChild) { setModalOpen(false); resetModal(); } }}
                   disabled={addingChild}
-                  className="flex-1 inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium bg-muted text-foreground hover:bg-muted/80 disabled:opacity-60"
+                  variant="secondary"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={addingChild}
-                  className="flex-1 inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium bg-foreground text-background hover:opacity-90 disabled:opacity-60"
+                  className="flex-1"
                 >
                   {addingChild ? "Saving…" : "Continue"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1079,13 +1062,9 @@ function LoginSecurityTab({ user }: { user: User | null }) {
             description="Update the password you use to sign in to Wowzi."
             action={
               !showPasswordForm ? (
-                <button
-                  type="button"
-                  className="text-xs font-medium rounded-full bg-foreground px-3 py-1.5 text-background hover:opacity-90 whitespace-nowrap"
-                  onClick={() => setShowPasswordForm(true)}
-                >
+                <Button type="button" size="xs" onClick={() => setShowPasswordForm(true)}>
                   {userEmail ? "Change" : "Set password"}
-                </button>
+                </Button>
               ) : undefined
             }
           >
@@ -1118,17 +1097,18 @@ function LoginSecurityTab({ user }: { user: User | null }) {
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <button type="submit" disabled={passwordSaving} className="inline-flex items-center rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:opacity-60">
+                  <Button type="submit" disabled={passwordSaving} size="xs">
                     {passwordSaving ? "Saving…" : "Save password"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     disabled={passwordSaving}
-                    className="inline-flex items-center rounded-full border border-input bg-transparent px-4 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                    variant="outline"
+                    size="xs"
                     onClick={() => { setShowPasswordForm(false); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setPasswordError(null); setPasswordStatus(null); }}
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
@@ -1140,9 +1120,9 @@ function LoginSecurityTab({ user }: { user: User | null }) {
             label="Two-factor authentication"
             description="Add an extra layer of security with a one-time code when signing in."
             action={
-              <button type="button" className="text-xs font-medium rounded-full border border-input bg-transparent px-3 py-1.5 text-muted-foreground cursor-not-allowed whitespace-nowrap" disabled>
+              <Button type="button" variant="outline" size="xs" disabled className="cursor-not-allowed text-muted-foreground">
                 Coming soon
-              </button>
+              </Button>
             }
           />
         </CardContent>
@@ -1170,13 +1150,15 @@ function LoginSecurityTab({ user }: { user: User | null }) {
               label={device.label}
               description={device.detail}
               action={
-                <button
+                <Button
                   type="button"
-                  className="text-xs font-medium text-muted-foreground hover:text-foreground whitespace-nowrap"
+                  variant="ghost"
+                  size="xs"
+                  className="text-muted-foreground"
                   onClick={() => handleDisconnectDevice(device.id)}
                 >
                   {device.isCurrent ? "Sign out" : "Disconnect"}
-                </button>
+                </Button>
               }
             />
           ))}
@@ -1197,9 +1179,9 @@ function LoginSecurityTab({ user }: { user: User | null }) {
             label="Calendar syncing"
             description="Sync your Wowzi activities with Google, Outlook, or Apple calendar."
             action={
-              <button type="button" className="text-xs font-medium rounded-full border border-input bg-transparent px-3 py-1.5 text-foreground hover:bg-muted whitespace-nowrap">
+              <Button type="button" variant="outline" size="xs">
                 Add iCal
-              </button>
+              </Button>
             }
           />
           <SettingsRow
@@ -1207,9 +1189,9 @@ function LoginSecurityTab({ user }: { user: User | null }) {
             label="Sync contacts with Google"
             description="Sync your Gmail contacts to easily invite families to your events."
             action={
-              <button type="button" className="text-xs font-medium rounded-full border border-input bg-transparent px-3 py-1.5 text-foreground hover:bg-muted whitespace-nowrap">
+              <Button type="button" variant="outline" size="xs">
                 Connect
-              </button>
+              </Button>
             }
           />
         </CardContent>
@@ -1400,13 +1382,15 @@ function NotificationsTab({ userId }: { userId: string | null }) {
                   label={cat.label}
                   description={summarize(cat)}
                   action={
-                    <button
+                    <Button
                       type="button"
-                      className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                      variant="ghost"
+                      size="xs"
+                      className="text-muted-foreground"
                       onClick={() => openEdit(cat)}
                     >
                       Edit
-                    </button>
+                    </Button>
                   }
                 />
               ))}
@@ -1417,14 +1401,15 @@ function NotificationsTab({ userId }: { userId: string | null }) {
         {/* Unsubscribe all marketing */}
         <Card className="overflow-hidden py-0 gap-0">
           <CardContent className="px-5 py-4">
-            <button
+            <Button
               type="button"
-              className="inline-flex items-center rounded-full border border-input bg-transparent px-4 py-2 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60 transition-colors"
+              variant="outline"
+              size="sm"
               onClick={handleUnsubscribeAll}
               disabled={savingUnsubscribe}
             >
               {savingUnsubscribe ? "Updating preferences…" : "Unsubscribe from all marketing messages"}
-            </button>
+            </Button>
             <p className="mt-3 text-[11px] text-muted-foreground">
               By opting in to text messages, you agree to receive automated messaging from Wowzi at your saved phone number.
             </p>
@@ -1442,9 +1427,9 @@ function NotificationsTab({ userId }: { userId: string | null }) {
       {editingCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={(e) => { if (e.target === e.currentTarget) closeEdit(); }}>
           <div className="relative w-full max-w-md rounded-3xl bg-card shadow-xl max-h-[90vh] overflow-y-auto">
-            <button type="button" onClick={closeEdit} className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80">
+            <Button type="button" onClick={closeEdit} variant="ghost" size="icon" className="absolute right-4 top-4">
               ✕
-            </button>
+            </Button>
             <div className="px-6 pt-8 pb-6 space-y-5 text-sm">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight text-foreground">{editingCategory.label}</h2>
@@ -1452,44 +1437,25 @@ function NotificationsTab({ userId }: { userId: string | null }) {
               </div>
 
               <div className="space-y-3">
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm text-foreground">Email</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={editingEmail}
-                    onClick={() => setEditingEmail(!editingEmail)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${editingEmail ? "bg-primary" : "bg-muted"}`}
-                  >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition-transform ${editingEmail ? "translate-x-5" : "translate-x-0.5"} mt-0.5`} />
-                  </button>
-                </label>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-sm text-foreground">SMS</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={editingSms}
-                    onClick={() => setEditingSms(!editingSms)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${editingSms ? "bg-primary" : "bg-muted"}`}
-                  >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition-transform ${editingSms ? "translate-x-5" : "translate-x-0.5"} mt-0.5`} />
-                  </button>
-                </label>
+                <ToggleSwitch
+                  label="Email"
+                  checked={editingEmail}
+                  onChange={setEditingEmail}
+                />
+                <ToggleSwitch
+                  label="SMS"
+                  checked={editingSms}
+                  onChange={setEditingSms}
+                />
               </div>
 
               <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  disabled={savingCategory}
-                  onClick={handleSaveCategory}
-                  className="inline-flex items-center rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:opacity-90 disabled:opacity-60"
-                >
+                <Button type="button" disabled={savingCategory} onClick={handleSaveCategory} size="sm">
                   {savingCategory ? "Saving…" : "Save"}
-                </button>
-                <button type="button" onClick={closeEdit} className="inline-flex items-center rounded-full border border-input bg-transparent px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">
+                </Button>
+                <Button type="button" onClick={closeEdit} variant="outline" size="sm">
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>

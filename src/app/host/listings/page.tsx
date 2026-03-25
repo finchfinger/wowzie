@@ -218,7 +218,7 @@ export default function HostListingsPage() {
   if (listings.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border px-6 py-16 text-center space-y-3">
-        <div className="text-3xl">🏕️</div>
+        <div className="text-3xl"></div>
         <p className="text-sm text-muted-foreground">
           You haven&apos;t created any listings yet.
         </p>

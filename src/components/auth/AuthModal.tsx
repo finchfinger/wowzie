@@ -518,7 +518,7 @@ export function AuthModal({ isOpen, onClose, onSignedIn }: AuthModalProps) {
   // ── Titles per step ──────────────────────────────────────────────────────
 
   const titles: Record<Step, string> = {
-    email: "Welcome to Wowzi 👋",
+    email: "Welcome to Wowzi",
     code: "Check your email",
     parent: "Tell us a little more",
     child: "Who are you booking for?",

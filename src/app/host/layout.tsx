@@ -449,22 +449,18 @@ function HostGatewayPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               {
-                emoji: "👩‍🏫",
                 label: "Individual instructors",
                 desc: "Tutors, coaches, artists, and educators running their own programs",
               },
               {
-                emoji: "🏕️",
                 label: "Camp providers",
                 desc: "Day camps, overnight camps, themed programs, and seasonal offerings",
               },
               {
-                emoji: "🏫",
                 label: "Schools & studios",
                 desc: "Enrichment centers, dance studios, makerspaces, and learning hubs",
               },
               {
-                emoji: "🤝",
                 label: "Nonprofits & orgs",
                 desc: "Community organizations, youth programs, and after-school providers",
               },
@@ -473,7 +469,6 @@ function HostGatewayPage() {
                 key={who.label}
                 className="rounded-2xl border border-border bg-card p-5 sm:p-6"
               >
-                <div className="text-3xl mb-3">{who.emoji}</div>
                 <p className="text-sm font-semibold text-foreground mb-1.5">{who.label}</p>
                 <p className="text-xs text-muted-foreground leading-snug">{who.desc}</p>
               </div>

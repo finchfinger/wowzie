@@ -223,9 +223,9 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
         {messages.length <= 1 && (
           <div className="px-4 pb-2 flex gap-2 flex-wrap shrink-0">
             {[
-              "Plan my summer 🌞",
-              "Snow day ideas ❄️",
-              "Creative classes 🎨",
+              "Plan my summer",
+              "Snow day ideas",
+              "Creative classes",
             ].map((chip) => (
               <button
                 key={chip}

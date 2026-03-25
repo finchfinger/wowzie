@@ -57,10 +57,10 @@ const WELCOME: Message = {
 };
 
 const SUGGESTION_CHIPS = [
-  "Plan my summer 🌞",
-  "Snow day ideas ❄️",
-  "Creative classes 🎨",
-  "STEM camps near me 🔬",
+  "Plan my summer",
+  "Snow day ideas",
+  "Creative classes",
+  "STEM camps near me",
 ];
 
 /* ── robot icon ─────────────────────────────────────────── */

@@ -331,7 +331,6 @@ export function ListingCard({
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center text-2xl select-none">
-            🏕️
           </div>
         )}
       </div>

@@ -5,19 +5,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { WowziLogo } from "@/components/ui/WowziLogo";
 import { Button } from "@/components/ui/button";
-import {
-  Heart,
-  CalendarDays,
-  Users,
-  MessageSquare,
-  Bell,
-  UserCircle,
-  Settings,
-  HelpCircle,
-  LayoutDashboard,
-  LogOut,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+
+/* ── Material icon helper ───────────────────────────── */
+function MI({ name, size = 20 }: { name: string; size?: number }) {
+  return (
+    <span
+      className="material-symbols-rounded select-none"
+      style={{ fontSize: size, lineHeight: 1 }}
+    >
+      {name}
+    </span>
+  );
+}
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -57,15 +56,18 @@ export interface HeaderBarProps {
 
 /* ── Menu items ─────────────────────────────────────── */
 
-const MENU_ITEMS: Array<{ label: string; href: string; icon: LucideIcon }> = [
-  { label: "Wishlists", href: "/wishlist", icon: Heart },
-  { label: "My Activities", href: "/activities", icon: CalendarDays },
-  { label: "My Friends", href: "/friends", icon: Users },
-  { label: "Messages", href: "/messages", icon: MessageSquare },
-  { label: "Notifications", href: "/notifications", icon: Bell },
-  { label: "Profile", href: "/profile", icon: UserCircle },
-  { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Help Center", href: "/help", icon: HelpCircle },
+const NAV_ITEMS: Array<{ label: string; href: string; icon: string }> = [
+  { label: "Wishlists",     href: "/wishlist",      icon: "favorite" },
+  { label: "Activities",    href: "/activities",    icon: "tent" },
+  { label: "Friends",       href: "/friends",       icon: "diversity_3" },
+  { label: "Messages",      href: "/messages",      icon: "chat_bubble" },
+  { label: "Notifications", href: "/notifications", icon: "notifications" },
+  { label: "Profile",       href: "/profile",       icon: "account_circle" },
+];
+
+const ACCOUNT_ITEMS: Array<{ label: string; href: string; icon: string }> = [
+  { label: "Settings",    href: "/settings", icon: "settings" },
+  { label: "Help Center", href: "/help",     icon: "help" },
 ];
 
 /* ── Component ──────────────────────────────────────── */
@@ -241,10 +243,10 @@ export function HeaderBar({
                   {menuOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                      <div className="absolute right-0 top-14 z-50 w-60 rounded-2xl bg-card shadow-xl border border-border/40 overflow-hidden">
+                      <div className="absolute right-0 top-14 z-50 w-64 rounded-2xl bg-card shadow-xl border border-border/40 overflow-hidden">
 
                         {/* User info */}
-                        <div className="px-4 py-3 border-b border-border/50">
+                        <div className="px-4 py-3 border-b border-border/40">
                           {userName && (
                             <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
                           )}
@@ -255,21 +257,9 @@ export function HeaderBar({
                           )}
                         </div>
 
-                        {/* Nav links */}
-                        <nav className="py-1.5">
-                          <div className="md:hidden">
-                            <button
-                              type="button"
-                              onClick={() => { onHostClick?.(); setMenuOpen(false); }}
-                              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                            >
-                              <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
-                              {hostLabel}
-                            </button>
-                          </div>
-
-                          {MENU_ITEMS.map((item) => {
-                            const Icon = item.icon;
+                        {/* Main nav */}
+                        <nav className="py-1">
+                          {NAV_ITEMS.map((item) => {
                             const isActive = activePath === item.href;
                             const badge =
                               item.href === "/messages" && unreadCount > 0 ? unreadCount
@@ -280,11 +270,13 @@ export function HeaderBar({
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setMenuOpen(false)}
-                                className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-muted ${
-                                  isActive ? "text-foreground font-medium" : "text-foreground"
+                                className={`flex items-center gap-3 px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted/70 ${
+                                  isActive ? "bg-muted font-medium" : ""
                                 }`}
                               >
-                                <Icon className={`h-4 w-4 ${isActive ? "text-foreground" : "text-muted-foreground"}`} />
+                                <span className="text-muted-foreground">
+                                  <MI name={item.icon} />
+                                </span>
                                 {item.label}
                                 {badge > 0 && (
                                   <span className="ml-auto h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
@@ -296,15 +288,53 @@ export function HeaderBar({
                           })}
                         </nav>
 
+                        {/* Account items */}
+                        <div className="border-t border-border/40 py-1">
+                          {ACCOUNT_ITEMS.map((item) => {
+                            const isActive = activePath === item.href;
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setMenuOpen(false)}
+                                className={`flex items-center gap-3 px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted/70 ${
+                                  isActive ? "bg-muted font-medium" : ""
+                                }`}
+                              >
+                                <span className="text-muted-foreground">
+                                  <MI name={item.icon} />
+                                </span>
+                                {item.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+
+                        {/* Become a host — mobile only */}
+                        <div className="md:hidden border-t border-border/40 py-1">
+                          <button
+                            type="button"
+                            onClick={() => { onHostClick?.(); setMenuOpen(false); }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted/70 transition-colors"
+                          >
+                            <span className="text-muted-foreground">
+                              <MI name="mood" />
+                            </span>
+                            {hostLabel}
+                          </button>
+                        </div>
+
                         {/* Sign out */}
-                        <div className="border-t border-border/50 py-1.5">
+                        <div className="border-t border-border/40 py-1">
                           <button
                             type="button"
                             onClick={() => { onSignOut?.(); setMenuOpen(false); }}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted/70 transition-colors"
                           >
-                            <LogOut className="h-4 w-4 text-muted-foreground" />
-                            Log out
+                            <span className="text-muted-foreground">
+                              <MI name="waving_hand" />
+                            </span>
+                            Log Out
                           </button>
                         </div>
                       </div>

@@ -209,7 +209,7 @@ export default function ReviewPage() {
       <div className="mx-auto max-w-md px-4 py-16 text-center space-y-4">
         <div className="flex justify-center">
           <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center text-3xl">
-            ⭐
+            ★
           </div>
         </div>
         <h1 className="text-xl font-semibold text-foreground">

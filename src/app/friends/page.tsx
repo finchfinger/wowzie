@@ -240,8 +240,7 @@ export default function FriendsPage() {
         {/* Empty state */}
         {!loading && !error && friends.length === 0 && (
           <div className="px-6 py-10 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-2xl">
-              🤝
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             </div>
             <p className="text-sm font-semibold text-foreground">No friends yet</p>
             <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">
