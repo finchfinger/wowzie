@@ -160,6 +160,7 @@
     padding-inline: 80px;   /* desktop: 80px margins */
     margin-inline: auto;
     box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   /* 2 ── 12-column grid ─────────────────────── */

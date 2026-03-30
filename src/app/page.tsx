@@ -504,9 +504,7 @@ export default function HomePage() {
             Camps &amp; classes near you
           </p>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-foreground">
-            Where every kid finds
-            <br />
-            their thing.
+            Where every kid finds their thing.
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground max-w-md">
             From art to adventure, explore hand-picked camps and
@@ -720,35 +718,45 @@ export default function HomePage() {
 
       {/* GRID CONTROLS + GRID */}
       <section className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Sort dropdown (shadcn Select) */}
-          <div className="w-full sm:w-64">
+        <div className="flex items-center gap-2 sm:justify-between">
+          {/* Sort dropdown */}
+          <Select
+            value={sortMode}
+            onValueChange={(v) => setSortMode(v as SortMode)}
+          >
+            <SelectTrigger className="h-10 w-auto" aria-label="Sort">
+              <span className="text-foreground">{SORT_LABELS[sortMode]}</span>
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="featured">{SORT_LABELS.featured}</SelectItem>
+              <SelectItem value="popular">{SORT_LABELS.popular}</SelectItem>
+              <SelectItem value="new">{SORT_LABELS.new}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Category — dropdown on mobile, chips on sm+ */}
+          <div className="sm:hidden">
             <Select
-              value={sortMode}
-              onValueChange={(v) => setSortMode(v as SortMode)}
+              value={activeCategory}
+              onValueChange={(v) => setActiveCategory(v)}
             >
-              <SelectTrigger className="h-10 w-full" aria-label="Sort">
+              <SelectTrigger className="h-10 w-auto" aria-label="Category">
                 <span className="text-foreground">
-                  {SORT_LABELS[sortMode]}
+                  {CATEGORY_CHIPS.find((c) => c.value === activeCategory)?.label ?? "All"}
                 </span>
               </SelectTrigger>
-
-              <SelectContent>
-                <SelectItem value="featured">
-                  {SORT_LABELS.featured}
-                </SelectItem>
-                <SelectItem value="popular">
-                  {SORT_LABELS.popular}
-                </SelectItem>
-                <SelectItem value="new">
-                  {SORT_LABELS.new}
-                </SelectItem>
+              <SelectContent position="popper">
+                {CATEGORY_CHIPS.map((chip) => (
+                  <SelectItem key={chip.value} value={chip.value}>
+                    {chip.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Category chips */}
-          <div className="flex w-full items-center gap-2 overflow-x-auto py-2 sm:justify-end">
+          {/* Category chips — sm+ only */}
+          <div className="hidden sm:flex items-center gap-2 overflow-x-auto py-2 sm:justify-end">
             {CATEGORY_CHIPS.map((chip) => {
               const active = chip.value === activeCategory;
               return (

@@ -72,7 +72,7 @@ export default function RootLayout({
         </>
       )}
       <body
-        className="antialiased"
+        className="antialiased overflow-x-hidden"
       >
         <Providers>
           <div className="flex min-h-screen flex-col">
