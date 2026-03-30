@@ -35,7 +35,7 @@ export function FavoriteButton({
       disabled={favoriteLoading}
       aria-label={isFavorite ? "Remove from wishlist" : "Save to wishlist"}
       className={cn(
-        "inline-flex items-center justify-center rounded-full transition-all",
+        "inline-flex items-center justify-center rounded-lg transition-all",
         "bg-white/90 backdrop-blur-sm shadow-sm hover:scale-110 active:scale-95",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         sizeClasses,

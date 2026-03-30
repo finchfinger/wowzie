@@ -10,8 +10,23 @@ import Script from "next/script";
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
 
 export const metadata: Metadata = {
-  title: "Wowzi",
-  description: "Coordinate kids' activities",
+  title: {
+    default: "Wowzi — Find & Book Kids' Camps and Classes",
+    template: "%s | Wowzi",
+  },
+  description: "Browse, compare, and book the best kids' camps and classes near you. Everything from summer camps and STEM workshops to art programs and sports camps — all in one place.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://golly-roan.vercel.app"),
+  openGraph: {
+    siteName: "Wowzi",
+    type: "website",
+    title: "Wowzi — Find & Book Kids' Camps and Classes",
+    description: "Browse, compare, and book the best kids' camps and classes near you.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Wowzi — Find & Book Kids' Camps and Classes",
+    description: "Browse, compare, and book the best kids' camps and classes near you.",
+  },
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",

@@ -203,7 +203,10 @@ export default function BookingDetailPage() {
   const checkedInCount = attendance.filter(a => a.checked_in_at).length;
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-3">
+    <main>
+      <div className="page-container py-6">
+        <div className="page-grid">
+          <div className="span-8-center space-y-3">
 
       {/* Back */}
       <Link href="/activities" className="text-xs text-muted-foreground hover:text-foreground inline-block mb-1">
@@ -360,6 +363,9 @@ export default function BookingDetailPage() {
         )}
       </div>
 
-    </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

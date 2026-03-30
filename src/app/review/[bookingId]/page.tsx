@@ -269,7 +269,10 @@ export default function ReviewPage() {
     : null;
 
   return (
-    <div className="mx-auto max-w-md px-4 py-10 space-y-6">
+    <main>
+      <div className="page-container py-10">
+        <div className="page-grid">
+          <div className="span-8-center space-y-6">
       {/* Back */}
       <Link
         href="/activities"
@@ -361,6 +364,9 @@ export default function ReviewPage() {
           {submitting ? "Submitting…" : "Submit review"}
         </Button>
       </div>
-    </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

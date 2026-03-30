@@ -99,7 +99,10 @@ export default function CheckoutConfirmedPage() {
   const messageHref = hostId ? `/messages?to=${encodeURIComponent(hostId)}` : null;
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-16 space-y-6">
+    <main>
+      <div className="page-container py-16">
+        <div className="page-grid">
+          <div className="span-6-center space-y-6">
       {/* Success header */}
       <div className="text-center space-y-3">
         <div className="flex justify-center">
@@ -201,6 +204,9 @@ export default function CheckoutConfirmedPage() {
           Booking ID: {bookingId}
         </p>
       )}
-    </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

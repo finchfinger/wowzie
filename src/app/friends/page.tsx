@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ShareCalendarModal } from "@/components/ShareCalendarModal";
 import { FriendListItem, type FriendKid } from "@/components/FriendListItem";
 import { QrCode } from "lucide-react";
@@ -168,108 +170,93 @@ export default function FriendsPage() {
   }, []);
 
   return (
-    <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 lg:py-10">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          My Friends
-        </h1>
-        <Button size="sm" variant="outline" onClick={() => setShareOpen(true)}>
-          Add a friend
-        </Button>
-      </div>
-      <p className="text-sm text-muted-foreground mb-6">
-        Parents who have shared their calendars with you
-        <span className="mx-1.5 opacity-40">|</span>
-        See where you overlap with friends
-      </p>
+    <main>
+      <div className="page-container py-8 lg:py-10">
+        <div className="page-grid">
+          <div className="span-8-center">
+      <PageHeader
+        title="My Friends"
+        subtitle="Parents who have shared their calendars with you"
+        action={{ label: "Add a friend", onClick: () => setShareOpen(true) }}
+      />
 
-      {/* Main card */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      {/* Empty state — lives directly on page, no card */}
+      {!loading && !error && friends.length === 0 && (
+        <EmptyState
+          icon="sentiment_dissatisfied"
+          iconBg="bg-rose-100"
+          iconColor="text-rose-500"
+          title="No friends yet"
+          description="Invite a friend to share calendars and their activities will show up here."
+          action={{ label: "Add a friend", onClick: () => setShareOpen(true) }}
+        />
+      )}
 
-        {/* Invite banner */}
-        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-muted/40 border-b border-border">
-          <p className="text-sm text-foreground">
-            Don&apos;t see someone you want on Wowzi?{" "}
+      {/* Card — only shown when there are friends or still loading */}
+      {(loading || friends.length > 0) && (
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+
+          {/* Invite banner */}
+          <div className="flex items-center justify-between gap-3 px-4 py-3 bg-muted/40 border-b border-border">
+            <p className="text-sm text-foreground">
+              Don&apos;t see someone you want on Wowzi?{" "}
+              <button
+                type="button"
+                onClick={() => setShareOpen(true)}
+                className="font-medium text-primary hover:underline"
+              >
+                Invite them
+              </button>{" "}
+              using your share link.
+            </p>
             <button
               type="button"
               onClick={() => setShareOpen(true)}
-              className="font-medium text-primary hover:underline"
+              className="shrink-0 h-9 w-9 flex items-center justify-center rounded-xl border border-border bg-background hover:bg-muted transition-colors text-muted-foreground"
+              aria-label="Share via QR / link"
             >
-              Invite them
-            </button>{" "}
-            using your share link.
-          </p>
-          <button
-            type="button"
-            onClick={() => setShareOpen(true)}
-            className="shrink-0 h-9 w-9 flex items-center justify-center rounded-xl border border-border bg-background hover:bg-muted transition-colors text-muted-foreground"
-            aria-label="Share via QR / link"
-          >
-            <QrCode className="h-4 w-4" />
-          </button>
-        </div>
+              <QrCode className="h-4 w-4" />
+            </button>
+          </div>
 
-        {/* Section label */}
-        <div className="px-4 pt-4 pb-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            My friends
-          </p>
-        </div>
-
-        {/* Loading skeletons */}
-        {loading && (
-          <div className="divide-y divide-border/50">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-3.5 animate-pulse">
-                <div className="h-10 w-10 rounded-full bg-muted shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3.5 w-32 bg-muted rounded" />
-                  <div className="h-3 w-24 bg-muted rounded" />
+          {/* Loading skeletons */}
+          {loading && (
+            <div className="divide-y divide-border/50">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5 animate-pulse">
+                  <div className="h-10 w-10 rounded-full bg-muted shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-32 bg-muted rounded" />
+                    <div className="h-3 w-24 bg-muted rounded" />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Error */}
-        {!loading && error && (
-          <p className="px-4 py-6 text-sm text-destructive">{error}</p>
-        )}
-
-        {/* Empty state */}
-        {!loading && !error && friends.length === 0 && (
-          <div className="px-6 py-10 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              ))}
             </div>
-            <p className="text-sm font-semibold text-foreground">No friends yet</p>
-            <p className="mt-1 text-sm text-muted-foreground max-w-xs mx-auto">
-              Invite a friend to share calendars and their activities will show up here.
-            </p>
-            <Button size="sm" className="mt-4" onClick={() => setShareOpen(true)}>
-              Add a friend
-            </Button>
-          </div>
-        )}
+          )}
 
-        {/* Friend list */}
-        {!loading && !error && friends.length > 0 && (
-          <div className="divide-y divide-border/50 pb-2">
-            {friends.map((f) => (
-              <FriendListItem
-                key={f.shareId}
-                name={displayName(f.profile)}
-                kids={f.kids}
-                onClick={() => router.push(`/friends/${encodeURIComponent(f.senderId)}`)}
-                onMenuClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: open context menu (remove friend, view calendar, etc.)
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          {/* Error */}
+          {!loading && error && (
+            <p className="px-4 py-6 text-sm text-destructive">{error}</p>
+          )}
+
+          {/* Friend list */}
+          {!loading && !error && friends.length > 0 && (
+            <div className="divide-y divide-border/50 pb-2">
+              {friends.map((f) => (
+                <FriendListItem
+                  key={f.shareId}
+                  name={displayName(f.profile)}
+                  kids={f.kids}
+                  onClick={() => router.push(`/friends/${encodeURIComponent(f.senderId)}`)}
+                  onMenuClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Share / invite modal */}
       {myUserId && (
@@ -279,6 +266,9 @@ export default function FriendsPage() {
           userId={myUserId}
         />
       )}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

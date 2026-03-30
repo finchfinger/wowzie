@@ -1307,7 +1307,7 @@ export default function ActivityDetailPage() {
           <div className="flex flex-wrap gap-2 mb-4">
             {["all", "pending", "confirmed", "declined"].map(s => (
               <button key={s} type="button" onClick={() => setStatusFilter(s)}
-                className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${statusFilter === s ? "bg-foreground text-background border-foreground" : "bg-transparent text-muted-foreground border-input hover:bg-muted"}`}>
+                className={`rounded-lg px-3 py-1 text-xs font-medium border transition-colors ${statusFilter === s ? "bg-foreground text-background border-foreground" : "bg-transparent text-muted-foreground border-input hover:bg-muted"}`}>
                 {s.charAt(0).toUpperCase() + s.slice(1)}{s === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
               </button>
             ))}

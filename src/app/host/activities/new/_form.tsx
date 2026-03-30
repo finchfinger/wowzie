@@ -66,6 +66,8 @@ type CampSession = {
   endTime: string;
   capacity: string;
   enableWaitlist: boolean;
+  price_cents: number | null; // persisted per-session price
+  priceText: string;          // UI-only shadow, stripped at save
 };
 
 /** A class session section (day + capacity + time) for sessions mode */
@@ -142,6 +144,10 @@ type CampMeta = {
       type?: SiblingDiscountType;
       value?: string | null;
       price?: string | null;
+    };
+    multiSessionDiscount?: {
+      enabled?: boolean;
+      percent?: string | null;
     };
   };
   pricing?: {
@@ -424,6 +430,8 @@ const makeDefaultCampSession = (): CampSession => ({
   endTime: "",
   capacity: "",
   enableWaitlist: false,
+  price_cents: null,
+  priceText: "",
 });
 
 const MAX_PHOTOS = 9;
@@ -1040,6 +1048,10 @@ export default function CreateActivityPage({
     useState<SiblingDiscountType>("none");
   const [siblingDiscountValue, setSiblingDiscountValue] = useState("");
 
+  /* Multi-session discount */
+  const [offerMultiSessionDiscount, setOfferMultiSessionDiscount] = useState(false);
+  const [multiSessionDiscountPercent, setMultiSessionDiscountPercent] = useState("");
+
   /* Submit / load state */
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -1107,12 +1119,15 @@ export default function CreateActivityPage({
       setDescription(data.description ?? "");
       setLocation(data.location ?? "");
 
-      if (data.price_cents != null) {
-        setPriceCents(data.price_cents);
-        setPriceText(formatCentsToMoneyText(data.price_cents));
-      } else {
-        setPriceCents(null);
-        setPriceText("");
+      /* Top-level price only applies to non-camp kinds (camps use per-session prices) */
+      if (meta.activityKind !== "camp") {
+        if (data.price_cents != null) {
+          setPriceCents(data.price_cents);
+          setPriceText(formatCentsToMoneyText(data.price_cents));
+        } else {
+          setPriceCents(null);
+          setPriceText("");
+        }
       }
 
       setVisibility(
@@ -1172,9 +1187,15 @@ export default function CreateActivityPage({
         setWeeklySchedule((prev) => ({ ...prev, ...meta.weeklySchedule! }));
       }
 
-      /* Camp sessions */
+      /* Camp sessions — rehydrate priceText from persisted price_cents */
       if (Array.isArray(meta.campSessions) && meta.campSessions.length) {
-        setCampSessions(meta.campSessions);
+        setCampSessions(
+          meta.campSessions.map((s: any) => ({
+            ...s,
+            price_cents: s.price_cents ?? null,
+            priceText: s.price_cents != null ? formatCentsToMoneyText(s.price_cents) : "",
+          })),
+        );
       }
 
       /* Activities */
@@ -1214,6 +1235,10 @@ export default function CreateActivityPage({
       setExtendedDayPrice(ext.price ?? "");
       setExtendedDayStart(ext.start ?? "");
       setExtendedDayEnd(ext.end ?? "");
+
+      const msd = adv.multiSessionDiscount || {};
+      setOfferMultiSessionDiscount(Boolean(msd.enabled));
+      setMultiSessionDiscountPercent(msd.percent ?? "");
 
       const legacyPrice = (sib as any).price as string | undefined;
       const loadedEnabled = Boolean(sib.enabled);
@@ -1274,6 +1299,14 @@ export default function CreateActivityPage({
   const buildPayloadAndSave = async (hostId: string) => {
     const { min, max } = deriveMinMaxFromBuckets(ageBuckets);
 
+    /* Derive effective price: per-session min for camps, top-level for classes */
+    const sessionPrices = activityKind === "camp"
+      ? campSessions.map((s) => s.price_cents).filter((p): p is number => p != null)
+      : [];
+    const effectivePriceCents = activityKind === "camp"
+      ? (sessionPrices.length > 0 ? Math.min(...sessionPrices) : null)
+      : priceCents;
+
     const legacyAgeBucket: AgeBucket =
       ageBuckets.length === 1 ? ageBuckets[0] : "all";
 
@@ -1311,7 +1344,9 @@ export default function CreateActivityPage({
         endDate: ongoingEndDate || null,
       },
       weeklySchedule,
-      campSessions: activityKind === "camp" ? campSessions : undefined,
+      campSessions: activityKind === "camp"
+        ? campSessions.map(({ priceText: _pt, ...rest }) => rest) as CampSession[]
+        : undefined,
       classSchedule:
         activityKind === "class"
           ? {
@@ -1350,10 +1385,17 @@ export default function CreateActivityPage({
               ? siblingDiscountValue || null
               : null,
         },
+        multiSessionDiscount: activityKind === "camp" ? {
+          enabled:
+            offerMultiSessionDiscount &&
+            campSessions.length >= 2 &&
+            Boolean(multiSessionDiscountPercent),
+          percent: offerMultiSessionDiscount ? multiSessionDiscountPercent || null : null,
+        } : undefined,
       },
       pricing: {
-        price_cents: priceCents ?? null,
-        display: priceText || null,
+        price_cents: effectivePriceCents ?? null,
+        display: effectivePriceCents != null ? formatCentsToMoneyText(effectivePriceCents) : null,
         currency: "USD",
       },
       activities: activities.length ? activities : undefined,
@@ -1445,7 +1487,7 @@ export default function CreateActivityPage({
       slug,
       description: description || null,
       location: locationType === "virtual" ? "Virtual" : location || null,
-      price_cents: priceCents,
+      price_cents: effectivePriceCents,
       host_id: hostId,
       is_published: visibility === "public",
       is_active: true,
@@ -1495,8 +1537,17 @@ export default function CreateActivityPage({
       return;
     }
 
-    if (priceText.trim() && priceCents === null) {
+    if (activityKind !== "camp" && priceText.trim() && priceCents === null) {
       setSubmitError("Please enter a valid price (for example 450 or 450.00).");
+      return;
+    }
+
+    if (
+      activityKind === "camp" &&
+      offerMultiSessionDiscount &&
+      (!multiSessionDiscountPercent || Number(multiSessionDiscountPercent) <= 0)
+    ) {
+      setSubmitError("Please enter a multi-session discount percentage greater than 0.");
       return;
     }
 
@@ -1855,6 +1906,40 @@ export default function CreateActivityPage({
           </label>
         </div>
       </div>
+
+      {/* Price per child */}
+      <Field label="Price per child">
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
+            $
+          </span>
+          <Input
+            value={session.priceText}
+            onChange={(e) => {
+              const next = sanitizeMoneyInput(e.target.value);
+              updateCampSession(session.id, {
+                priceText: next,
+                price_cents: parseMoneyToCents(next),
+              });
+            }}
+            onBlur={() => {
+              if (!session.priceText.trim()) return;
+              if (session.price_cents == null) {
+                updateCampSession(session.id, { priceText: "" });
+                return;
+              }
+              updateCampSession(session.id, {
+                priceText: formatCentsToMoneyText(session.price_cents),
+              });
+            }}
+            placeholder="e.g. 450"
+            className="pl-8 text-left h-11"
+            inputMode="decimal"
+            autoComplete="off"
+            aria-label="Price per child"
+          />
+        </div>
+      </Field>
     </div>
   );
 
@@ -2602,34 +2687,36 @@ export default function CreateActivityPage({
       {/* Pricing & visibility */}
       <FormCard title="Pricing &amp; visibility">
         <div className="space-y-4">
-          <Field label="Price per child">
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-                $
-              </span>
-              <Input
-                value={priceText}
-                onChange={(e) => {
-                  const nextText = sanitizeMoneyInput(e.target.value);
-                  setPriceText(nextText);
-                  setPriceCents(parseMoneyToCents(nextText));
-                }}
-                onBlur={() => {
-                  if (!priceText.trim()) return;
-                  if (priceCents == null) {
-                    setPriceText("");
-                    return;
-                  }
-                  setPriceText(formatCentsToMoneyText(priceCents));
-                }}
-                placeholder="e.g. 450"
-                className="pl-8 text-left h-11"
-                inputMode="decimal"
-                autoComplete="off"
-                aria-label="Price per child"
-              />
-            </div>
-          </Field>
+          {activityKind !== "camp" && (
+            <Field label="Price per child">
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
+                  $
+                </span>
+                <Input
+                  value={priceText}
+                  onChange={(e) => {
+                    const nextText = sanitizeMoneyInput(e.target.value);
+                    setPriceText(nextText);
+                    setPriceCents(parseMoneyToCents(nextText));
+                  }}
+                  onBlur={() => {
+                    if (!priceText.trim()) return;
+                    if (priceCents == null) {
+                      setPriceText("");
+                      return;
+                    }
+                    setPriceText(formatCentsToMoneyText(priceCents));
+                  }}
+                  placeholder="e.g. 450"
+                  className="pl-8 text-left h-11"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  aria-label="Price per child"
+                />
+              </div>
+            </Field>
+          )}
 
           <Field
             label="Visibility"
@@ -2824,6 +2911,38 @@ export default function CreateActivityPage({
               : `Each additional sibling will receive ${siblingDiscountValue || "X"}% off the registration fee.`}
           </Tip>
         </ExpandableCheckboxCard>
+
+        {activityKind === "camp" && campSessions.length >= 2 && (
+          <ExpandableCheckboxCard
+            checked={offerMultiSessionDiscount}
+            onCheckedChange={(checked) => {
+              setOfferMultiSessionDiscount(checked);
+              if (!checked) setMultiSessionDiscountPercent("");
+            }}
+            title="Multi-session discount"
+            description="Offer a discount when a guest books 2 or more sessions."
+          >
+            <Field label="Discount percentage">
+              <div className="relative">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={multiSessionDiscountPercent}
+                  onChange={(e) => setMultiSessionDiscountPercent(e.target.value)}
+                  placeholder="e.g. 10"
+                  className="h-11 pr-8"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  %
+                </span>
+              </div>
+            </Field>
+            <Tip>
+              Guests save {multiSessionDiscountPercent || "X"}% when they book 2 or more sessions.
+            </Tip>
+          </ExpandableCheckboxCard>
+        )}
       </FormCard>
     </div>
   );
@@ -2871,7 +2990,19 @@ export default function CreateActivityPage({
             )}
 
             <span className="text-xs text-muted-foreground">Price</span>
-            <span>{priceCents != null ? `$${formatCentsToMoneyText(priceCents)}` : "Free / not set"}</span>
+            <span>
+              {activityKind === "camp" ? (() => {
+                const prices = campSessions
+                  .map((s) => s.price_cents)
+                  .filter((p): p is number => p != null);
+                if (!prices.length) return "Free / not set";
+                const lo = Math.min(...prices);
+                const hi = Math.max(...prices);
+                return lo === hi
+                  ? `$${formatCentsToMoneyText(lo)} / session`
+                  : `$${formatCentsToMoneyText(lo)}–$${formatCentsToMoneyText(hi)} / session`;
+              })() : priceCents != null ? `$${formatCentsToMoneyText(priceCents)}` : "Free / not set"}
+            </span>
 
             <span className="text-xs text-muted-foreground">Schedule</span>
             <span>
@@ -2976,8 +3107,18 @@ export default function CreateActivityPage({
                   {s.enableWaitlist && (
                     <span className="ml-1 text-muted-foreground">· waitlist</span>
                   )}
+                  {s.price_cents != null && (
+                    <span className="ml-2 text-muted-foreground">
+                      · ${formatCentsToMoneyText(s.price_cents)}
+                    </span>
+                  )}
                 </div>
               ))}
+              {offerMultiSessionDiscount && multiSessionDiscountPercent && (
+                <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  Multi-session discount: {multiSessionDiscountPercent}% off when booking 2+ sessions
+                </div>
+              )}
             </div>
           )}
 

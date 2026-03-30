@@ -4,6 +4,8 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   MoreVertical,
   Send,
@@ -20,9 +22,15 @@ export default function MessagesPageWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-5xl mx-auto px-4 py-8 text-sm text-muted-foreground">
-          Loading messages…
-        </div>
+        <main>
+          <div className="page-container py-8">
+            <div className="page-grid">
+              <div className="span-10-center text-sm text-muted-foreground">
+                Loading messages…
+              </div>
+            </div>
+          </div>
+        </main>
       }
     >
       <MessagesPageInner />
@@ -164,6 +172,212 @@ async function uploadToStorage(file: File, userId: string): Promise<string | nul
   }
 }
 
+/* ── mock data ─────────────────────────────────────────── */
+
+const _now  = new Date().toISOString();
+const _30m  = new Date(Date.now() - 30 * 60000).toISOString();
+const _1h   = new Date(Date.now() - 3600000).toISOString();
+const _2h   = new Date(Date.now() - 2 * 3600000).toISOString();
+const _1d   = new Date(Date.now() - 86400000).toISOString();
+const _3d   = new Date(Date.now() - 3 * 86400000).toISOString();
+const _1wk  = new Date(Date.now() - 7 * 86400000).toISOString();
+
+const mockConversations: Conversation[] = [
+  {
+    id: "mock-wildwood",
+    participant_name: "Camp Wildwood",
+    avatar_emoji: null,
+    last_message_preview: "We can't wait to see you tomorrow. Please use the front entrance for check-in.",
+    last_message_at: _now,
+    unread_count: 1,
+    participant_profile_id: null,
+    camp_slug: "camp-wildwood",
+    camp_name: "Camp Wildwood",
+  },
+  {
+    id: "mock-golden-gate",
+    participant_name: "Golden Gate Arts Camp",
+    avatar_emoji: null,
+    last_message_preview: "Hi! Do you have any art camps open for 8-year-olds?",
+    last_message_at: _30m,
+    unread_count: 1,
+    participant_profile_id: null,
+    camp_slug: "golden-gate-arts",
+    camp_name: "Golden Gate Arts Camp",
+  },
+  {
+    id: "mock-riverside",
+    participant_name: "Riverside Science Camp",
+    avatar_emoji: null,
+    last_message_preview: "We have a camper with a peanut allergy…",
+    last_message_at: _1d,
+    unread_count: 0,
+    participant_profile_id: null,
+    camp_slug: "riverside-science",
+    camp_name: "Riverside Science Camp",
+  },
+  {
+    id: "mock-saddle-grove",
+    participant_name: "Saddle and Grove Summer Camp",
+    avatar_emoji: null,
+    last_message_preview: "Perfect, thanks so much!",
+    last_message_at: _1d,
+    unread_count: 0,
+    participant_profile_id: null,
+    camp_slug: "saddle-grove",
+    camp_name: "Saddle and Grove Summer Camp",
+  },
+  {
+    id: "mock-stem-robotics",
+    participant_name: "STEM Robotics Week",
+    avatar_emoji: null,
+    last_message_preview: "Thanks for confirming our registration f…",
+    last_message_at: _3d,
+    unread_count: 0,
+    participant_profile_id: null,
+    camp_slug: "stem-robotics",
+    camp_name: "STEM Robotics Week",
+  },
+  {
+    id: "mock-cooking-adventures",
+    participant_name: "Cooking Adventures Camp",
+    avatar_emoji: null,
+    last_message_preview: "Is there a way to update emergency contact info?",
+    last_message_at: _1wk,
+    unread_count: 0,
+    participant_profile_id: null,
+    camp_slug: "cooking-adventures",
+    camp_name: "Cooking Adventures Camp",
+  },
+];
+
+const mockMessagesByConv: Record<string, Message[]> = {
+  "mock-wildwood": [
+    {
+      id: "mock-ww-1",
+      conversation_id: "mock-wildwood",
+      sender: "them",
+      body: "Hey there! What's the drop-off time again for tomorrow's camp? I can't find the confirmation email.",
+      created_at: _2h,
+      image_url: null,
+    },
+    {
+      id: "mock-ww-2",
+      conversation_id: "mock-wildwood",
+      sender: "user",
+      body: "No problem! Drop-off starts at 8:30 AM, and activities begin at 9:00 AM.",
+      created_at: _2h,
+      image_url: null,
+    },
+    {
+      id: "mock-ww-3",
+      conversation_id: "mock-wildwood",
+      sender: "them",
+      body: "Would it be okay if we dropped Liam off a bit early? I have a work call at 8:15.",
+      created_at: _1h,
+      image_url: null,
+    },
+    {
+      id: "mock-ww-4",
+      conversation_id: "mock-wildwood",
+      sender: "user",
+      body: "Totally fine! Our staff will be here starting at 8:00 AM.",
+      created_at: _1h,
+      image_url: null,
+    },
+    {
+      id: "mock-ww-5",
+      conversation_id: "mock-wildwood",
+      sender: "them",
+      body: "We can't wait to see you tomorrow. Please use the front entrance for check-in. Also, it looks like it might be a hot one. Please pack sunscreen for your little one.",
+      created_at: _now,
+      image_url: null,
+    },
+  ],
+  "mock-golden-gate": [
+    {
+      id: "mock-gg-1",
+      conversation_id: "mock-golden-gate",
+      sender: "them",
+      body: "Hi! Do you have any art camps open for 8-year-olds this summer?",
+      created_at: _30m,
+      image_url: null,
+    },
+  ],
+  "mock-riverside": [
+    {
+      id: "mock-rs-1",
+      conversation_id: "mock-riverside",
+      sender: "them",
+      body: "Hi, we have a camper with a peanut allergy. Can you confirm the kitchen is nut-free?",
+      created_at: _1d,
+      image_url: null,
+    },
+    {
+      id: "mock-rs-2",
+      conversation_id: "mock-riverside",
+      sender: "user",
+      body: "Absolutely — our kitchen is completely nut-free and all staff are trained on allergy protocols.",
+      created_at: _1d,
+      image_url: null,
+    },
+  ],
+  "mock-saddle-grove": [
+    {
+      id: "mock-sg-1",
+      conversation_id: "mock-saddle-grove",
+      sender: "them",
+      body: "Quick question — can we switch my daughter's session from week 2 to week 3?",
+      created_at: _1d,
+      image_url: null,
+    },
+    {
+      id: "mock-sg-2",
+      conversation_id: "mock-saddle-grove",
+      sender: "user",
+      body: "Yes, week 3 still has spots! I'll move her over now.",
+      created_at: _1d,
+      image_url: null,
+    },
+    {
+      id: "mock-sg-3",
+      conversation_id: "mock-saddle-grove",
+      sender: "them",
+      body: "Perfect, thanks so much!",
+      created_at: _1d,
+      image_url: null,
+    },
+  ],
+  "mock-stem-robotics": [
+    {
+      id: "mock-sr-1",
+      conversation_id: "mock-stem-robotics",
+      sender: "them",
+      body: "Thanks for confirming our registration for STEM Robotics Week. Really excited!",
+      created_at: _3d,
+      image_url: null,
+    },
+  ],
+  "mock-cooking-adventures": [
+    {
+      id: "mock-ca-1",
+      conversation_id: "mock-cooking-adventures",
+      sender: "them",
+      body: "Is there a way to update our emergency contact information before camp starts?",
+      created_at: _1wk,
+      image_url: null,
+    },
+    {
+      id: "mock-ca-2",
+      conversation_id: "mock-cooking-adventures",
+      sender: "user",
+      body: "Yes! You can update it any time from your account profile page.",
+      created_at: _1wk,
+      image_url: null,
+    },
+  ],
+};
+
 /* ── page ──────────────────────────────────────────────── */
 
 function MessagesPageInner() {
@@ -181,6 +395,7 @@ function MessagesPageInner() {
   const [messagesByConv, setMessagesByConv] = useState<Record<string, Message[]>>({});
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notAuthed, setNotAuthed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draftText, setDraftText] = useState("");
   const [sending, setSending] = useState(false);
@@ -192,6 +407,7 @@ function MessagesPageInner() {
   const [pendingMedia, setPendingMedia] = useState<PendingMedia | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
   const convIdsRef = useRef<Set<string>>(new Set());
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -215,7 +431,8 @@ function MessagesPageInner() {
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [activeMessages]);
 
   // Close emoji picker on outside click
@@ -237,7 +454,8 @@ function MessagesPageInner() {
       try {
         const { data: userRes } = await supabase.auth.getUser();
         if (!userRes.user) {
-          router.replace("/");
+          setNotAuthed(true);
+          setLoading(false);
           return;
         }
         const myId = userRes.user.id;
@@ -302,9 +520,15 @@ function MessagesPageInner() {
         }
 
         if (convs.length === 0) {
-          setConversations([]);
-          setMessagesByConv({});
-          setActiveConvId(null);
+          // Fall back to mock data so the UI is always demonstrable
+          const sorted = sortConvs(mockConversations);
+          const target = initialCParam && isMock(initialCParam)
+            ? initialCParam
+            : sorted[0]?.id ?? null;
+          setConversations(sorted);
+          setMessagesByConv(mockMessagesByConv);
+          setActiveConvId(target);
+          setMobileView(initialCParam ? "thread" : "list");
           setLoading(false);
           return;
         }
@@ -542,24 +766,30 @@ function MessagesPageInner() {
   /* ── conversation list ──────────────────────────────── */
 
   const ConversationListUI = (
-    <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden h-full flex flex-col">
-      <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-900">Messages</h2>
+    <div className="rounded-2xl bg-card overflow-hidden h-full flex flex-col">
+      {/* Filter + search row */}
+      <div className="px-3 py-3 border-b border-border flex items-center gap-2">
+        <div className="flex items-center gap-1 bg-muted/60 rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground cursor-default shrink-0">
+          All
+          <svg className="h-3 w-3 ml-0.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div className="flex-1 flex items-center gap-2 bg-muted/40 rounded-lg px-3 py-1.5">
+          <svg className="h-3.5 w-3.5 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <circle cx="11" cy="11" r="8" /><path strokeLinecap="round" d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search"
+            className="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground text-foreground"
+          />
+        </div>
         {!loading && authedUserId && (
           <span
-            title={
-              realtimeStatus === "connected"
-                ? "Live updates on"
-                : realtimeStatus === "error"
-                ? "Connection error"
-                : "Connecting…"
-            }
-            className={`h-2 w-2 rounded-full transition-colors ${
-              realtimeStatus === "connected"
-                ? "bg-emerald-500"
-                : realtimeStatus === "error"
-                ? "bg-red-500"
-                : "bg-amber-400 animate-pulse"
+            title={realtimeStatus === "connected" ? "Live" : realtimeStatus === "error" ? "Error" : "Connecting…"}
+            className={`h-2 w-2 rounded-full shrink-0 transition-colors ${
+              realtimeStatus === "connected" ? "bg-emerald-500" : realtimeStatus === "error" ? "bg-destructive" : "bg-amber-400 animate-pulse"
             }`}
           />
         )}
@@ -570,31 +800,13 @@ function MessagesPageInner() {
           <div className="px-4 py-6 space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3 animate-pulse">
-                <div className="h-10 w-10 rounded-full bg-gray-200 shrink-0" />
+                <div className="h-10 w-10 rounded-full bg-muted shrink-0" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-3 w-28 bg-gray-200 rounded" />
-                  <div className="h-2.5 w-44 bg-gray-200 rounded" />
+                  <div className="h-3 w-28 bg-muted rounded" />
+                  <div className="h-2.5 w-44 bg-muted rounded" />
                 </div>
               </div>
             ))}
-          </div>
-        )}
-        {!loading && conversations.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full px-6 py-12 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-2xl">
-              💬
-            </div>
-            <p className="text-sm font-semibold text-gray-800 mb-1">No messages yet</p>
-            <p className="text-xs text-gray-400 max-w-[200px] leading-relaxed mb-4">
-              Message a host after browsing a camp or class.
-            </p>
-            <button
-              type="button"
-              onClick={() => router.push("/search")}
-              className="rounded-lg bg-gray-900 px-4 py-1.5 text-xs font-medium text-white hover:bg-gray-700 transition-colors"
-            >
-              Find a camp
-            </button>
           </div>
         )}
         {conversations.map((c) => (
@@ -602,8 +814,8 @@ function MessagesPageInner() {
             key={c.id}
             type="button"
             onClick={() => handleSelectConversation(c.id)}
-            className={`w-full text-left px-4 py-3.5 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 ${
-              activeConvId === c.id ? "bg-violet-50" : ""
+            className={`w-full text-left px-4 py-3.5 flex items-center gap-3 transition-colors border-b border-border last:border-0 ${
+              activeConvId === c.id ? "bg-primary/[0.05]" : "hover:bg-muted/50"
             }`}
           >
             <UserAvatar
@@ -616,26 +828,26 @@ function MessagesPageInner() {
                 <p
                   className={`text-sm truncate ${
                     c.unread_count > 0
-                      ? "font-semibold text-gray-900"
-                      : "font-medium text-gray-800"
+                      ? "font-semibold text-foreground"
+                      : "font-medium text-foreground"
                   }`}
                 >
                   {c.participant_name || "Unknown"}
                 </p>
-                <span className="text-[11px] text-gray-400 shrink-0">
+                <span className="text-[11px] text-muted-foreground shrink-0">
                   {relTime(c.last_message_at)}
                 </span>
               </div>
               <p
                 className={`text-xs truncate mt-0.5 ${
-                  c.unread_count > 0 ? "text-gray-700 font-medium" : "text-gray-400"
+                  c.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"
                 }`}
               >
                 {c.last_message_preview || "No messages yet"}
               </p>
             </div>
             {c.unread_count > 0 && (
-              <span className="h-5 w-5 rounded-full bg-violet-500 text-white text-[10px] flex items-center justify-center font-semibold shrink-0">
+              <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-semibold shrink-0">
                 {c.unread_count}
               </span>
             )}
@@ -654,14 +866,14 @@ function MessagesPageInner() {
     !sending;
 
   const ThreadUI = (
-    <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden h-full flex flex-col">
+    <div className="rounded-2xl bg-card overflow-hidden h-full flex flex-col">
 
       {/* ── Header ── */}
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+      <div className="px-4 py-3 border-b border-border flex items-center gap-3">
         <button
           type="button"
           onClick={() => setMobileView("list")}
-          className="lg:hidden shrink-0 p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500"
+          className="lg:hidden shrink-0 p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -674,39 +886,39 @@ function MessagesPageInner() {
               className="shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-900 truncate">
+              <p className="text-sm font-semibold text-foreground truncate">
                 {activeConv.participant_name}
               </p>
               {activeConv.camp_name && (
-                <p className="text-[11px] text-gray-400 truncate">{activeConv.camp_name}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{activeConv.camp_name}</p>
               )}
             </div>
             <button
               type="button"
-              className="shrink-0 p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-400"
+              className="shrink-0 p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
             >
               <MoreVertical className="h-5 w-5" />
             </button>
           </>
         ) : (
-          <p className="text-sm text-gray-400">Select a conversation to start messaging</p>
+          <p className="text-sm text-muted-foreground">Select a conversation to start messaging</p>
         )}
       </div>
 
       {/* ── Messages ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto px-4 py-4">
         {activeMessages.length === 0 && !loading && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-2">
             {activeConv ? (
               <>
                 <span className="text-3xl">👋</span>
-                <p className="text-sm font-medium text-gray-700">Start the conversation</p>
-                <p className="text-xs text-gray-400">Say hello to {activeConv.participant_name ?? "them"}!</p>
+                <p className="text-sm font-medium text-foreground">Start the conversation</p>
+                <p className="text-xs text-muted-foreground">Say hello to {activeConv.participant_name ?? "them"}!</p>
               </>
             ) : (
               <>
                 <span className="text-3xl">💬</span>
-                <p className="text-sm text-gray-400">Select a conversation to start messaging</p>
+                <p className="text-sm text-muted-foreground">Select a conversation to start messaging</p>
               </>
             )}
           </div>
@@ -716,11 +928,11 @@ function MessagesPageInner() {
           <div key={`${group.dateLabel}-${group.date.toISOString()}`}>
             {/* Date separator */}
             <div className="flex items-center gap-3 my-5">
-              <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-[11px] text-gray-400 font-medium px-2 shrink-0">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-[11px] text-muted-foreground font-medium px-2 shrink-0">
                 {group.dateLabel}
               </span>
-              <div className="flex-1 h-px bg-gray-100" />
+              <div className="flex-1 h-px bg-border" />
             </div>
 
             {/* Messages */}
@@ -753,7 +965,7 @@ function MessagesPageInner() {
                       }`}
                     >
                       {/* Name + timestamp */}
-                      <p className="text-[11px] text-gray-400 mb-1 px-1">
+                      <p className="text-[11px] text-muted-foreground mb-1 px-1">
                         {senderName} · {msgTime(m.created_at)}
                         {isOptimistic && (
                           <span className="ml-1 opacity-60">· Sending…</span>
@@ -764,8 +976,8 @@ function MessagesPageInner() {
                       <div
                         className={`rounded-2xl px-3.5 py-2.5 text-sm transition-opacity ${
                           isUser
-                            ? "bg-violet-500 text-white rounded-br-sm"
-                            : "bg-gray-100 text-gray-900 rounded-bl-sm"
+                            ? "bg-violet-100 text-violet-900 rounded-br-sm"
+                            : "bg-muted text-foreground rounded-bl-sm"
                         } ${isOptimistic ? "opacity-70" : "opacity-100"}`}
                       >
                         {m.body && (
@@ -785,7 +997,7 @@ function MessagesPageInner() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`flex items-center gap-2 text-sm underline underline-offset-2 ${
-                              isUser ? "text-white/90" : "text-violet-600"
+                              isUser ? "text-violet-700" : "text-primary"
                             }`}
                           >
                             <FileText className="h-4 w-4 shrink-0" />
@@ -814,11 +1026,11 @@ function MessagesPageInner() {
       </div>
 
       {/* ── Composer ── */}
-      <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+      <div className="px-4 pb-4 pt-2 border-t border-border">
 
         {/* Pending media preview */}
         {pendingMedia && (
-          <div className="mb-2 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-2">
+          <div className="mb-2 flex items-center gap-2 bg-muted/50 border border-border rounded-xl p-2">
             {pendingMedia.isImage && pendingMedia.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -827,13 +1039,13 @@ function MessagesPageInner() {
                 className="h-12 w-12 rounded-lg object-cover shrink-0"
               />
             ) : (
-              <div className="h-12 w-12 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
-                <FileText className="h-5 w-5 text-gray-500" />
+              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <FileText className="h-5 w-5 text-muted-foreground" />
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-gray-700 truncate">{pendingMedia.file.name}</p>
-              <p className="text-[11px] text-gray-400">
+              <p className="text-xs font-medium text-foreground truncate">{pendingMedia.file.name}</p>
+              <p className="text-[11px] text-muted-foreground">
                 {pendingMedia.uploading
                   ? "Uploading…"
                   : pendingMedia.uploadedUrl
@@ -844,7 +1056,7 @@ function MessagesPageInner() {
             <button
               type="button"
               onClick={removePendingMedia}
-              className="p-1 rounded-full hover:bg-gray-200 transition-colors text-gray-400 shrink-0"
+              className="p-1 rounded-full hover:bg-muted transition-colors text-muted-foreground shrink-0"
             >
               <X className="h-4 w-4" />
             </button>
@@ -864,21 +1076,21 @@ function MessagesPageInner() {
                   type="button"
                   onClick={() => setEmojiPickerOpen((o) => !o)}
                   disabled={!activeConvId}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 disabled:opacity-40"
+                  className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                   title="Add emoji"
                 >
                   <Smile className="h-5 w-5" />
                 </button>
 
                 {emojiPickerOpen && (
-                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 z-50">
+                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-card border border-border rounded-2xl shadow-2xl p-3 z-50">
                     <div className="grid grid-cols-8 gap-0.5">
                       {EMOJIS.map((emoji) => (
                         <button
                           key={emoji}
                           type="button"
                           onClick={() => handleEmojiSelect(emoji)}
-                          className="text-xl h-8 w-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                          className="text-xl h-8 w-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
                         >
                           {emoji}
                         </button>
@@ -893,7 +1105,7 @@ function MessagesPageInner() {
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
                 disabled={!activeConvId || !!pendingMedia}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 disabled:opacity-40"
+                className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                 title="Add image"
               >
                 <ImageIcon className="h-5 w-5" />
@@ -904,7 +1116,7 @@ function MessagesPageInner() {
                 type="button"
                 onClick={() => attachmentInputRef.current?.click()}
                 disabled={!activeConvId || !!pendingMedia}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 disabled:opacity-40"
+                className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                 title="Add attachment"
               >
                 <Paperclip className="h-5 w-5" />
@@ -924,7 +1136,7 @@ function MessagesPageInner() {
                 placeholder={activeConv ? "Write a message…" : "Select a conversation"}
                 rows={1}
                 disabled={!activeConvId}
-                className="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-shadow disabled:opacity-50 overflow-hidden"
+                className="w-full resize-none rounded-2xl border border-border bg-muted/40 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow disabled:opacity-50 overflow-hidden"
                 style={{ minHeight: 42, maxHeight: 120 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -943,8 +1155,8 @@ function MessagesPageInner() {
                 title="Send"
                 className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
                   canSend
-                    ? "bg-gray-900 text-white hover:bg-gray-700"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    ? "bg-gray-900 text-white hover:bg-gray-800"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
                 }`}
               >
                 <Send className="h-4 w-4" />
@@ -973,32 +1185,58 @@ function MessagesPageInner() {
   );
 
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-gray-900 mb-5">Messages</h1>
+    <main>
+      <div className="page-container py-6 lg:py-8">
+        <div className="page-grid">
+          <div className="span-10-center">
+            <PageHeader title="Messages" />
 
-      {error && (
-        <div className="mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-xs text-red-600 flex items-center justify-between">
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={() => setError(null)}
-            className="ml-3 text-red-400 hover:text-red-600 shrink-0"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
+            {error && (
+              <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-2.5 text-xs text-destructive flex items-center justify-between">
+                <span>{error}</span>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="ml-3 text-destructive/60 hover:text-destructive shrink-0"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
 
-      <div className="h-[calc(100vh-11rem)] max-h-[740px]">
-        {/* Desktop: side-by-side */}
-        <div className="hidden lg:grid grid-cols-[minmax(0,300px)_minmax(0,1fr)] gap-4 h-full">
-          {ConversationListUI}
-          {ThreadUI}
-        </div>
+            {notAuthed ? (
+              <EmptyState
+                icon="chat"
+                iconBg="bg-blue-100"
+                iconColor="text-blue-500"
+                title="Sign in to see your messages"
+                description="Your conversations with camps and other parents will appear here."
+                action={{ label: "Sign in", href: "#signin" }}
+              />
+            ) : !loading && conversations.length === 0 ? (
+              <EmptyState
+                icon="mood"
+                iconBg="bg-rose-100"
+                iconColor="text-rose-500"
+                title="No messages yet"
+                description="When camps or other parents reach out, your conversations will appear here."
+                action={{ label: "Browse camps and classes", href: "/search" }}
+              />
+            ) : (
+              <div className="h-[calc(100vh-12rem)] max-h-[740px]">
+                {/* Desktop: side-by-side */}
+                <div className="hidden lg:grid grid-cols-[minmax(0,300px)_minmax(0,1fr)] gap-4 h-full">
+                  {ConversationListUI}
+                  {ThreadUI}
+                </div>
 
-        {/* Mobile: list or thread */}
-        <div className="lg:hidden h-full">
-          {mobileView === "list" ? ConversationListUI : ThreadUI}
+                {/* Mobile: list or thread */}
+                <div className="lg:hidden h-full">
+                  {mobileView === "list" ? ConversationListUI : ThreadUI}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </main>

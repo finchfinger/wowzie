@@ -1,6 +1,9 @@
 export default function PrivacyPage() {
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <main>
+      <div className="page-container py-10">
+        <div className="page-grid">
+          <div className="span-8-center">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-6">
         Privacy Policy
       </h1>
@@ -40,6 +43,9 @@ export default function PrivacyPage() {
           If you have any questions about this privacy policy, please contact us at{" "}
           <a href="mailto:flatmade@gmail.com" className="text-primary underline">flatmade@gmail.com</a>.
         </p>
+      </div>
+          </div>
+        </div>
       </div>
     </main>
   );

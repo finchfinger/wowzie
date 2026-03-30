@@ -132,7 +132,7 @@ function StatusBadge({
           e.stopPropagation();
           setOpen((p) => !p);
         }}
-        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-medium transition-colors ${
           isLive
             ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
             : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"

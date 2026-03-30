@@ -299,14 +299,18 @@ export default function CampDetailPage() {
 
   if (loadingCamp) {
     return (
-      <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <div className="grid gap-8 lg:grid-cols-[380px_1fr] items-start animate-pulse">
-            <div className="aspect-square rounded-3xl bg-muted" />
-            <div className="space-y-4">
-              <div className="h-8 w-3/4 rounded-xl bg-muted" />
-              <div className="h-4 w-1/2 rounded-lg bg-muted" />
-              <div className="h-32 rounded-2xl bg-muted" />
+      <main>
+        <div className="page-container py-8">
+          <div className="page-grid">
+            <div className="span-10-center">
+              <div className="grid gap-8 lg:grid-cols-[380px_1fr] items-start animate-pulse">
+                <div className="aspect-square rounded-3xl bg-muted" />
+                <div className="space-y-4">
+                  <div className="h-8 w-3/4 rounded-xl bg-muted" />
+                  <div className="h-4 w-1/2 rounded-lg bg-muted" />
+                  <div className="h-32 rounded-2xl bg-muted" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -316,11 +320,15 @@ export default function CampDetailPage() {
 
   if (campError || !camp) {
     return (
-      <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <button type="button" className="mb-4 text-xs text-muted-foreground hover:text-foreground" onClick={() => router.back()}>← Back</button>
-          <div className="rounded-2xl bg-card px-6 py-8">
-            <p className="text-sm text-destructive">{campError || "We couldn't find that camp."}</p>
+      <main>
+        <div className="page-container py-8">
+          <div className="page-grid">
+            <div className="span-10-center">
+              <button type="button" className="mb-4 text-xs text-muted-foreground hover:text-foreground" onClick={() => router.back()}>← Back</button>
+              <div className="rounded-2xl bg-card px-6 py-8">
+                <p className="text-sm text-destructive">{campError || "We couldn't find that camp."}</p>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -579,8 +587,10 @@ export default function CampDetailPage() {
   }
 
   return (
-    <main className="flex-1">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <main>
+      <div className="page-container py-8">
+        <div className="page-grid">
+          <div className="span-10-center">
         <button type="button" className="mb-6 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={() => router.back()}>
           ← Back
         </button>
@@ -1344,6 +1354,8 @@ export default function CampDetailPage() {
             <button type="button" className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               Report this event
             </button>
+          </div>
+        </div>
           </div>
         </div>
       </div>

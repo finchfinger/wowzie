@@ -153,7 +153,7 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
     || (camp as unknown as { location?: string }).location || null;
 
   return (
-    <div className="flex items-center gap-4 py-4 border-b border-border last:border-0">
+    <div className="flex items-center gap-3 sm:gap-4 py-4 border-b border-border last:border-0 min-w-0">
       <Link href={`/camp/${camp.slug}`} className="shrink-0">
         <div className="relative h-[72px] w-[72px] rounded-xl overflow-hidden bg-muted">
           {image
@@ -213,9 +213,13 @@ function SkeletonRow() {
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <main className="flex-1">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
-          {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
+      <main>
+        <div className="page-container py-10">
+          <div className="page-grid">
+            <div className="span-8-center">
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
+            </div>
+          </div>
         </div>
       </main>
     }>
@@ -362,10 +366,12 @@ function SearchContent() {
   };
 
   return (
-    <main className="flex-1">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+    <main>
+      <div className="page-container py-8">
+        <div className="page-grid">
+          <div className="span-8-center space-y-5">
 
-        <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-foreground leading-tight">
           Let&apos;s find something awesome
         </h1>
 
@@ -473,13 +479,15 @@ function SearchContent() {
 
         {/* Results */}
         {!loading && !error && displayedResults.length > 0 && (
-          <div className="rounded-2xl border border-border bg-card px-5">
+          <div className="rounded-2xl border border-border bg-card px-3 sm:px-5 overflow-hidden">
             {displayedResults.map((camp) => (
               <SearchResultRow key={camp.id} camp={camp} favIds={favIds} onToggleFav={toggleFav} />
             ))}
           </div>
         )}
 
+      </div>
+        </div>
       </div>
     </main>
   );
@@ -488,7 +496,7 @@ function SearchContent() {
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <button type="button" onClick={onRemove}
-      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-3 py-1 text-xs text-foreground hover:bg-muted/70 transition-colors">
+      className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted px-3 py-1 text-xs text-foreground hover:bg-muted/70 transition-colors">
       {label}
       <X className="h-3 w-3 text-muted-foreground" />
     </button>

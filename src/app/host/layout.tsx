@@ -35,7 +35,7 @@ export default function HostLayout({
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.replace("/");
+      setChecking(false);
       return;
     }
 
@@ -85,11 +85,23 @@ export default function HostLayout({
     }
   }, [status, checking, pathname, isAllowedPreApprovalPath, authLoading, user, router]);
 
+  if (!authLoading && !checking && !user) {
+    return (
+      <main className="flex-1">
+        <HostGatewayPage />
+      </main>
+    );
+  }
+
   if (authLoading || checking) {
     return (
       <main className="flex-1">
-        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-8">
-          <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+        <div className="page-container py-8">
+          <div className="page-grid">
+            <div className="span-8-center">
+              <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
         </div>
       </main>
     );
@@ -107,8 +119,10 @@ export default function HostLayout({
 
     return (
       <main className="flex-1">
-        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-8">
-          {children}
+        <div className="page-container py-8">
+          <div className="page-grid">
+            <div className="span-8-center">{children}</div>
+          </div>
         </div>
       </main>
     );
@@ -118,8 +132,10 @@ export default function HostLayout({
   if (isHostActivitiesRoute) {
     return (
       <main className="flex-1">
-        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-8">
-          {children}
+        <div className="page-container py-8">
+          <div className="page-grid">
+            <div className="span-8-center">{children}</div>
+          </div>
         </div>
       </main>
     );
@@ -128,7 +144,7 @@ export default function HostLayout({
   // Approved: dashboard with nav tabs
   const hostTabs = [
     { id: "listings", label: "Listings", href: "/host/listings" },
-    { id: "contacts", label: "Contacts", href: "/host/contacts" },
+    { id: "guests", label: "Guests", href: "/host/guests" },
     { id: "financials", label: "Financials", href: "/host/financials" },
     { id: "settings", label: "Settings", href: "/host/settings" },
   ];
@@ -137,28 +153,32 @@ export default function HostLayout({
 
   return (
     <main className="flex-1">
-      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-6 sm:py-8 pb-16">
-        {/* Header row */}
-        <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
-              Host Basecamp
-            </h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Manage your activities, families, and payouts.
-            </p>
+      <div className="page-container py-6 sm:py-8 pb-16">
+        <div className="page-grid">
+          <div className="span-8-center">
+            {/* Header row */}
+            <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
+                  Host Basecamp
+                </h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  Manage your activities, families, and payouts.
+                </p>
+              </div>
+              <Link
+                href="/host/activities/new"
+                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+              >
+                + Create listing
+              </Link>
+            </header>
+
+            <NavTabs tabs={hostTabs} activeId={activeTabId} borderless />
+
+            <section>{children}</section>
           </div>
-          <Link
-            href="/host/activities/new"
-            className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
-          >
-            + Create listing
-          </Link>
-        </header>
-
-        <NavTabs tabs={hostTabs} activeId={activeTabId} />
-
-        <section>{children}</section>
+        </div>
       </div>
     </main>
   );

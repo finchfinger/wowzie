@@ -306,6 +306,7 @@ function SettingsPageInner({
 }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [notAuthed, setNotAuthed] = useState(false);
 
   const [children, setChildren] = useState<Child[]>([]);
   const [loadingChildren, setLoadingChildren] = useState(false);
@@ -336,7 +337,7 @@ function SettingsPageInner({
     const init = async () => {
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) {
-        router.push("/");
+        setNotAuthed(true);
         return;
       }
       setUser(data.user);
@@ -568,9 +569,39 @@ function SettingsPageInner({
   };
 
 
+  if (notAuthed) {
+    return (
+      <main>
+        <div className="page-container py-8">
+          <div className="page-grid">
+            <div className="span-8-center">
+              <div className="rounded-2xl bg-card shadow-sm p-8 text-center space-y-4">
+                <span className="material-symbols-rounded text-4xl text-muted-foreground">manage_accounts</span>
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Sign in to manage your settings</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Your account, children, and preferences are waiting.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => document.querySelector<HTMLButtonElement>("button[data-signin]")?.click()}
+                  className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Sign in
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 lg:py-10">
+      <main>
+        <div className="page-container py-8 lg:py-10">
+          <div className="page-grid">
+            <div className="span-8-center">
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -778,6 +809,9 @@ function SettingsPageInner({
         {tab === "notifications" && (
           <NotificationsTab userId={user?.id ?? null} />
         )}
+            </div>
+          </div>
+        </div>
       </main>
 
       {/* ADD CHILD MODAL */}

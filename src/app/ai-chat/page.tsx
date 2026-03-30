@@ -90,7 +90,9 @@ export default function AIChatPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  const mountedRef = useRef(false);
   useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return; }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, thinking]);
 
@@ -165,7 +167,10 @@ export default function AIChatPage() {
   const isFirstMessage = messages.length <= 1;
 
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col" style={{ height: "calc(100dvh - 72px)" }}>
+    <main>
+      <div className="page-container">
+        <div className="page-grid">
+          <div className="span-8-center flex flex-col" style={{ height: "calc(100dvh - 72px)" }}>
 
       {/* Page header */}
       <div className="py-5 flex items-center gap-3 shrink-0">
@@ -182,7 +187,7 @@ export default function AIChatPage() {
           <button
             type="button"
             onClick={handleNewChat}
-            className="ml-auto flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="ml-auto flex items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14M5 12h14" />
@@ -260,7 +265,7 @@ export default function AIChatPage() {
                 type="button"
                 onClick={() => void send(chip)}
                 disabled={thinking}
-                className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                className="rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
               >
                 {chip}
               </button>
@@ -300,6 +305,9 @@ export default function AIChatPage() {
           <p className="mt-2 text-center text-[10px] text-muted-foreground">
             Wowzi AI can make mistakes. Always verify camp details directly with the host.
           </p>
+        </div>
+      </div>
+          </div>
         </div>
       </div>
     </main>

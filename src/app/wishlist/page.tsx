@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { CampGrid } from "@/components/CampGrid";
@@ -57,15 +58,11 @@ export default function WishlistPage() {
   }, [user]);
 
   return (
-    <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Wishlist
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Activities you&apos;ve saved for later.
-        </p>
-      </div>
+    <main>
+      <div className="page-container py-6 lg:py-8">
+        <div className="page-grid">
+          <div className="span-10-center">
+      <PageHeader title="Wishlist" subtitle="Activities you've saved for later." />
 
       {/* Not signed in */}
       {!user && !loading && (
@@ -123,6 +120,9 @@ export default function WishlistPage() {
           <CampGrid camps={camps} />
         </>
       )}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

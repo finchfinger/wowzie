@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ContentCard } from "@/components/ui/ContentCard";
 
 /* ── types ── */
 
@@ -87,17 +88,19 @@ async function saveToSupabase(userId: string, s: HostSettings) {
 
 /* ── sub-components ── */
 
-function SectionHeader({ icon, title }: { icon: string; title: string }) {
+/** Icon + label for ContentCard title prop */
+function SectionTitle({ icon, label }: { icon: string; label: string }) {
   return (
-    <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border/60">
+    <span className="inline-flex items-center gap-2">
       <span
+        aria-hidden
         className="material-symbols-rounded text-muted-foreground select-none"
         style={{ fontSize: 18, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20" }}
       >
         {icon}
       </span>
-      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-    </div>
+      {label}
+    </span>
   );
 }
 
@@ -113,7 +116,7 @@ function FieldRow({
   onEdit: () => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 px-5 py-3.5 border-b border-border/40 last:border-0">
+    <div className="flex items-start justify-between gap-4 py-4">
       <div className="space-y-0.5 min-w-0 flex-1">
         <p className="text-xs font-medium text-foreground">{label}</p>
         <p className={`text-[13px] line-clamp-2 ${value ? "text-foreground" : "text-muted-foreground"}`}>
@@ -228,9 +231,20 @@ export default function HostSettingsPage() {
   /* ── loading skeleton ── */
   if (loading) {
     return (
-      <div className="space-y-5 max-w-2xl">
-        {[80, 56, 72].map((h, i) => (
-          <div key={i} className="rounded-2xl bg-muted animate-pulse" style={{ height: h * 1.4 }} />
+      <div className="space-y-5">
+        {[2, 5, 3].map((rows, i) => (
+          <div key={i} className="rounded-2xl bg-card p-8 space-y-4">
+            <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+            {Array.from({ length: rows }).map((_, j) => (
+              <div key={j} className="flex items-center justify-between py-4 border-t border-border/50">
+                <div className="space-y-1.5">
+                  <div className="h-3 w-24 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-40 rounded bg-muted animate-pulse" />
+                </div>
+                <div className="h-8 w-14 rounded-lg bg-muted animate-pulse" />
+              </div>
+            ))}
+          </div>
         ))}
       </div>
     );
@@ -239,7 +253,7 @@ export default function HostSettingsPage() {
   const cfg = activeField ? MODAL_CONFIG[activeField] : null;
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="space-y-5">
       {/* save toast */}
       {(toast || saving) && (
         <div className={`text-sm font-medium px-4 py-2.5 rounded-xl transition-all ${
@@ -252,57 +266,71 @@ export default function HostSettingsPage() {
       )}
 
       {/* ── General ── */}
-      <section className="rounded-2xl bg-card border border-border overflow-hidden">
-        <SectionHeader icon="manage_accounts" title="General" />
-
-        {/* Business details — logo + name together */}
-        <div className="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-border/40">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => open("logo_emoji", s.logo_emoji)}
-              title="Change logo"
-              className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-xl hover:bg-accent transition-colors shrink-0"
-            >
-              {s.logo_emoji}
-            </button>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-muted-foreground">Business details</p>
-              <p className={`text-[13px] font-semibold ${s.business_name ? "text-foreground" : "text-muted-foreground font-normal"}`}>
-                {s.business_name || "Your name or business name"}
-              </p>
+      <ContentCard
+        bordered={false}
+        title={<SectionTitle icon="manage_accounts" label="General" />}
+        bodyClassName="px-8 pb-8"
+      >
+        <div className="divide-y divide-border/50">
+          {/* Business details — logo + name together */}
+          <div className="flex items-center justify-between gap-4 py-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => open("logo_emoji", s.logo_emoji)}
+                title="Change logo"
+                className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-xl hover:bg-accent transition-colors shrink-0"
+              >
+                {s.logo_emoji}
+              </button>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted-foreground">Business details</p>
+                <p className={`text-[13px] font-semibold ${s.business_name ? "text-foreground" : "text-muted-foreground font-normal"}`}>
+                  {s.business_name || "Your name or business name"}
+                </p>
+              </div>
             </div>
+            <Button variant="outline" size="sm" onClick={() => open("business_name", s.business_name)} className="shrink-0">
+              {s.business_name ? "Edit" : "Add"}
+            </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={() => open("business_name", s.business_name)} className="shrink-0">
-            {s.business_name ? "Edit" : "Add"}
-          </Button>
-        </div>
 
-        <FieldRow
-          label="About"
-          value={s.about}
-          placeholder="Tell families about yourself and your programs."
-          onEdit={() => open("about", s.about)}
-        />
-      </section>
+          <FieldRow
+            label="About"
+            value={s.about}
+            placeholder="Tell families about yourself and your programs."
+            onEdit={() => open("about", s.about)}
+          />
+        </div>
+      </ContentCard>
 
       {/* ── Social links ── */}
-      <section className="rounded-2xl bg-card border border-border overflow-hidden">
-        <SectionHeader icon="link" title="Social links" />
-        <FieldRow label="Instagram"  value={s.instagram} placeholder="Username"         onEdit={() => open("instagram", s.instagram)} />
-        <FieldRow label="X"          value={s.x_handle}  placeholder="None provided"    onEdit={() => open("x",         s.x_handle)}  />
-        <FieldRow label="YouTube"    value={s.youtube}   placeholder="Channel"          onEdit={() => open("youtube",   s.youtube)}   />
-        <FieldRow label="TikTok"     value={s.tiktok}    placeholder="Username"         onEdit={() => open("tiktok",    s.tiktok)}    />
-        <FieldRow label="Website"    value={s.website}   placeholder="www.example.com"  onEdit={() => open("website",   s.website)}   />
-      </section>
+      <ContentCard
+        bordered={false}
+        title={<SectionTitle icon="link" label="Social links" />}
+        bodyClassName="px-8 pb-8"
+      >
+        <div className="divide-y divide-border/50">
+          <FieldRow label="Instagram"  value={s.instagram} placeholder="Username"         onEdit={() => open("instagram", s.instagram)} />
+          <FieldRow label="X"          value={s.x_handle}  placeholder="None provided"    onEdit={() => open("x",         s.x_handle)}  />
+          <FieldRow label="YouTube"    value={s.youtube}   placeholder="Channel"          onEdit={() => open("youtube",   s.youtube)}   />
+          <FieldRow label="TikTok"     value={s.tiktok}    placeholder="Username"         onEdit={() => open("tiktok",    s.tiktok)}    />
+          <FieldRow label="Website"    value={s.website}   placeholder="www.example.com"  onEdit={() => open("website",   s.website)}   />
+        </div>
+      </ContentCard>
 
       {/* ── Policies & rules ── */}
-      <section className="rounded-2xl bg-card border border-border overflow-hidden">
-        <SectionHeader icon="rule" title="Policies and rules" />
-        <FieldRow label="Cancellation Policy" value={s.cancellation_policy} placeholder="Not set" onEdit={() => open("cancellation_policy", s.cancellation_policy)} />
-        <FieldRow label="House rules"          value={s.house_rules}         placeholder="e.g. Arrive 10 minutes early for check-in…" onEdit={() => open("house_rules",         s.house_rules)}         />
-        <FieldRow label="What to bring"        value={s.what_to_bring}       placeholder="e.g. Water bottle, sunscreen, snack…"       onEdit={() => open("what_to_bring",       s.what_to_bring)}       />
-      </section>
+      <ContentCard
+        bordered={false}
+        title={<SectionTitle icon="rule" label="Policies and rules" />}
+        bodyClassName="px-8 pb-8"
+      >
+        <div className="divide-y divide-border/50">
+          <FieldRow label="Cancellation Policy" value={s.cancellation_policy} placeholder="Not set"                                        onEdit={() => open("cancellation_policy", s.cancellation_policy)} />
+          <FieldRow label="House rules"          value={s.house_rules}         placeholder="e.g. Arrive 10 minutes early for check-in…"    onEdit={() => open("house_rules",         s.house_rules)}         />
+          <FieldRow label="What to bring"        value={s.what_to_bring}       placeholder="e.g. Water bottle, sunscreen, snack…"          onEdit={() => open("what_to_bring",       s.what_to_bring)}       />
+        </div>
+      </ContentCard>
 
       {/* ── Edit modal ── */}
       {activeField && cfg && (

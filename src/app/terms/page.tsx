@@ -1,6 +1,9 @@
 export default function TermsPage() {
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <main>
+      <div className="page-container py-10">
+        <div className="page-grid">
+          <div className="span-8-center">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-6">
         Terms of Service
       </h1>
@@ -49,6 +52,9 @@ export default function TermsPage() {
           Questions about these terms should be directed to{" "}
           <a href="mailto:flatmade@gmail.com" className="text-primary underline">flatmade@gmail.com</a>.
         </p>
+      </div>
+          </div>
+        </div>
       </div>
     </main>
   );

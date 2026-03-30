@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { WowziLogo } from "@/components/ui/WowziLogo";
 import { supabase } from "@/lib/supabase";
 
 type Status = "idle" | "success" | "error" | "duplicate";
@@ -55,11 +56,9 @@ export function Footer() {
       <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-12">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
           {/* Left: Logo + Links */}
-          <div className="flex flex-col gap-6 sm:flex-row sm:gap-10">
-            <Link href="/" className="inline-flex items-center" aria-label="Go to homepage">
-              <span className="font-bold tracking-tight font-logo leading-none text-brand" style={{ fontSize: "40px" }}>
-                wowzi
-              </span>
+          <div className="flex flex-col gap-6 sm:flex-row sm:gap-10 sm:items-start">
+            <Link href="/" className="inline-flex items-start" aria-label="Go to homepage">
+              <WowziLogo size={36} color="oklch(0.50 0 0)" />
             </Link>
 
             <div className="grid grid-cols-2 gap-12 text-sm text-muted-foreground">
@@ -96,6 +95,31 @@ export function Footer() {
                     <Link href="/contact" className="hover:text-primary">
                       Contact
                     </Link>
+                  </li>
+                  <li>
+                    <a
+                      href="https://instagram.com/heywowzi"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 hover:text-primary transition-colors"
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                        <circle cx="12" cy="12" r="3.5" />
+                        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                      </svg>
+                      Follow us
+                    </a>
                   </li>
                 </ul>
               </div>

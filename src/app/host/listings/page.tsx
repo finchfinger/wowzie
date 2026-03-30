@@ -1,11 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Search } from "lucide-react";
+import { SortDropdown } from "@/components/ui/SortDropdown";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { ListingCard, type ListingCardData } from "@/components/host/ListingCard";
+import { HostListItem, type HostListItemData } from "@/components/host/HostListItem";
+import { ContentCard } from "@/components/ui/ContentCard";
+
+/* ── Sort options ───────────────────────────────────────── */
+
+type SortKey = "alphabetical" | "newest" | "status";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "alphabetical", label: "Alphabetical" },
+  { value: "newest",       label: "Newest first" },
+  { value: "status",       label: "Status" },
+];
 
 /* ── Delete confirmation modal ─────────────────────────── */
 
@@ -14,7 +27,7 @@ function DeleteConfirmModal({
   onConfirm,
   onCancel,
 }: {
-  listing: ListingCardData;
+  listing: HostListItemData;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -40,14 +53,14 @@ function DeleteConfirmModal({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-full border border-border bg-background py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            className="flex-1 rounded-lg border border-border bg-background py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 rounded-full bg-destructive text-destructive-foreground py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+            className="flex-1 rounded-lg bg-destructive text-destructive-foreground py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Delete
           </button>
@@ -62,10 +75,12 @@ function DeleteConfirmModal({
 export default function HostListingsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [listings, setListings] = useState<ListingCardData[]>([]);
+  const [listings, setListings] = useState<HostListItemData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ListingCardData | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<HostListItemData | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("alphabetical");
 
   /* ── load ── */
   useEffect(() => {
@@ -92,10 +107,9 @@ export default function HostListingsPage() {
         return;
       }
 
-      const rows = (data || []) as Omit<ListingCardData, "bookingCount" | "pendingCount">[];
+      const rows = (data || []) as Omit<HostListItemData, "bookingCount" | "pendingCount">[];
 
-      // Fetch booking counts
-      const withCounts: ListingCardData[] = rows.map((r) => ({
+      const withCounts: HostListItemData[] = rows.map((r) => ({
         ...r,
         bookingCount: 0,
         pendingCount: 0,
@@ -131,7 +145,6 @@ export default function HostListingsPage() {
 
   /* ── status change ── */
   const handleStatusChange = async (id: string, newStatus: "active" | "inactive") => {
-    // Optimistic update
     setListings((prev) =>
       prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l))
     );
@@ -140,7 +153,6 @@ export default function HostListingsPage() {
       .update({ status: newStatus })
       .eq("id", id);
     if (error) {
-      // Revert on failure
       setListings((prev) =>
         prev.map((l) =>
           l.id === id
@@ -161,7 +173,6 @@ export default function HostListingsPage() {
     if (!deleteTarget) return;
     const id = deleteTarget.id;
     setDeleteTarget(null);
-    // Optimistic remove
     setListings((prev) => prev.filter((l) => l.id !== id));
     await supabase
       .from("camps")
@@ -177,21 +188,19 @@ export default function HostListingsPage() {
 
     const { data, error } = await supabase
       .from("camps")
-      .insert([
-        {
-          host_id: user.id,
-          name: `${original.name} (Copy)`,
-          status: "inactive",
-          is_published: false,
-          is_active: false,
-          meta: original.meta ?? {},
-          capacity: original.capacity,
-          image_url: original.image_url,
-          hero_image_url: original.hero_image_url,
-          start_time: original.start_time,
-          end_time: original.end_time,
-        },
-      ])
+      .insert([{
+        host_id: user.id,
+        name: `${original.name} (Copy)`,
+        status: "inactive",
+        is_published: false,
+        is_active: false,
+        meta: original.meta ?? {},
+        capacity: original.capacity,
+        image_url: original.image_url,
+        hero_image_url: original.hero_image_url,
+        start_time: original.start_time,
+        end_time: original.end_time,
+      }])
       .select("id")
       .single();
 
@@ -200,14 +209,45 @@ export default function HostListingsPage() {
     }
   };
 
-  /* ── render ── */
+  /* ── filtered + sorted list ── */
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let result = q
+      ? listings.filter((l) => l.name.toLowerCase().includes(q))
+      : listings;
+
+    if (sortKey === "alphabetical") {
+      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortKey === "newest") {
+      result = [...result].sort((a, b) =>
+        (b.start_time ?? "").localeCompare(a.start_time ?? "")
+      );
+    } else if (sortKey === "status") {
+      result = [...result].sort((a, b) =>
+        (a.status ?? "").localeCompare(b.status ?? "")
+      );
+    }
+
+    return result;
+  }, [listings, search, sortKey]);
+
+  /* ── loading skeleton ── */
   if (loading) {
     return (
-      <div className="space-y-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />
-        ))}
-      </div>
+      <ContentCard title="My Listings" bordered={false} bodyClassName="px-8 pb-8">
+        <div className="mt-4 divide-y divide-border/50">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 py-2">
+              <div className="h-24 w-24 rounded bg-muted animate-pulse shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 w-40 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-32 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-24 rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </ContentCard>
     );
   }
 
@@ -215,16 +255,17 @@ export default function HostListingsPage() {
     return <p className="text-sm text-destructive">{error}</p>;
   }
 
+  /* ── empty state ── */
   if (listings.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border px-6 py-16 text-center space-y-3">
-        <div className="text-3xl"></div>
+        <div className="text-3xl">🏕️</div>
         <p className="text-sm text-muted-foreground">
           You haven&apos;t created any listings yet.
         </p>
         <Link
           href="/host/activities/new"
-          className="inline-flex items-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+          className="inline-flex items-center rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
         >
           Create your first listing
         </Link>
@@ -234,17 +275,41 @@ export default function HostListingsPage() {
 
   return (
     <>
-      <div className="space-y-3">
-        {listings.map((listing) => (
-          <ListingCard
-            key={listing.id}
-            listing={listing}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDeleteRequest}
-            onDuplicate={handleDuplicate}
-          />
-        ))}
-      </div>
+      <ContentCard title="My Listings" bordered={false} bodyClassName="px-8 pb-8">
+        {/* Search + sort row */}
+        <div className="mt-4 flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search"
+              className="h-9 w-full rounded-full border border-border bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <SortDropdown options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />
+        </div>
+
+        {/* Listing rows */}
+        <div className="mt-6 divide-y divide-border/50">
+          {filtered.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No listings match &ldquo;{search}&rdquo;
+            </p>
+          ) : (
+            filtered.map((listing) => (
+              <HostListItem
+                key={listing.id}
+                listing={listing}
+                onStatusChange={handleStatusChange}
+                onDelete={handleDeleteRequest}
+                onDuplicate={handleDuplicate}
+              />
+            ))
+          )}
+        </div>
+      </ContentCard>
 
       {deleteTarget && (
         <DeleteConfirmModal

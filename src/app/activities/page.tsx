@@ -2,12 +2,15 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { CalendarEventList } from "@/components/calendar/CalendarEventList";
 import { ShareCalendarModal } from "@/components/ShareCalendarModal";
 import { CalendarSidebar } from "@/components/calendar/CalendarSidebar";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CampCard, type Camp } from "@/components/CampCard";
 
 import type { CalendarEvent, CalendarCamp } from "@/hooks/useMyCalendar";
 
@@ -26,6 +29,70 @@ const FullCalendarView = dynamic(
     ),
   }
 );
+
+/* ── mock popular camps (fallback when DB has no published camps) ── */
+const MOCK_POPULAR_CAMPS: Camp[] = [
+  {
+    id: "mock-art",
+    slug: "junior-artists-workshop",
+    name: "Junior Artists Workshop",
+    description: "Painting, drawing & mixed media for young creatives ages 6–12.",
+    image_url: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&q=80",
+    hero_image_url: null,
+    price_cents: 24900,
+    price_unit: "week",
+    listing_type: "camp",
+    meta: { pricing: { display: "$249 / week" }, location: "San Francisco, CA" },
+  },
+  {
+    id: "mock-coding",
+    slug: "code-explorers-camp",
+    name: "Code Explorers Camp",
+    description: "Scratch, Python & game dev for kids who love computers.",
+    image_url: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&q=80",
+    hero_image_url: null,
+    price_cents: 29900,
+    price_unit: "week",
+    listing_type: "camp",
+    meta: { pricing: { display: "$299 / week" }, location: "Oakland, CA" },
+  },
+  {
+    id: "mock-soccer",
+    slug: "summer-soccer-academy",
+    name: "Summer Soccer Academy",
+    description: "Skills, drills & match play for ages 5–14. All levels welcome.",
+    image_url: "https://images.unsplash.com/photo-1551958219-acbc58b6e019?w=400&q=80",
+    hero_image_url: null,
+    price_cents: 19900,
+    price_unit: "week",
+    listing_type: "camp",
+    meta: { pricing: { display: "$199 / week" }, location: "Berkeley, CA" },
+  },
+  {
+    id: "mock-music",
+    slug: "rockstar-music-camp",
+    name: "Rockstar Music Camp",
+    description: "Guitar, drums, keys & vocals. End the week with a live performance.",
+    image_url: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80",
+    hero_image_url: null,
+    price_cents: 32500,
+    price_unit: "week",
+    listing_type: "camp",
+    meta: { pricing: { display: "$325 / week" }, location: "San Francisco, CA" },
+  },
+  {
+    id: "mock-science",
+    slug: "mad-scientists-lab",
+    name: "Mad Scientists Lab",
+    description: "Experiments, rockets & robotics for curious minds ages 7–13.",
+    image_url: "https://images.unsplash.com/photo-1603354350317-6f7aaa5911c5?w=400&q=80",
+    hero_image_url: null,
+    price_cents: 27500,
+    price_unit: "week",
+    listing_type: "camp",
+    meta: { pricing: { display: "$275 / week" }, location: "Palo Alto, CA" },
+  },
+];
 
 /* ── types ──────────────────────────────────────────── */
 
@@ -246,6 +313,7 @@ export default function ActivitiesPage() {
   const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
   const [myChildren, setMyChildren] = useState<Child[]>([]);
   const [friends, setFriends] = useState<FriendProfile[]>([]);
+  const [suggestedCamps, setSuggestedCamps] = useState<Camp[]>([]);
 
   /* sidebar filter state */
   const [enabledChildren, setEnabledChildren] = useState<Set<string>>(
@@ -460,6 +528,21 @@ export default function ActivitiesPage() {
       }
 
       setLoading(false);
+
+      /* Load suggested camps whenever events list is empty */
+      if (events.length === 0) {
+        const { data: campRows } = await supabase
+          .from("camps")
+          .select("id, slug, name, description, image_url, hero_image_url, price_cents, price_unit, listing_type, meta")
+          .eq("status", "published")
+          .limit(6);
+        if (campRows && campRows.length > 0) {
+          setSuggestedCamps(campRows as Camp[]);
+        } else {
+          // Fallback mock suggestions so the section is never empty
+          setSuggestedCamps(MOCK_POPULAR_CAMPS);
+        }
+      }
     };
     void load();
   }, []);
@@ -584,23 +667,28 @@ export default function ActivitiesPage() {
   };
 
   return (
-    <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6 lg:py-8">
+    <main>
+      <div className="page-container py-4 sm:py-6 lg:py-8">
+        <div className="page-grid">
+          <div className="span-12">
       {/* ── Page header ── */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
           My Activities
         </h1>
-        <Button
-          size="sm"
-          variant="outline"
-          className="text-xs"
-          onClick={() => setShareOpen(true)}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
-          </svg>
-          Share
-        </Button>
+        {!loading && allEvents.length > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs"
+            onClick={() => setShareOpen(true)}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+            Share
+          </Button>
+        )}
       </div>
 
       {/* ── Pending reviews prompt ── */}
@@ -642,7 +730,8 @@ export default function ActivitiesPage() {
         </div>
       )}
 
-      {/* ── View controls ── */}
+      {/* ── View controls (only when user has activities) ── */}
+      {!loading && allEvents.length > 0 && (
       <div className="flex items-center gap-2 sm:gap-3 mt-3 mb-4 overflow-x-auto">
           {/* List / Calendar toggle */}
           <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden text-sm shrink-0">
@@ -738,6 +827,7 @@ export default function ActivitiesPage() {
               <span className="text-[11px] font-semibold text-foreground min-w-[5.5rem] text-center sm:hidden">
                 {monthLabelShort}
               </span>
+
               <button
                 type="button"
                 onClick={goNext}
@@ -749,6 +839,7 @@ export default function ActivitiesPage() {
             </div>
           )}
         </div>
+      )}
 
       {/* ── Auth guard ── */}
       {!loading && !userId && (
@@ -783,19 +874,33 @@ export default function ActivitiesPage() {
           <div className="flex-1 min-w-0">
             {/* Empty state — shown instead of calendar/list when no events */}
             {allEvents.length === 0 && !loading ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-8 py-16 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                </div>
-                <p className="text-base font-semibold text-foreground mb-1">
-                  No activities yet
-                </p>
-                <p className="text-sm text-muted-foreground max-w-xs mb-5">
-                  Browse camps and classes near you — once you book something it'll show up here.
-                </p>
-                <Button onClick={() => router.push("/search")}>
-                  Find an activity
-                </Button>
-              </div>
+              <>
+                <EmptyState
+                  icon="camping"
+                  iconBg="bg-amber-100"
+                  iconColor="text-amber-600"
+                  title="No activities yet"
+                  description="Browse camps and classes near you — once you book something it'll show up here."
+                  action={{ label: "Find an activity", href: "/search" }}
+                />
+
+                {/* Popular suggestions */}
+                {suggestedCamps.length > 0 && (
+                  <div className="mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-sm font-semibold text-foreground">Popular activities near you</h2>
+                      <Link href="/search" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        Explore all
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {suggestedCamps.slice(0, 5).map((camp) => (
+                        <CampCard key={camp.id} camp={camp} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <>
                 {/* List view */}
@@ -896,6 +1001,9 @@ export default function ActivitiesPage() {
           userId={userId}
         />
       )}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

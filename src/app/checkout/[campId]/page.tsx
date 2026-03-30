@@ -245,15 +245,18 @@ function CheckoutContent() {
   const isMockMode = stripeAvailable === false;
 
   return (
-    <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:py-10">
-      <div className="mb-6">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Checkout
-        </p>
-        <h1 className="text-xl font-semibold text-foreground">
-          Confirm your booking
-        </h1>
-      </div>
+    <main>
+      <div className="page-container py-8 lg:py-10">
+        <div className="page-grid">
+          <div className="span-10-center">
+            <div className="mb-6">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Checkout
+              </p>
+              <h1 className="text-xl font-semibold text-foreground">
+                Confirm your booking
+              </h1>
+            </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -440,6 +443,9 @@ function CheckoutContent() {
           )}
         </aside>
       </div>
-    </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

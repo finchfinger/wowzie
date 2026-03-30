@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
@@ -76,23 +77,11 @@ export default function HostActivitiesPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Activities
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            All camps, classes, and series you&apos;ve created.
-          </p>
-        </div>
-        <Link
-          href="/host/activities/new"
-          className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-opacity"
-        >
-          + New activity
-        </Link>
-      </div>
+      <PageHeader
+        title="Activities"
+        subtitle="All camps, classes, and series you've created."
+        action={{ label: "+ New activity", href: "/host/activities/new", variant: "primary" }}
+      />
 
       {loading && (
         <div className="space-y-3">

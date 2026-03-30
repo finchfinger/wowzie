@@ -46,7 +46,7 @@ export function UserAvatar({
   const safeName = (name || "?").trim();
   const initial = safeName.charAt(0).toUpperCase();
   const color = getAvatarColor(safeName);
-  const fontSize = Math.round(size * 0.44);
+  const fontSize = Math.round(size * 0.5);
 
   if (avatarUrl) {
     return (
@@ -71,8 +71,8 @@ export function UserAvatar({
       style={{ width: size, height: size, backgroundColor: color }}
     >
       <span
-        className="font-bold text-white leading-none font-logo"
-        style={{ fontSize, fontFeatureSettings: '"ss15" 1' }}
+        className="font-bold text-white leading-none font-sans"
+        style={{ fontSize }}
       >
         {initial}
       </span>

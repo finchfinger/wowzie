@@ -493,7 +493,10 @@ export default function HomePage() {
   }, [pool, sortMode, activeCategory, ageSelect]);
 
   return (
-    <main className="flex-1 max-w-screen-2xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+    <main>
+      <div className="page-container py-8">
+        <div className="page-grid">
+          <div className="span-12 space-y-10">
       {/* HERO */}
       <section className="grid gap-8 lg:grid-cols-2 lg:items-center">
         <div className="space-y-4">
@@ -537,7 +540,7 @@ export default function HomePage() {
                           key={term}
                           type="button"
                           onMouseDown={(e) => { e.preventDefault(); doSearch(term); }}
-                          className="rounded-full border border-border px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
+                          className="rounded-lg border border-border px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
                         >
                           {term}
                         </button>
@@ -753,7 +756,7 @@ export default function HomePage() {
                   key={chip.value}
                   type="button"
                   onClick={() => setActiveCategory(chip.value)}
-                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${
+                  className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${
                     active
                       ? "bg-primary/10 text-primary"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -789,6 +792,9 @@ export default function HomePage() {
           </div>
         )}
       </section>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

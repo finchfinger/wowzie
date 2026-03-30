@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { resend, FROM_EMAIL } from "@/lib/resend";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -92,6 +93,23 @@ export async function POST(req: NextRequest) {
           bookingId: booking.id,
         },
       });
+
+      // Email host: new booking request
+      try {
+        const { data: hostUser } = await supabase.auth.admin.getUserById(camp.host_id);
+        const hostEmail = hostUser?.user?.email;
+        if (hostEmail) {
+          const origin = req.headers.get("origin") || "https://golly-roan.vercel.app";
+          await resend.emails.send({
+            from: FROM_EMAIL,
+            to: hostEmail,
+            subject: `New booking request for ${campName}`,
+            html: hostBookingRequestEmailHtml({ campName, parentEmail: email, bookingId: booking.id, appUrl: origin }),
+          });
+        }
+      } catch (e) {
+        console.error("[checkout] Failed to send host request email:", e);
+      }
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
@@ -125,4 +143,59 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Unexpected error.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+/* ── Email template ───────────────────────────────────────────────────────── */
+
+function hostBookingRequestEmailHtml({
+  campName,
+  parentEmail,
+  bookingId,
+  appUrl,
+}: {
+  campName: string;
+  parentEmail: string;
+  bookingId: string;
+  appUrl: string;
+}) {
+  const dashboardUrl = `${appUrl}/host/bookings`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:#18181b;padding:28px 32px;">
+            <p style="margin:0;font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.5px;">Wowzi 🎉</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <h1 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#111;">Someone wants to book your camp!</h1>
+            <p style="margin:0 0 20px;color:#666;font-size:15px;line-height:1.5;">
+              <strong style="color:#111;">${parentEmail}</strong> is completing a booking for <strong style="color:#111;">${campName}</strong>. You'll receive another email once payment is confirmed.
+            </p>
+            <a href="${dashboardUrl}"
+               style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;padding:14px 28px;border-radius:100px;font-size:15px;font-weight:600;letter-spacing:-0.2px;">
+              View your bookings →
+            </a>
+            <p style="margin:24px 0 0;font-size:12px;color:#999;">
+              Booking reference: <span style="color:#666;font-family:monospace;">${bookingId}</span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px;border-top:1px solid #f0f0f0;">
+            <p style="margin:0;font-size:12px;color:#aaa;">
+              Manage your listings and bookings at <a href="${appUrl}/host" style="color:#666;">your host dashboard</a>.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
 }

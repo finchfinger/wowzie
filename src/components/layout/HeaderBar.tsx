@@ -58,9 +58,9 @@ export interface HeaderBarProps {
 
 const NAV_ITEMS: Array<{ label: string; href: string; icon: string }> = [
   { label: "Wishlists",     href: "/wishlist",      icon: "favorite" },
-  { label: "Activities",    href: "/activities",    icon: "tent" },
-  { label: "Friends",       href: "/friends",       icon: "diversity_3" },
-  { label: "Messages",      href: "/messages",      icon: "chat_bubble" },
+  { label: "Activities",    href: "/activities",    icon: "camping" },
+  { label: "Friends",       href: "/friends",       icon: "diversity_2" },
+  { label: "Messages",      href: "/messages",      icon: "tooltip" },
   { label: "Notifications", href: "/notifications", icon: "notifications" },
   { label: "Profile",       href: "/profile",       icon: "account_circle" },
 ];
@@ -250,11 +250,6 @@ export function HeaderBar({
                           {userName && (
                             <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
                           )}
-                          {userEmail && (
-                            <p className={`truncate ${userName ? "text-xs text-muted-foreground" : "text-sm font-medium text-foreground"}`}>
-                              {userEmail}
-                            </p>
-                          )}
                         </div>
 
                         {/* Main nav */}
@@ -310,8 +305,8 @@ export function HeaderBar({
                           })}
                         </div>
 
-                        {/* Become a host — mobile only */}
-                        <div className="md:hidden border-t border-border/40 py-1">
+                        {/* Become a host */}
+                        <div className="border-t border-border/40 py-1">
                           <button
                             type="button"
                             onClick={() => { onHostClick?.(); setMenuOpen(false); }}

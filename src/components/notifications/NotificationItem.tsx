@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { MoreVertical } from "lucide-react";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { ActionsMenu } from "@/components/ui/ActionsMenu";
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -22,6 +21,7 @@ export type NotificationData = {
     bookingId?: string;
     campId?: string;
     campSlug?: string;
+    conversationId?: string;
   } | null;
 };
 
@@ -32,6 +32,8 @@ type NotificationItemProps = {
   onApprove?: (notifId: string, bookingId: string) => void;
   onDecline?: (notifId: string, bookingId: string) => void;
   onReply?: (notifId: string) => void;
+  /** Called when a message notification row is clicked */
+  onNavigate?: (notifId: string) => void;
 };
 
 /* ── Helpers ───────────────────────────────────────────── */
@@ -123,86 +125,20 @@ function NotificationTitle({
     );
   }
 
+  if (type === "camp_reminder" && campName) {
+    return (
+      <p className="text-sm text-foreground leading-snug">
+        <strong className="font-semibold">{campName}</strong>
+        {" begins tomorrow"}
+      </p>
+    );
+  }
+
   // Generic fallback
   return (
     <p className="text-sm text-foreground leading-snug">
       {title || "Notification"}
     </p>
-  );
-}
-
-/* ── Three-dot context menu ───────────────────────────── */
-
-function NotifMenu({
-  isRead,
-  onToggleRead,
-  onDelete,
-}: {
-  isRead: boolean;
-  onToggleRead: () => void;
-  onDelete: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((p) => !p);
-        }}
-        aria-label="More options"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 transition-colors"
-      >
-        <MoreVertical className="h-4 w-4" />
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-border bg-popover shadow-lg z-30 overflow-hidden py-1">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleRead();
-              setOpen(false);
-            }}
-            className="flex w-full items-center px-3 py-2 text-xs text-foreground hover:bg-accent transition-colors text-left"
-          >
-            {isRead ? "Mark as unread" : "Mark as read"}
-          </button>
-          <div className="my-1 h-px bg-border" />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-              setOpen(false);
-            }}
-            className="flex w-full items-center px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors text-left"
-          >
-            Delete
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -215,6 +151,7 @@ export function NotificationItem({
   onApprove,
   onDecline,
   onReply,
+  onNavigate,
 }: NotificationItemProps) {
   const { id, type, is_read, created_at, meta } = notification;
   const isRead = !!is_read;
@@ -227,11 +164,17 @@ export function NotificationItem({
   const showReply = type === "message" && !!messageBody;
   const showBodyBox = showApproveDecline || showReply;
 
+  const isClickable = type === "message" && !!onNavigate;
+
   return (
     <div
-      className={`flex items-start gap-3 px-5 py-4 ${
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onClick={isClickable ? () => onNavigate(id) : undefined}
+      onKeyDown={isClickable ? (e) => { if (e.key === "Enter" || e.key === " ") onNavigate(id); } : undefined}
+      className={`flex items-start gap-3 px-8 py-4 transition-colors ${
         !isRead ? "bg-primary/[0.03]" : ""
-      }`}
+      } ${isClickable ? "cursor-pointer hover:bg-muted/40" : ""}`}
     >
       {/* Avatar */}
       <div className="mt-0.5 shrink-0">
@@ -275,8 +218,8 @@ export function NotificationItem({
             {showReply && (
               <button
                 type="button"
-                onClick={() => onReply?.(id)}
-                className="text-xs font-medium text-foreground border border-border rounded-full px-3 py-1 hover:bg-muted transition-colors"
+                onClick={(e) => { e.stopPropagation(); onReply?.(id); }}
+                className="text-xs font-medium text-foreground border border-border rounded-lg px-3 py-1 hover:bg-muted transition-colors"
               >
                 Reply
               </button>
@@ -287,14 +230,14 @@ export function NotificationItem({
                 <button
                   type="button"
                   onClick={() => onDecline?.(id, bookingId)}
-                  className="inline-flex items-center gap-1 rounded-full border border-destructive/40 px-3 py-1 text-xs font-medium text-destructive hover:bg-destructive/5 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-lg border border-destructive/40 px-3 py-1 text-xs font-medium text-destructive hover:bg-destructive/5 transition-colors"
                 >
                   Decline <span className="text-[11px]">✕</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => onApprove?.(id, bookingId)}
-                  className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
                 >
                   Approve <span className="text-[11px]">✓</span>
                 </button>
@@ -306,10 +249,11 @@ export function NotificationItem({
 
       {/* Three-dot menu */}
       <div className="shrink-0 -mt-1">
-        <NotifMenu
-          isRead={isRead}
-          onToggleRead={() => onToggleRead(id, !isRead)}
-          onDelete={() => onDelete(id)}
+        <ActionsMenu
+          items={[
+            { label: isRead ? "Mark as unread" : "Mark as read", onSelect: () => onToggleRead(id, !isRead) },
+            { label: "Delete", onSelect: () => onDelete(id), tone: "destructive", separator: true },
+          ]}
         />
       </div>
     </div>

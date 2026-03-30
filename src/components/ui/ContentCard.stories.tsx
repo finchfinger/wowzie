@@ -72,6 +72,29 @@ export const NoHeader: Story = {
   },
 };
 
+export const Borderless: Story = {
+  name: "Borderless (dashboard style)",
+  args: {
+    title: "My Listings",
+    bordered: false,
+    bodyClassName: "px-8 pb-8",
+    children: (
+      <div className="mt-4 space-y-0.5 divide-y divide-border/50">
+        {["Art Camp", "Soccer Academy", "Science Explorers"].map((name) => (
+          <div key={name} className="flex items-center gap-4 py-2">
+            <div className="h-24 w-24 shrink-0 rounded bg-muted" />
+            <div className="flex-1 space-y-1.5">
+              <p className="text-sm font-semibold text-foreground">{name}</p>
+              <p className="text-xs text-muted-foreground">$350 / session</p>
+              <p className="text-xs text-muted-foreground">June 2 – June 6 from 9AM–3PM</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+};
+
 export const EightColumnLayout: Story = {
   args: { children: <></> }, // render overrides — required to satisfy type
   parameters: { layout: "fullscreen" },

@@ -384,7 +384,10 @@ export default function FriendActivitiesPage() {
   };
 
   return (
-    <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6 lg:py-8">
+    <main>
+      <div className="page-container py-4 sm:py-6 lg:py-8">
+        <div className="page-grid">
+          <div className="span-10-center">
       {/* ── Back link ── */}
       <div className="mb-3">
         <Link
@@ -631,6 +634,9 @@ export default function FriendActivitiesPage() {
           </div>
         </>
       )}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

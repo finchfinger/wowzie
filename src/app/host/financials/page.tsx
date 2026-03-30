@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const FEE_RATE = 0.05;
 
@@ -120,6 +121,46 @@ export default function HostFinancialsPage() {
   const totalFee = Math.round(totalGross * FEE_RATE);
   const totalNet = totalGross - totalFee;
 
+  /* ── Not connected — show setup prompt ── */
+  if (connectStatus === "not_connected" || connectStatus === "not_configured") {
+    return (
+      <div className="space-y-6">
+        <EmptyState
+          icon="payments"
+          iconBg="bg-emerald-100"
+          iconColor="text-emerald-700"
+          title="Connect your payout account"
+          description="Before you can receive payments from bookings, you need to connect your bank account through Stripe. This is quick, secure, and only takes a few minutes."
+          action={{
+            label: connectLoading ? "Redirecting…" : "Connect to Stripe",
+            onClick: handleConnectStripe,
+          }}
+        />
+
+        {/* Fee breakdown explainer */}
+        <div className="mx-auto max-w-sm rounded-2xl bg-card p-5 space-y-0">
+          <p className="text-sm font-semibold text-foreground mb-3">
+            Here&apos;s an example of how payments work
+          </p>
+          {[
+            { label: "Family pays", value: "$400", bold: false },
+            { label: `Platform fee (${Math.round(FEE_RATE * 100)}%)`, value: `−$${400 * FEE_RATE}`, muted: true },
+            { label: "Payment processing (3%)", value: "−$12", muted: true },
+            { label: "You receive", value: `$${400 - 400 * FEE_RATE - 12}`, bold: true },
+          ].map(({ label, value, muted, bold }, i, arr) => (
+            <div
+              key={label}
+              className={`flex items-center justify-between py-2.5 ${i < arr.length - 1 ? "border-b border-border/60" : ""}`}
+            >
+              <span className={`text-sm ${muted ? "text-muted-foreground" : "text-foreground"}`}>{label}</span>
+              <span className={`text-sm ${bold ? "font-semibold text-foreground" : muted ? "text-muted-foreground" : "text-foreground"}`}>{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary cards */}
@@ -196,8 +237,12 @@ export default function HostFinancialsPage() {
                         {fmt(net)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                          Paid
+                        <span
+                          className="material-symbols-rounded select-none text-[20px] text-emerald-600"
+                          title="Paid"
+                          aria-label="Paid"
+                        >
+                          paid
                         </span>
                       </td>
                     </tr>
@@ -226,11 +271,6 @@ export default function HostFinancialsPage() {
             {connectStatus === "pending" && (
               <p className="text-xs text-amber-600">Finish setting up your account to receive payouts</p>
             )}
-            {(connectStatus === "not_connected" || connectStatus === "not_configured") && (
-              <p className="text-xs text-muted-foreground">
-                Connect your Stripe account to accept payments and get paid directly.
-              </p>
-            )}
           </div>
 
           {connectStatus === "loading" && (
@@ -249,11 +289,6 @@ export default function HostFinancialsPage() {
           {connectStatus === "pending" && (
             <Button size="sm" onClick={handleConnectStripe} disabled={connectLoading}>
               {connectLoading ? "Redirecting…" : "Finish setup"}
-            </Button>
-          )}
-          {(connectStatus === "not_connected" || connectStatus === "not_configured") && (
-            <Button size="sm" onClick={handleConnectStripe} disabled={connectLoading || connectStatus === "not_configured"}>
-              {connectLoading ? "Redirecting…" : "Get started"}
             </Button>
           )}
         </div>

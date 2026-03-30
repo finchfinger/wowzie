@@ -59,7 +59,10 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <main>
+      <div className="page-container py-10">
+        <div className="page-grid">
+          <div className="span-8-center">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Contact</h1>
         <p className="mt-1 text-sm text-muted-foreground">Send us a note. We read every message.</p>
@@ -130,6 +133,9 @@ export default function ContactPage() {
               Browse help articles
             </Link>
             <p className="mt-2 text-[11px] text-muted-foreground">Booking, cancellations, hosting, and safety.</p>
+          </div>
+        </div>
+      </div>
           </div>
         </div>
       </div>

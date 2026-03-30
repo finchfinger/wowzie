@@ -204,15 +204,34 @@ export default function ChildDetailPage() {
   };
 
   if (loading) {
-    return <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-sm text-muted-foreground">Loading child...</div>;
+    return (
+      <main>
+        <div className="page-container py-8">
+          <div className="page-grid">
+            <div className="span-8-center text-sm text-muted-foreground">Loading child...</div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (!child) {
-    return <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-sm text-destructive">{message.text || "We couldn't load this child."}</div>;
+    return (
+      <main>
+        <div className="page-container py-8">
+          <div className="page-grid">
+            <div className="span-8-center text-sm text-destructive">{message.text || "We couldn't load this child."}</div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 lg:py-10">
+    <main>
+      <div className="page-container py-8 lg:py-10">
+        <div className="page-grid">
+          <div className="span-8-center">
       <div className="mb-4">
         <Link href="/settings?tab=children" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <span>&larr;</span> Back to settings
@@ -344,6 +363,9 @@ export default function ChildDetailPage() {
           </div>
         </form>
       </section>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

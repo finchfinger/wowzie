@@ -2,7 +2,10 @@ import Link from "next/link";
 
 export default function DataTransparencyPage() {
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <main>
+      <div className="page-container py-10">
+        <div className="page-grid">
+          <div className="span-8-center">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Data transparency
@@ -81,6 +84,9 @@ export default function DataTransparencyPage() {
         >
           Read our full Privacy Policy →
         </Link>
+      </div>
+          </div>
+        </div>
       </div>
     </main>
   );

@@ -234,7 +234,7 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
                   setInput(chip);
                   setTimeout(() => inputRef.current?.focus(), 50);
                 }}
-                className="rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
+                className="rounded-lg border border-border bg-muted/50 px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
               >
                 {chip}
               </button>

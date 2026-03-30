@@ -14,7 +14,10 @@ export default function HelpArticleLayout({
   children,
 }: HelpArticleLayoutProps) {
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <main>
+      <div className="page-container py-10">
+        <div className="page-grid">
+          <div className="span-8-center">
       {/* Breadcrumb */}
       <div className="mb-4">
         <Link
@@ -48,6 +51,9 @@ export default function HelpArticleLayout({
       <article className="prose prose-sm max-w-none text-foreground">
         {children}
       </article>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
