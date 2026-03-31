@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { BlockSkeletons } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
@@ -83,13 +85,7 @@ export default function HostActivitiesPage() {
         action={{ label: "+ New activity", href: "/host/activities/new", variant: "primary" }}
       />
 
-      {loading && (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />
-          ))}
-        </div>
-      )}
+      {loading && <BlockSkeletons count={4} height="h-16" />}
 
       {error && (
         <p className="text-sm text-destructive">{error}</p>
@@ -141,15 +137,7 @@ export default function HostActivitiesPage() {
 
                 {/* Right: status pill + arrow */}
                 <div className="flex items-center gap-3 shrink-0 ml-4">
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                      published
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {published ? "Published" : "Draft"}
-                  </span>
+                  <StatusBadge variant={published ? "published" : "draft"} />
                   <span className="text-muted-foreground text-xs">&rsaquo;</span>
                 </div>
               </button>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Alert } from "@/components/ui/Alert";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
@@ -104,15 +105,7 @@ export default function ContactPage() {
       </div>
 
       {toast && (
-        <div
-          className={`mt-4 rounded-xl px-4 py-3 text-sm ${
-            toast.tone === "success"
-              ? "bg-green-50 text-green-700 border border-green-200"
-              : "bg-destructive/5 text-destructive border border-destructive/20"
-          }`}
-        >
-          {toast.text}
-        </div>
+        <Alert tone={toast.tone} className="mt-4">{toast.text}</Alert>
       )}
 
       <div className="mt-6 rounded-2xl bg-card p-5 sm:p-6">

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { Alert } from "@/components/ui/Alert";
+import { BlockSkeletons } from "@/components/ui/skeleton";
 
 type HostRow = {
   user_id: string;
@@ -141,18 +143,10 @@ export default function AdminHostsPage() {
               </div>
             </div>
 
-            {error && (
-              <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+            {error && <Alert tone="error" className="mb-4">{error}</Alert>}
 
             {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />
-                ))}
-              </div>
+              <BlockSkeletons count={4} height="h-24" />
             ) : filtered.length === 0 ? (
               <div className="rounded-xl border border-border bg-card px-6 py-10 text-center text-sm text-muted-foreground">
                 No {filter === "all" ? "" : filter} applications.

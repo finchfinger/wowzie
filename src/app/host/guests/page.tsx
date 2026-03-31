@@ -10,6 +10,7 @@ import { ContentCard } from "@/components/ui/ContentCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SortDropdown } from "@/components/ui/SortDropdown";
 import { GuestRosterItem, type GuestRosterItemData } from "@/components/host/GuestRosterItem";
+import { RowSkeletons } from "@/components/ui/skeleton";
 
 function formatPhoneInput(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 10);
@@ -129,17 +130,7 @@ export default function HostGuestsPage() {
         }
       >
         {loading ? (
-          <div className="mt-4 divide-y divide-border/50">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 py-3">
-                <div className="h-10 w-10 rounded-full bg-muted animate-pulse shrink-0" />
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-3.5 w-36 rounded bg-muted animate-pulse" />
-                  <div className="h-3 w-24 rounded bg-muted animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <RowSkeletons count={3} className="mt-4" />
         ) : guests.length === 0 ? (
           <EmptyState
             icon="child_hat"
