@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
@@ -63,10 +64,7 @@ export default function ContactPage() {
       <div className="page-container py-10">
         <div className="page-grid">
           <div className="span-8-center">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Contact</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Send us a note. We read every message.</p>
-      </div>
+      <PageHeader title="Contact" subtitle="Send us a note. We read every message." />
 
       <div className="rounded-2xl bg-card p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-5">

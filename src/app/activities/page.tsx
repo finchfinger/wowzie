@@ -6,6 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { CalendarEventList } from "@/components/calendar/CalendarEventList";
 import { ShareCalendarModal } from "@/components/ShareCalendarModal";
 import { CalendarSidebar } from "@/components/calendar/CalendarSidebar";
@@ -671,25 +672,17 @@ export default function ActivitiesPage() {
       <div className="page-container py-4 sm:py-6 lg:py-8">
         <div className="page-grid">
           <div className="span-12">
-      {/* ── Page header ── */}
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-          My Activities
-        </h1>
-        {!loading && allEvents.length > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-xs"
-            onClick={() => setShareOpen(true)}
-          >
+      <PageHeader
+        title="My Activities"
+        actions={!loading && allEvents.length > 0 ? (
+          <Button size="sm" variant="outline" className="text-xs" onClick={() => setShareOpen(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
               <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
             </svg>
             Share
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* ── Pending reviews prompt ── */}
       {!loading && pendingReviews.length > 0 && (

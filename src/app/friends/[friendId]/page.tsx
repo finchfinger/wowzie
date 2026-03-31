@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { CalendarEventList } from "@/components/calendar/CalendarEventList";
 import { CalendarSidebar } from "@/components/calendar/CalendarSidebar";
 
@@ -401,12 +402,7 @@ export default function FriendActivitiesPage() {
         </Link>
       </div>
 
-      {/* ── Page header ── */}
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-          {displayName}&apos;s Activities
-        </h1>
-      </div>
+      <PageHeader title={`${displayName}'s Activities`} />
 
       {/* ── View controls ── */}
       <div className="flex items-center gap-2 sm:gap-3 mt-3 mb-4 overflow-x-auto">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ContentCard } from "@/components/ui/ContentCard";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   NotificationItem,
   type NotificationData,
@@ -272,10 +273,8 @@ export default function NotificationsPage() {
       <div className="page-container py-8 lg:py-10">
         <div className="page-grid">
           <div className="span-8-center">
-            <ContentCard
+            <PageHeader
               title="Notifications"
-              bordered={false}
-              bodyClassName="px-8 pb-8"
               actions={
                 <>
                   <Button variant="outline" size="sm" onClick={handleDeleteAll} disabled={items.length === 0}>
@@ -286,6 +285,10 @@ export default function NotificationsPage() {
                   </Button>
                 </>
               }
+            />
+            <ContentCard
+              bordered={false}
+              bodyClassName="px-8 pb-8"
             >
               {/* Filter row */}
               <div className="flex items-center justify-between gap-3 mt-4 mb-2">

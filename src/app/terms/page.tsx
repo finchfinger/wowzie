@@ -1,12 +1,12 @@
+import { PageHeader } from "@/components/ui/PageHeader";
+
 export default function TermsPage() {
   return (
     <main>
       <div className="page-container py-10">
         <div className="page-grid">
           <div className="span-8-center">
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-6">
-        Terms of Service
-      </h1>
+      <PageHeader title="Terms of Service" />
 
       <div className="rounded-2xl bg-card p-5 sm:p-6 prose prose-sm max-w-none text-foreground">
         <p className="text-muted-foreground">

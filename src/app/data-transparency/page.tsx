@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function DataTransparencyPage() {
   return (
@@ -6,14 +7,7 @@ export default function DataTransparencyPage() {
       <div className="page-container py-10">
         <div className="page-grid">
           <div className="span-8-center">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Data transparency
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Last updated October 23, 2025
-        </p>
-      </div>
+      <PageHeader title="Data transparency" subtitle="Last updated October 23, 2025" />
 
       <div className="prose prose-sm max-w-none text-foreground space-y-6">
         <p>
