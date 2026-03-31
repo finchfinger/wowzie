@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/auth-context";
 import { FormCard } from "@/components/ui/form-card";
 import { AddressInput } from "@/components/ui/AddressInput";
 import type { AddressSelection } from "@/components/ui/AddressInput";
+import { RadioCard } from "@/components/ui/RadioCard";
+import { CheckboxCard } from "@/components/ui/CheckboxCard";
 
 /* ── Static data ── */
 
@@ -134,49 +136,6 @@ function SelectInput({ value, onChange, disabled, options, placeholder, error }:
   );
 }
 
-function RadioCard({ id, name, title, description, value, selectedValue, disabled, onChange }: {
-  id: string; name: string; title: string; description: string; value: string; selectedValue: string; disabled?: boolean; onChange: (v: string) => void;
-}) {
-  const checked = value === selectedValue;
-  return (
-    <label
-      htmlFor={id}
-      className={[
-        "flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors",
-        checked ? "border-primary bg-primary/5" : "border-input bg-transparent hover:bg-gray-50",
-        disabled && "opacity-60 cursor-not-allowed",
-      ].filter(Boolean).join(" ")}
-    >
-      <input type="radio" id={id} name={name} value={value} checked={checked} disabled={disabled} onChange={() => onChange(value)} className="mt-0.5 accent-primary" />
-      <div>
-        <div className="text-sm font-medium text-foreground">{title}</div>
-        <div className="mt-0.5 text-xs text-muted-foreground">{description}</div>
-      </div>
-    </label>
-  );
-}
-
-function CheckboxCard({ id, title, description, checked, disabled, onChange, rightSlot }: {
-  id: string; title: string; description?: string; checked: boolean; disabled?: boolean; onChange: (v: boolean) => void; rightSlot?: React.ReactNode;
-}) {
-  return (
-    <label
-      htmlFor={id}
-      className={[
-        "flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors",
-        checked ? "border-primary bg-primary/5" : "border-input bg-transparent hover:bg-gray-50",
-        disabled && "opacity-60 cursor-not-allowed",
-      ].filter(Boolean).join(" ")}
-    >
-      <input type="checkbox" id={id} checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 accent-primary" />
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-foreground">{title}</div>
-        {description && <div className="mt-0.5 text-xs text-muted-foreground">{description}</div>}
-      </div>
-      {rightSlot}
-    </label>
-  );
-}
 
 /* ── Main page ── */
 

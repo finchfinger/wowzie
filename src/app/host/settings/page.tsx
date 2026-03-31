@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ContentCard } from "@/components/ui/ContentCard";
+import { EditableFieldRow } from "@/components/ui/EditableFieldRow";
 
 /* ── types ── */
 
@@ -104,31 +105,6 @@ function SectionTitle({ icon, label }: { icon: string; label: string }) {
   );
 }
 
-function FieldRow({
-  label,
-  value,
-  placeholder,
-  onEdit,
-}: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onEdit: () => void;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-4">
-      <div className="space-y-0.5 min-w-0 flex-1">
-        <p className="text-xs font-medium text-foreground">{label}</p>
-        <p className={`text-[13px] line-clamp-2 ${value ? "text-foreground" : "text-muted-foreground"}`}>
-          {value || placeholder}
-        </p>
-      </div>
-      <Button variant="outline" size="sm" onClick={onEdit} className="shrink-0">
-        {value ? "Edit" : "Add"}
-      </Button>
-    </div>
-  );
-}
 
 /* ── modal field config ── */
 
@@ -295,7 +271,7 @@ export default function HostSettingsPage() {
             </Button>
           </div>
 
-          <FieldRow
+          <EditableFieldRow
             label="About"
             value={s.about}
             placeholder="Tell families about yourself and your programs."
@@ -311,11 +287,11 @@ export default function HostSettingsPage() {
         bodyClassName="px-8 pb-8"
       >
         <div className="divide-y divide-border/50">
-          <FieldRow label="Instagram"  value={s.instagram} placeholder="Username"         onEdit={() => open("instagram", s.instagram)} />
-          <FieldRow label="X"          value={s.x_handle}  placeholder="None provided"    onEdit={() => open("x",         s.x_handle)}  />
-          <FieldRow label="YouTube"    value={s.youtube}   placeholder="Channel"          onEdit={() => open("youtube",   s.youtube)}   />
-          <FieldRow label="TikTok"     value={s.tiktok}    placeholder="Username"         onEdit={() => open("tiktok",    s.tiktok)}    />
-          <FieldRow label="Website"    value={s.website}   placeholder="www.example.com"  onEdit={() => open("website",   s.website)}   />
+          <EditableFieldRow label="Instagram"  value={s.instagram} placeholder="Username"         onEdit={() => open("instagram", s.instagram)} />
+          <EditableFieldRow label="X"          value={s.x_handle}  placeholder="None provided"    onEdit={() => open("x",         s.x_handle)}  />
+          <EditableFieldRow label="YouTube"    value={s.youtube}   placeholder="Channel"          onEdit={() => open("youtube",   s.youtube)}   />
+          <EditableFieldRow label="TikTok"     value={s.tiktok}    placeholder="Username"         onEdit={() => open("tiktok",    s.tiktok)}    />
+          <EditableFieldRow label="Website"    value={s.website}   placeholder="www.example.com"  onEdit={() => open("website",   s.website)}   />
         </div>
       </ContentCard>
 
@@ -326,9 +302,9 @@ export default function HostSettingsPage() {
         bodyClassName="px-8 pb-8"
       >
         <div className="divide-y divide-border/50">
-          <FieldRow label="Cancellation Policy" value={s.cancellation_policy} placeholder="Not set"                                        onEdit={() => open("cancellation_policy", s.cancellation_policy)} />
-          <FieldRow label="House rules"          value={s.house_rules}         placeholder="e.g. Arrive 10 minutes early for check-in…"    onEdit={() => open("house_rules",         s.house_rules)}         />
-          <FieldRow label="What to bring"        value={s.what_to_bring}       placeholder="e.g. Water bottle, sunscreen, snack…"          onEdit={() => open("what_to_bring",       s.what_to_bring)}       />
+          <EditableFieldRow label="Cancellation Policy" value={s.cancellation_policy} placeholder="Not set"                                        onEdit={() => open("cancellation_policy", s.cancellation_policy)} />
+          <EditableFieldRow label="House rules"          value={s.house_rules}         placeholder="e.g. Arrive 10 minutes early for check-in…"    onEdit={() => open("house_rules",         s.house_rules)}         />
+          <EditableFieldRow label="What to bring"        value={s.what_to_bring}       placeholder="e.g. Water bottle, sunscreen, snack…"          onEdit={() => open("what_to_bring",       s.what_to_bring)}       />
         </div>
       </ContentCard>
 
