@@ -26,7 +26,7 @@ export function NavTabs<T extends string = string>({
   className = "",
 }: NavTabsProps<T>) {
   return (
-    <div className={cn("flex mb-6", !borderless && "border-b border-border", className)}>
+    <div className={cn("flex mb-6 overflow-x-auto scrollbar-none", !borderless && "border-b border-border", className)}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeId;
         const sharedClass = [
