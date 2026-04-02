@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useCampFavorite } from "@/hooks/useCampFavorite";
+import { useAuth } from "@/lib/auth-context";
 
 type FavoriteButtonProps = {
   campId: string;
@@ -18,6 +18,7 @@ export function FavoriteButton({
   className,
   size = "md",
 }: FavoriteButtonProps) {
+  const { user } = useAuth();
   const { isFavorite, favoriteLoading, toggleFavorite } = useCampFavorite(campId);
 
   const sizeClasses = size === "sm"
@@ -30,6 +31,10 @@ export function FavoriteButton({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (!user) {
+          window.dispatchEvent(new CustomEvent("wowzi:open-auth"));
+          return;
+        }
         void toggleFavorite();
       }}
       disabled={favoriteLoading}

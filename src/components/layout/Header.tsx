@@ -58,6 +58,13 @@ export function Header() {
     return () => window.removeEventListener("wowzi:play-changed", handler as EventListener);
   }, []);
 
+  // Global sign-in trigger (e.g. from FavoriteButton when not logged in)
+  useEffect(() => {
+    const handler = () => setAuthOpen(true);
+    window.addEventListener("wowzi:open-auth", handler);
+    return () => window.removeEventListener("wowzi:open-auth", handler);
+  }, []);
+
   // Unread messages
   useEffect(() => {
     if (!user?.id) { setUnreadCount(0); return; }
