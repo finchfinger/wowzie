@@ -132,7 +132,8 @@ export function Header() {
         userEmail={user?.email}
         avatarUrl={avatarUrl}
         isApprovedHost={isApprovedHost}
-        isPlaying={isPlaying}
+        {/* FEATURE FLAG: set NEXT_PUBLIC_ENABLE_PLAYING=true to re-enable */}
+        isPlaying={process.env.NEXT_PUBLIC_ENABLE_PLAYING === "true" ? isPlaying : undefined}
         showHeaderSearch={showHeaderSearch}
         unreadCount={unreadCount}
         unreadNotifCount={unreadNotifCount}

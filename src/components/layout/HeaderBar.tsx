@@ -148,18 +148,20 @@ export function HeaderBar({
 
             {isLoggedIn && (
               <>
-                {/* Playing status — desktop only, uses Button so corners match */}
-                <Button
-                  variant="outline"
-                  role="switch"
-                  aria-checked={isPlaying}
-                  onClick={onPlayToggle}
-                  aria-label={isPlaying ? "Playing — tap to stop" : "Not playing — tap to start"}
-                  className={`hidden md:inline-flex h-12 px-4 gap-2 ${isPlaying ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100" : ""}`}
-                >
-                  <span className={`h-2 w-2 rounded-full shrink-0 ${isPlaying ? "bg-green-500" : "bg-red-500"}`} />
-                  {isPlaying ? "Playing" : "Not Playing"}
-                </Button>
+                {/* Playing status — FEATURE FLAG: set NEXT_PUBLIC_ENABLE_PLAYING=true to re-enable */}
+                {process.env.NEXT_PUBLIC_ENABLE_PLAYING === "true" && (
+                  <Button
+                    variant="outline"
+                    role="switch"
+                    aria-checked={isPlaying}
+                    onClick={onPlayToggle}
+                    aria-label={isPlaying ? "Playing — tap to stop" : "Not playing — tap to start"}
+                    className={`hidden md:inline-flex h-12 px-4 gap-2 ${isPlaying ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100" : ""}`}
+                  >
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${isPlaying ? "bg-green-500" : "bg-red-500"}`} />
+                    {isPlaying ? "Playing" : "Not Playing"}
+                  </Button>
+                )}
 
                 {/* AI Chat — robot_2 with light purple bg */}
                 <Link
