@@ -17,7 +17,7 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
 /** Card-shaped skeleton for activity/camp listings */
 export function CampCardSkeleton() {
   return (
-    <div className="rounded-2xl overflow-hidden bg-card border border-border/50">
+    <div className="rounded-card overflow-hidden bg-card">
       <Skeleton className="h-40 w-full rounded-none" />
       <div className="px-4 py-3 space-y-2">
         <Skeleton className="h-4 w-3/4" />
@@ -61,7 +61,7 @@ export function BlockSkeletons({ count = 4, height = "h-16", className }: { coun
   return (
     <div className={cn("space-y-3", className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <Skeleton key={i} className={cn("w-full rounded-2xl", height)} />
+        <Skeleton key={i} className={cn("w-full rounded-card", height)} />
       ))}
     </div>
   );
@@ -72,7 +72,7 @@ export function ListingSkeletons({ count = 3, className }: { count?: number; cla
   return (
     <div className={cn("space-y-3", className)}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex gap-4 rounded-2xl border border-border p-4">
+        <div key={i} className="flex gap-4 rounded-card p-4">
           <Skeleton className="h-24 w-24 rounded-xl shrink-0" />
           <div className="flex-1 space-y-2 py-1">
             <Skeleton className="h-3.5 w-40" />

@@ -161,7 +161,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-10 text-center">
-      <div className="h-10 w-10 rounded-2xl bg-card border flex items-center justify-center">
+      <div className="h-10 w-10 rounded-card bg-card border flex items-center justify-center">
         <ImagePlus className="h-5 w-5 text-muted-foreground" />
       </div>
 
@@ -271,7 +271,7 @@ export const PhotoUploader: React.FC<Props> = ({
           },
         })}
         className={cn(
-          "rounded-2xl border border-dashed bg-transparent p-4 transition-colors",
+          "rounded-card border border-dashed bg-transparent p-4 transition-colors",
           drop.isDragActive ? "border-primary" : "border-border",
         )}
       >

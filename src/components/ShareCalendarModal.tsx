@@ -234,7 +234,7 @@ export function ShareCalendarModal({ isOpen, onClose, userId, senderName }: Shar
             type="button"
             onClick={() => void handleCopy()}
             disabled={!shareUrl}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-40"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-40"
           >
             {copied
               ? <Check className="h-4 w-4 text-emerald-600" />
@@ -294,7 +294,7 @@ export function ShareCalendarModal({ isOpen, onClose, userId, senderName }: Shar
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              className="rounded-xl px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               Cancel
             </button>

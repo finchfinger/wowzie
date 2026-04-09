@@ -66,7 +66,7 @@ export default function WishlistPage() {
 
       {/* Not signed in */}
       {!user && !loading && (
-        <div className="rounded-2xl border border-border/50 bg-card px-6 py-14 text-center max-w-sm mx-auto">
+        <div className="rounded-card bg-card px-6 py-14 text-center max-w-sm mx-auto">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
             <Heart className="h-6 w-6 text-muted-foreground" />
           </div>
@@ -94,7 +94,7 @@ export default function WishlistPage() {
 
       {/* Empty state */}
       {!loading && user && camps.length === 0 && (
-        <div className="rounded-2xl border border-border/50 bg-card px-6 py-14 text-center max-w-sm mx-auto">
+        <div className="rounded-card bg-card px-6 py-14 text-center max-w-sm mx-auto">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
             <Heart className="h-6 w-6 text-muted-foreground" />
           </div>

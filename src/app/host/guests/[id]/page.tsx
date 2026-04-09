@@ -57,7 +57,7 @@ function ChildCard({ child }: { child: Child }) {
   const medications = parseList(child.medications);
 
   return (
-    <div className="rounded-2xl bg-card border border-border/50 divide-y divide-border/40">
+    <div className="rounded-card bg-card divide-y divide-border/40">
       <div className="px-4 py-3 flex items-center gap-3">
         <div className="h-9 w-9 rounded-full bg-amber-100 flex items-center justify-center text-lg shrink-0">
           {child.avatar_emoji || "🧒"}
@@ -166,7 +166,7 @@ export default function GuestDetailPage() {
     return (
       <div className="mt-6 space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />
+          <div key={i} className="h-20 rounded-card bg-muted animate-pulse" />
         ))}
       </div>
     );
@@ -214,7 +214,7 @@ export default function GuestDetailPage() {
         <button
           type="button"
           onClick={() => router.push(`/messages?to=${contact.id}`)}
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors shrink-0"
+          className="inline-flex items-center gap-2 rounded-lg bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors shrink-0"
         >
           <MessageSquare className="h-4 w-4" />
           Message
@@ -224,7 +224,7 @@ export default function GuestDetailPage() {
       {/* Contact info */}
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-foreground">Contact</h3>
-        <div className="rounded-2xl bg-card border border-border/50 divide-y divide-border/40">
+        <div className="rounded-card bg-card divide-y divide-border/40">
           <div className="px-5 py-3 flex items-start gap-4">
             <span className="w-20 shrink-0 text-xs text-muted-foreground pt-0.5">Email</span>
             {contact.email ? (
@@ -260,7 +260,7 @@ export default function GuestDetailPage() {
         {children.length > 0 ? (
           children.map((child) => <ChildCard key={child.id} child={child} />)
         ) : (
-          <div className="rounded-2xl bg-muted/50 border border-border/50 px-5 py-4 text-xs text-muted-foreground">
+          <div className="rounded-card bg-muted/50 px-5 py-4 text-xs text-muted-foreground">
             No child profiles on file — they may not have a Wowzi account yet.
           </div>
         )}

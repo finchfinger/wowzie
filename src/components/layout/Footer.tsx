@@ -52,8 +52,8 @@ export function Footer() {
   };
 
   return (
-    <footer className="">
-      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 py-12">
+    <footer className="bg-transparent">
+      <div className="header-container py-12">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
           {/* Left: Logo + Links */}
           <div className="flex flex-col gap-6 sm:flex-row sm:gap-10 sm:items-start">

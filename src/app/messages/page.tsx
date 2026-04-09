@@ -766,7 +766,7 @@ function MessagesPageInner() {
   /* ── conversation list ──────────────────────────────── */
 
   const ConversationListUI = (
-    <div className="rounded-2xl bg-card overflow-hidden h-full flex flex-col">
+    <div className="rounded-card bg-card overflow-hidden h-full flex flex-col">
       {/* Filter + search row */}
       <div className="px-3 py-3 border-b border-border flex items-center gap-2">
         <div className="flex items-center gap-1 bg-muted/60 rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground cursor-default shrink-0">
@@ -866,7 +866,7 @@ function MessagesPageInner() {
     !sending;
 
   const ThreadUI = (
-    <div className="rounded-2xl bg-card overflow-hidden h-full flex flex-col">
+    <div className="rounded-card bg-card overflow-hidden h-full flex flex-col">
 
       {/* ── Header ── */}
       <div className="px-4 py-3 border-b border-border flex items-center gap-3">
@@ -974,7 +974,7 @@ function MessagesPageInner() {
 
                       {/* Bubble */}
                       <div
-                        className={`rounded-2xl px-3.5 py-2.5 text-sm transition-opacity ${
+                        className={`rounded-card px-3.5 py-2.5 text-sm transition-opacity ${
                           isUser
                             ? "bg-violet-100 text-violet-900 rounded-br-sm"
                             : "bg-muted text-foreground rounded-bl-sm"
@@ -1030,7 +1030,7 @@ function MessagesPageInner() {
 
         {/* Pending media preview */}
         {pendingMedia && (
-          <div className="mb-2 flex items-center gap-2 bg-muted/50 border border-border rounded-xl p-2">
+          <div className="mb-2 flex items-center gap-2 bg-muted/50 rounded-xl p-2">
             {pendingMedia.isImage && pendingMedia.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -1083,7 +1083,7 @@ function MessagesPageInner() {
                 </button>
 
                 {emojiPickerOpen && (
-                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-card border border-border rounded-2xl shadow-2xl p-3 z-50">
+                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-card rounded-card shadow-2xl p-3 z-50">
                     <div className="grid grid-cols-8 gap-0.5">
                       {EMOJIS.map((emoji) => (
                         <button
@@ -1136,7 +1136,7 @@ function MessagesPageInner() {
                 placeholder={activeConv ? "Write a message…" : "Select a conversation"}
                 rows={1}
                 disabled={!activeConvId}
-                className="w-full resize-none rounded-2xl border border-border bg-muted/40 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow disabled:opacity-50 overflow-hidden"
+                className="w-full resize-none rounded-card bg-muted/40 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow disabled:opacity-50 overflow-hidden"
                 style={{ minHeight: 42, maxHeight: 120 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {

@@ -28,7 +28,7 @@ export function HostCard({
   const initial = (hostName || "?").charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
+    <div className="flex items-center justify-between rounded-card bg-card px-4 py-3">
       {/* Left: avatar + label + name */}
       <div className="flex items-center gap-3 min-w-0">
         {hostAvatarUrl ? (
@@ -61,7 +61,7 @@ export function HostCard({
         <button
           type="button"
           onClick={onEdit}
-          className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+          className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
         >
           <Pencil className="h-3.5 w-3.5" />
           Edit listing
@@ -70,7 +70,7 @@ export function HostCard({
         <button
           type="button"
           onClick={onMessage}
-          className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+          className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
         >
           <MessageSquare className="h-3.5 w-3.5" />
           Send a message

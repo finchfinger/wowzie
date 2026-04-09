@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCampFavorite } from "@/hooks/useCampFavorite";
+import { useAuth } from "@/lib/auth-context";
 import { getPriceUnit } from "@/lib/pricing";
 
 export type Camp = {
@@ -111,6 +112,7 @@ export function CampCard({
       ? (meta.dateLabel as string).trim()
       : null;
 
+  const { user } = useAuth();
   const favoriteHook = useCampFavorite(id);
   const isControlled =
     typeof onToggleFavorite === "function" &&
@@ -122,6 +124,11 @@ export function CampCard({
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user) {
+      window.dispatchEvent(new CustomEvent("wowzi:open-auth", { detail: { reason: "favorite" } }));
+      return;
+    }
 
     if (isControlled) {
       onToggleFavorite!(id);
@@ -169,8 +176,16 @@ export function CampCard({
         className="absolute top-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white disabled:opacity-60"
         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       >
-        <span className={isFavorite ? "text-red-500" : "text-foreground/70"}>
-          {isFavorite ? "\u2665" : "\u2661"}
+        <span
+          className="material-symbols-rounded select-none"
+          style={{
+            fontSize: 22,
+            lineHeight: 1,
+            color: isFavorite ? "#e11d48" : "rgba(0,0,0,0.6)",
+            fontVariationSettings: isFavorite ? "'FILL' 1" : "'FILL' 0",
+          }}
+        >
+          favorite
         </span>
       </button>
     </article>

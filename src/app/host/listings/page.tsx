@@ -199,7 +199,7 @@ export default function HostListingsPage() {
   /* ── empty state ── */
   if (listings.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border px-6 py-16 text-center space-y-3">
+      <div className="rounded-card border border-dashed border-border px-6 py-16 text-center space-y-3">
         <div className="text-3xl">🏕️</div>
         <p className="text-sm text-muted-foreground">
           You haven&apos;t created any listings yet.
@@ -226,7 +226,7 @@ export default function HostListingsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search"
-              className="h-9 w-full rounded-full border border-border bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="h-9 w-full rounded-full bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
           <SortDropdown options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />

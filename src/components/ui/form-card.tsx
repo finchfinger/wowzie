@@ -10,7 +10,7 @@ type FormCardProps = {
 
 export function FormCard({ title, subtitle, children }: FormCardProps) {
   return (
-    <section className="rounded-2xl bg-card">
+    <section className="rounded-card bg-card">
       <div className="px-5 py-4 sm:px-6">
         <div className="text-sm font-semibold text-foreground">{title}</div>
         {subtitle && (

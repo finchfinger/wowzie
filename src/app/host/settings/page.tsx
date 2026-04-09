@@ -209,7 +209,7 @@ export default function HostSettingsPage() {
     return (
       <div className="space-y-5">
         {[2, 5, 3].map((rows, i) => (
-          <div key={i} className="rounded-2xl bg-card p-8 space-y-4">
+          <div key={i} className="rounded-card bg-card p-8 space-y-4">
             <div className="h-4 w-32 rounded bg-muted animate-pulse" />
             {Array.from({ length: rows }).map((_, j) => (
               <div key={j} className="flex items-center justify-between py-4 border-t border-border/50">
@@ -317,7 +317,7 @@ export default function HostSettingsPage() {
             onClick={close}
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           />
-          <div className="relative mx-auto mt-20 w-[92%] max-w-md rounded-2xl bg-background border border-border p-5 shadow-2xl">
+          <div className="relative mx-auto mt-20 w-[92%] max-w-md rounded-card bg-background p-5 shadow-2xl">
             <div className="space-y-4">
               <h3 className="text-base font-semibold text-foreground">{cfg.title}</h3>
 

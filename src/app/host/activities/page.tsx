@@ -92,7 +92,7 @@ export default function HostActivitiesPage() {
       )}
 
       {!loading && !error && activities.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-center space-y-3">
+        <div className="rounded-card border border-dashed border-border px-6 py-12 text-center space-y-3">
           <p className="text-sm text-muted-foreground">
             You haven&apos;t created any activities yet.
           </p>
@@ -117,7 +117,7 @@ export default function HostActivitiesPage() {
                 key={activity.id}
                 type="button"
                 onClick={() => router.push(`/host/activities/${activity.id}`)}
-                className="w-full flex items-center justify-between rounded-2xl px-4 py-3 hover:bg-muted/40 transition-colors text-left"
+                className="w-full flex items-center justify-between rounded-card px-4 py-3 hover:bg-muted/40 transition-colors text-left"
               >
                 {/* Left: name + meta */}
                 <div className="flex items-center gap-4 min-w-0">

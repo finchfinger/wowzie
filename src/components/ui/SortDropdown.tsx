@@ -35,7 +35,7 @@ export function SortDropdown<T extends string>({ options, value, onChange }: Pro
       {open && (
         <>
           <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-border bg-popover shadow-lg z-30 overflow-hidden py-1">
+          <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl bg-popover shadow-lg z-30 overflow-hidden py-1">
             {options.map((opt) => (
               <button
                 key={opt.value}

@@ -261,7 +261,7 @@ function CheckoutContent() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {!user ? (
-            <div className="rounded-2xl bg-card p-5">
+            <div className="rounded-card bg-card p-5">
               <p className="text-sm text-muted-foreground">
                 Please sign in to continue.
               </p>
@@ -269,7 +269,7 @@ function CheckoutContent() {
           ) : (
             <form onSubmit={onSubmit} className="space-y-5">
               {/* Contact */}
-              <section className="rounded-2xl bg-card p-5 space-y-4">
+              <section className="rounded-card bg-card p-5 space-y-4">
                 <div>
                   <h2 className="text-sm font-semibold">Contact</h2>
                   <p className="text-xs text-muted-foreground">
@@ -290,7 +290,7 @@ function CheckoutContent() {
               </section>
 
               {/* Payment */}
-              <section className="rounded-2xl bg-card p-5 space-y-4">
+              <section className="rounded-card bg-card p-5 space-y-4">
                 <div>
                   <h2 className="text-sm font-semibold">Payment</h2>
                   <p className="text-xs text-muted-foreground">
@@ -304,7 +304,7 @@ function CheckoutContent() {
                     Payment fields are disabled in mock mode
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="rounded-xl bg-muted/30 px-4 py-4 flex items-center gap-3 text-sm text-muted-foreground">
                     <Lock className="h-4 w-4 shrink-0 text-emerald-600" />
                     <span>
                       Secure payment powered by{" "}
@@ -316,7 +316,7 @@ function CheckoutContent() {
               </section>
 
               {/* Message */}
-              <section className="rounded-2xl bg-card p-5 space-y-4">
+              <section className="rounded-card bg-card p-5 space-y-4">
                 <div>
                   <h2 className="text-sm font-semibold">Message the host</h2>
                   <p className="text-xs text-muted-foreground">
@@ -363,7 +363,7 @@ function CheckoutContent() {
 
         {/* Sidebar */}
         <aside className="space-y-4">
-          <div className="rounded-2xl bg-card p-5">
+          <div className="rounded-card bg-card p-5">
             <div className="flex items-center gap-3">
               <div className="h-16 w-16 overflow-hidden rounded-xl bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

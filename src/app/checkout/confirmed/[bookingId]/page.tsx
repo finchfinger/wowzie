@@ -120,7 +120,7 @@ export default function CheckoutConfirmedPage() {
 
       {/* Booking summary card */}
       {!loading && booking && (
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="rounded-card bg-card overflow-hidden">
           {thumb && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
@@ -175,7 +175,7 @@ export default function CheckoutConfirmedPage() {
       {messageHref && (
         <Link
           href={messageHref}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
         >
           <MessageCircle className="h-4 w-4" />
           Message the host
@@ -192,7 +192,7 @@ export default function CheckoutConfirmedPage() {
         </Link>
         <Link
           href="/search"
-          className="inline-flex items-center justify-center rounded-lg border border-border px-5 py-2.5 text-sm font-medium hover:bg-accent"
+          className="inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-accent"
         >
           Browse more camps
         </Link>

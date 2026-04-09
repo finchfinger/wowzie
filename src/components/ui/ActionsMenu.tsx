@@ -51,7 +51,7 @@ export function ActionsMenu({ items, stopPropagation = true }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-popover shadow-lg z-30 overflow-hidden py-1">
+        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl bg-popover shadow-lg z-30 overflow-hidden py-1">
           {items.map((item, idx) => (
             <div key={idx}>
               {item.separator && <div className="my-1 h-px bg-border" />}

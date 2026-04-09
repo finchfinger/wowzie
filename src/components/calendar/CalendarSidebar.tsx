@@ -122,7 +122,7 @@ export function CalendarSidebar({
   return (
     <aside className="space-y-5">
       {/* ── Mini month calendar ── */}
-      <div className="bg-card rounded-xl border border-border p-3">
+      <div className="bg-card rounded-xl p-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-foreground">{monthLabel}</span>
           <div className="flex items-center gap-0.5">
@@ -154,7 +154,7 @@ export function CalendarSidebar({
       </div>
 
       {/* ── My Calendar (children) ── */}
-      <div className="bg-card rounded-xl border border-border p-3">
+      <div className="bg-card rounded-xl p-3">
         <h3 className="text-xs font-semibold text-foreground mb-2">My Calendar</h3>
         {myChildren.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No children added yet.</p>
@@ -199,7 +199,7 @@ export function CalendarSidebar({
 
       {/* ── Shared Calendars (friends) ── */}
       {friends.length > 0 && (
-        <div className="bg-card rounded-xl border border-border p-3">
+        <div className="bg-card rounded-xl p-3">
           <button
             type="button"
             onClick={() => setSharedExpanded((p) => !p)}

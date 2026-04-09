@@ -67,7 +67,7 @@ export function ActivityRow({ ev }: { ev: CalendarEvent }) {
   return (
     <article
       onClick={() => router.push(`/bookings/${ev.id}`)}
-      className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 hover:bg-accent/30 transition-colors cursor-pointer select-none"
+      className="flex items-center gap-3 bg-card rounded-card px-4 py-3 hover:bg-accent/30 transition-colors cursor-pointer select-none"
     >
       {/* Thumbnail */}
       <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-muted shrink-0">

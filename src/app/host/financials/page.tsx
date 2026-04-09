@@ -138,7 +138,7 @@ export default function HostFinancialsPage() {
         />
 
         {/* Fee breakdown explainer */}
-        <div className="mx-auto max-w-sm rounded-2xl bg-card p-5 space-y-0">
+        <div className="mx-auto max-w-sm rounded-card bg-card p-5 space-y-0">
           <p className="text-sm font-semibold text-foreground mb-3">
             Here&apos;s an example of how payments work
           </p>
@@ -170,7 +170,7 @@ export default function HostFinancialsPage() {
           { label: "Wowzi fee (5%)", value: loading ? "—" : fmt(totalFee), muted: true },
           { label: "Net payout", value: loading ? "—" : fmt(totalNet), highlight: true },
         ].map(({ label, value, muted, highlight }) => (
-          <div key={label} className="rounded-2xl bg-card px-5 py-4 space-y-1">
+          <div key={label} className="rounded-card bg-card px-5 py-4 space-y-1">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className={`text-2xl font-semibold ${highlight ? "text-emerald-600" : muted ? "text-muted-foreground" : "text-foreground"}`}>
               {value}
@@ -198,7 +198,7 @@ export default function HostFinancialsPage() {
         )}
 
         {!loading && bookings.length > 0 && (
-          <div className="rounded-2xl overflow-hidden border border-border">
+          <div className="rounded-card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/40">
@@ -262,7 +262,7 @@ export default function HostFinancialsPage() {
           This covers payment processing, customer support, and platform maintenance.
         </p>
 
-        <div className="flex items-center justify-between rounded-2xl bg-muted/50 px-4 py-3">
+        <div className="flex items-center justify-between rounded-card bg-muted/50 px-4 py-3">
           <div>
             <p className="text-sm font-medium text-foreground">Stripe</p>
             {connectStatus === "connected" && (

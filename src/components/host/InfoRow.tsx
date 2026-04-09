@@ -15,7 +15,7 @@ export const InfoRow: React.FC<InfoRowProps> = ({
 }) => {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground ring-1 ring-border">
+      <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground">
         {icon}
       </div>
       <div className="space-y-0.5">

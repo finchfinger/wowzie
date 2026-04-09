@@ -18,39 +18,52 @@ function MI({ name, size = 20 }: { name: string; size?: number }) {
   );
 }
 
+/* ── Ask Scout gradient-border pill ────────────────── */
+function AskScoutButton({ onClick }: { onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="hidden md:inline-flex shrink-0 w-fit"
+      aria-label="Ask Scout"
+    >
+      {/* gradient border wrapper */}
+      <span
+        className="p-[1.5px] rounded-full"
+        style={{ background: "linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #3b82f6 100%)" }}
+      >
+        <span className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-background text-sm font-medium text-foreground whitespace-nowrap hover:bg-muted/60 transition-colors">
+          <span
+            className="material-symbols-rounded select-none text-foreground"
+            style={{ fontSize: 18, lineHeight: 1 }}
+          >
+            explore
+          </span>
+          Ask Scout
+        </span>
+      </span>
+    </button>
+  );
+}
+
 /* ── Types ──────────────────────────────────────────── */
 
 export interface HeaderBarProps {
-  /** Is a user logged in? */
   isLoggedIn?: boolean;
-  /** Full display name, e.g. "Jane Smith" */
   userName?: string;
-  /** Email for dropdown header */
   userEmail?: string;
-  /** Profile photo URL — omit for initials fallback */
   avatarUrl?: string | null;
-
-  /** Host status controls button label + menu visibility */
   isApprovedHost?: boolean;
-
-  /** Play toggle state */
   isPlaying?: boolean;
   onPlayToggle?: () => void;
-
-  /** Show/hide the search bar (hidden on homepage before scroll) */
   showHeaderSearch?: boolean;
-
-  /** Unread badge counts */
   unreadCount?: number;
   unreadNotifCount?: number;
-
-  /** Callbacks — all optional; no-ops by default */
+  onScoutClick?: () => void;
   onSignInClick?: () => void;
   onHostClick?: () => void;
   onSignOut?: () => void;
   onSearchSubmit?: (query: string) => void;
-
-  /** Highlight the active menu item */
   activePath?: string;
 }
 
@@ -70,11 +83,36 @@ const ACCOUNT_ITEMS: Array<{ label: string; href: string; icon: string }> = [
   { label: "Help Center", href: "/help",     icon: "help" },
 ];
 
-/* ── Component ──────────────────────────────────────── */
+/* ── Dots icon (9-dot grid) ─────────────────────────── */
+function DotsGrid() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+      <circle cx="3"  cy="3"  r="1.6" />
+      <circle cx="9"  cy="3"  r="1.6" />
+      <circle cx="15" cy="3"  r="1.6" />
+      <circle cx="3"  cy="9"  r="1.6" />
+      <circle cx="9"  cy="9"  r="1.6" />
+      <circle cx="15" cy="9"  r="1.6" />
+      <circle cx="3"  cy="15" r="1.6" />
+      <circle cx="9"  cy="15" r="1.6" />
+      <circle cx="15" cy="15" r="1.6" />
+    </svg>
+  );
+}
 
-/* ── Shared icon-button class (48 × 48 px) ──────────── */
-const iconBtn =
-  "h-12 w-12 flex items-center justify-center rounded-full hover:bg-muted transition-colors shrink-0";
+/* ── Search icon ────────────────────────────────────── */
+function SearchIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+/* ── Component ──────────────────────────────────────── */
 
 export function HeaderBar({
   isLoggedIn = false,
@@ -87,6 +125,7 @@ export function HeaderBar({
   unreadCount = 0,
   unreadNotifCount = 0,
   onPlayToggle,
+  onScoutClick,
   onSignInClick,
   onHostClick,
   onSignOut,
@@ -107,86 +146,61 @@ export function HeaderBar({
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6">
-        <div className="py-3 flex items-center justify-between gap-2">
+      <div className="header-container">
+        <div className="py-3 grid grid-cols-[auto_1fr_auto] items-center gap-2">
 
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0" aria-label="Go to homepage">
             <WowziLogo size={40} />
           </Link>
 
-          {/* Search — Material 3 style, stretches to fill */}
+          {/* Search bar — desktop only, fades when hidden on homepage */}
           <form
             onSubmit={handleSearch}
             className={`hidden sm:flex flex-1 mx-3 transition-opacity duration-200 ${
               showHeaderSearch ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
             }`}
           >
-            <div className="relative w-full flex items-center h-12 rounded-full bg-white transition-colors">
-              <div className="pointer-events-none absolute left-4 flex items-center">
-                <svg
-                  width="18" height="18" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  className="text-muted-foreground"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+            <div className="relative w-full flex items-center h-11 rounded-full bg-white transition-colors">
+              <div className="pointer-events-none absolute left-4 flex items-center text-muted-foreground">
+                <SearchIcon />
               </div>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search camps and classes..."
-                className="h-full w-full rounded-full bg-transparent pl-11 pr-5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                placeholder="Search by camp name, topic, or location"
+                className="h-full w-full rounded-full bg-transparent pl-12 pr-5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
           </form>
 
           {/* Right side */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
 
-            {isLoggedIn && (
-              <>
-                {/* Playing status — FEATURE FLAG: set NEXT_PUBLIC_ENABLE_PLAYING=true to re-enable */}
-                {process.env.NEXT_PUBLIC_ENABLE_PLAYING === "true" && (
-                  <Button
-                    variant="outline"
-                    role="switch"
-                    aria-checked={isPlaying}
-                    onClick={onPlayToggle}
-                    aria-label={isPlaying ? "Playing — tap to stop" : "Not playing — tap to start"}
-                    className={`hidden md:inline-flex h-12 px-4 gap-2 ${isPlaying ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100" : ""}`}
-                  >
-                    <span className={`h-2 w-2 rounded-full shrink-0 ${isPlaying ? "bg-green-500" : "bg-red-500"}`} />
-                    {isPlaying ? "Playing" : "Not Playing"}
-                  </Button>
-                )}
-
-                {/* AI Chat — robot_2 with light purple bg */}
-                <Link
-                  href="/ai-chat"
-                  aria-label="AI Chat"
-                  title="AI Chat"
-                  className="h-12 w-12 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors shrink-0"
-                >
-                  <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <mask id="robot-mask" style={{ maskType: "alpha" as const }} maskUnits="userSpaceOnUse" x="0" y="0" width="20" height="20">
-                      <rect width="20" height="20" fill="#D9D9D9"/>
-                    </mask>
-                    <g mask="url(#robot-mask)">
-                      <path d="M4.16667 17.5C3.70833 17.5 3.31597 17.3368 2.98958 17.0104C2.66319 16.684 2.5 16.2917 2.5 15.8333V7.5C2.5 6.11111 2.98611 4.93056 3.95833 3.95833C4.93056 2.98611 6.11111 2.5 7.5 2.5H12.5C13.8889 2.5 15.0694 2.98611 16.0417 3.95833C17.0139 4.93056 17.5 6.11111 17.5 7.5V15.8333C17.5 16.2917 17.3368 16.684 17.0104 17.0104C16.684 17.3368 16.2917 17.5 15.8333 17.5H4.16667ZM4.16667 15.8333H15.8333V7.5C15.8333 6.58333 15.5069 5.79861 14.8542 5.14583C14.2014 4.49306 13.4167 4.16667 12.5 4.16667H7.5C6.58333 4.16667 5.79861 4.49306 5.14583 5.14583C4.49306 5.79861 4.16667 6.58333 4.16667 7.5V15.8333ZM6.32292 9.51042C5.99653 9.18403 5.83333 8.79167 5.83333 8.33333C5.83333 7.875 5.99653 7.48264 6.32292 7.15625C6.64931 6.82986 7.04167 6.66667 7.5 6.66667C7.95833 6.66667 8.35069 6.82986 8.67708 7.15625C9.00347 7.48264 9.16667 7.875 9.16667 8.33333C9.16667 8.79167 9.00347 9.18403 8.67708 9.51042C8.35069 9.83681 7.95833 10 7.5 10C7.04167 10 6.64931 9.83681 6.32292 9.51042ZM11.3229 9.51042C10.9965 9.18403 10.8333 8.79167 10.8333 8.33333C10.8333 7.875 10.9965 7.48264 11.3229 7.15625C11.6493 6.82986 12.0417 6.66667 12.5 6.66667C12.9583 6.66667 13.3507 6.82986 13.6771 7.15625C14.0035 7.48264 14.1667 7.875 14.1667 8.33333C14.1667 8.79167 14.0035 9.18403 13.6771 9.51042C13.3507 9.83681 12.9583 10 12.5 10C12.0417 10 11.6493 9.83681 11.3229 9.51042ZM5.83333 15.8333V14.1667C5.83333 13.7083 5.99653 13.316 6.32292 12.9896C6.64931 12.6632 7.04167 12.5 7.5 12.5H12.5C12.9583 12.5 13.3507 12.6632 13.6771 12.9896C14.0035 13.316 14.1667 13.7083 14.1667 14.1667V15.8333H12.5V14.1667H10.8333V15.8333H9.16667V14.1667H7.5V15.8333H5.83333Z" fill="currentColor"/>
-                    </g>
-                  </svg>
-                </Link>
-              </>
+            {/* Playing status — FEATURE FLAG */}
+            {isLoggedIn && process.env.NEXT_PUBLIC_ENABLE_PLAYING === "true" && (
+              <Button
+                variant="outline"
+                role="switch"
+                aria-checked={isPlaying}
+                onClick={onPlayToggle}
+                aria-label={isPlaying ? "Playing — tap to stop" : "Not playing — tap to start"}
+                className={`hidden md:inline-flex h-11 px-4 gap-2 rounded-full ${isPlaying ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100" : ""}`}
+              >
+                <span className={`h-2 w-2 rounded-full shrink-0 ${isPlaying ? "bg-green-500" : "bg-red-500"}`} />
+                {isPlaying ? "Playing" : "Not Playing"}
+              </Button>
             )}
+
+            {/* Ask Scout — only when logged in */}
+            {isLoggedIn && <AskScoutButton onClick={onScoutClick} />}
 
             {/* Host button — desktop only */}
             {isApprovedHost ? (
               <Button
                 onClick={onHostClick}
-                className="hidden md:inline-flex h-12 px-5"
+                className="hidden md:inline-flex h-11 px-5 rounded-full"
               >
                 Host Basecamp
               </Button>
@@ -194,7 +208,7 @@ export function HeaderBar({
               <Button
                 variant="outline"
                 onClick={onHostClick}
-                className="hidden md:inline-flex h-12 px-5"
+                className="hidden md:inline-flex h-11 px-5 rounded-full border-foreground text-foreground"
               >
                 Become a Host
               </Button>
@@ -202,40 +216,39 @@ export function HeaderBar({
 
             {isLoggedIn ? (
               <>
-                {/* Profile avatar — 48 × 48 */}
+                {/* Mobile search icon */}
+                <button
+                  type="button"
+                  onClick={() => onSearchSubmit?.("")}
+                  className="sm:hidden h-11 w-11 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-foreground"
+                  aria-label="Search"
+                >
+                  <SearchIcon />
+                </button>
+
+                {/* Profile avatar — desktop only */}
                 <Link
                   href="/profile"
-                  className="relative h-12 w-12 rounded-full overflow-hidden flex items-center justify-center bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity ml-1 shrink-0"
+                  className="hidden sm:flex relative h-10 w-10 rounded-full overflow-hidden items-center justify-center bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity shrink-0"
                   aria-label="View profile"
                 >
                   {avatarUrl ? (
-                    <Image src={avatarUrl} alt="Profile" fill sizes="48px" className="object-cover" />
+                    <Image src={avatarUrl} alt="Profile" fill sizes="40px" className="object-cover" />
                   ) : (
                     <span>{userInitial}</span>
                   )}
                 </Link>
 
-                {/* Menu button */}
+                {/* 9-dot menu button */}
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setMenuOpen((p) => !p)}
-                    className={iconBtn}
+                    className="h-11 w-11 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-foreground shrink-0"
                     aria-label="Menu"
                     aria-expanded={menuOpen}
                   >
-                    {/* 3×3 grid dots */}
-                    <svg width="16" height="16" viewBox="0 0 15 15" fill="currentColor" className="text-foreground">
-                      <circle cx="2.5" cy="2.5" r="1.5" />
-                      <circle cx="7.5" cy="2.5" r="1.5" />
-                      <circle cx="12.5" cy="2.5" r="1.5" />
-                      <circle cx="2.5" cy="7.5" r="1.5" />
-                      <circle cx="7.5" cy="7.5" r="1.5" />
-                      <circle cx="12.5" cy="7.5" r="1.5" />
-                      <circle cx="2.5" cy="12.5" r="1.5" />
-                      <circle cx="7.5" cy="12.5" r="1.5" />
-                      <circle cx="12.5" cy="12.5" r="1.5" />
-                    </svg>
+                    <DotsGrid />
                     {(unreadCount > 0 || unreadNotifCount > 0) && (
                       <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-background" />
                     )}
@@ -245,7 +258,7 @@ export function HeaderBar({
                   {menuOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                      <div className="absolute right-0 top-14 z-50 w-64 rounded-2xl bg-card shadow-xl border border-border/40 overflow-hidden">
+                      <div className="absolute right-0 top-14 z-50 w-64 rounded-card bg-card shadow-xl overflow-hidden">
 
                         {/* User info */}
                         <div className="px-4 py-3 border-b border-border/40">
@@ -307,7 +320,7 @@ export function HeaderBar({
                           })}
                         </div>
 
-                        {/* Become a host */}
+                        {/* Host */}
                         <div className="border-t border-border/40 py-1">
                           <button
                             type="button"
@@ -340,11 +353,26 @@ export function HeaderBar({
                 </div>
               </>
             ) : (
-              <div className="flex items-center ml-1">
-                <Button className="h-12 px-5" onClick={onSignInClick}>
-                  Sign in
+              /* Signed out — mobile: just dots grid, desktop: Become a Host + Sign In */
+              <>
+                {/* Mobile: dots grid opens sign-in */}
+                <button
+                  type="button"
+                  onClick={onSignInClick}
+                  className="sm:hidden h-11 w-11 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-foreground"
+                  aria-label="Menu"
+                >
+                  <DotsGrid />
+                </button>
+
+                {/* Desktop Sign In */}
+                <Button
+                  className="hidden sm:inline-flex h-11 px-5 rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  onClick={onSignInClick}
+                >
+                  Sign In
                 </Button>
-              </div>
+              </>
             )}
           </div>
         </div>

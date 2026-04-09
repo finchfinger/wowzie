@@ -193,7 +193,7 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
             >
               <div
                 className={`
-                  max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap
+                  max-w-[85%] rounded-card px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap
                   ${msg.role === "user"
                     ? "bg-primary text-primary-foreground rounded-br-sm"
                     : "bg-muted text-foreground rounded-bl-sm"
@@ -208,7 +208,7 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
           {/* Typing indicator */}
           {thinking && (
             <div className="flex justify-start">
-              <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1 items-center">
+              <div className="bg-muted rounded-card rounded-bl-sm px-4 py-3 flex gap-1 items-center">
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
                 <span className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
@@ -234,7 +234,7 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
                   setInput(chip);
                   setTimeout(() => inputRef.current?.focus(), 50);
                 }}
-                className="rounded-lg border border-border bg-muted/50 px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
+                className="rounded-lg bg-muted/50 px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
               >
                 {chip}
               </button>
@@ -244,7 +244,7 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
 
         {/* Input */}
         <div className="px-4 py-3 border-t border-border bg-card shrink-0">
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 focus-within:ring-1 focus-within:ring-primary/30">
+          <div className="flex items-center gap-2 rounded-xl bg-background px-3 py-2 focus-within:ring-1 focus-within:ring-primary/30">
             <input
               ref={inputRef}
               type="text"

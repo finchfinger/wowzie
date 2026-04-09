@@ -407,7 +407,7 @@ export default function FriendActivitiesPage() {
       {/* ── View controls ── */}
       <div className="flex items-center gap-2 sm:gap-3 mt-3 mb-4 overflow-x-auto">
         {/* List / Calendar toggle */}
-        <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden text-sm shrink-0">
+        <div className="inline-flex rounded-lg bg-card overflow-hidden text-sm shrink-0">
           <button
             type="button"
             onClick={() => setViewMode("list")}
@@ -443,7 +443,7 @@ export default function FriendActivitiesPage() {
 
         {/* Agenda / Week / Month sub-tabs — calendar mode only */}
         {viewMode === "calendar" && (
-          <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden text-xs sm:text-sm shrink-0">
+          <div className="inline-flex rounded-lg bg-card overflow-hidden text-xs sm:text-sm shrink-0">
             {(["agenda", "week", "month"] as CalendarTab[]).map((t) => (
               <button
                 key={t}
@@ -466,7 +466,7 @@ export default function FriendActivitiesPage() {
           <button
             type="button"
             onClick={() => setMobileFilterOpen(true)}
-            className="lg:hidden inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+            className="lg:hidden inline-flex items-center gap-1.5 rounded-lg bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
             aria-label="Open calendar"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -482,7 +482,7 @@ export default function FriendActivitiesPage() {
             <button
               type="button"
               onClick={goToday}
-              className="rounded-lg border border-border bg-card px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-foreground hover:bg-accent transition-colors mr-1 sm:mr-2"
+              className="rounded-lg bg-card px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-foreground hover:bg-accent transition-colors mr-1 sm:mr-2"
             >
               Today
             </button>
@@ -518,14 +518,14 @@ export default function FriendActivitiesPage() {
 
       {/* ── Loading ── */}
       {loading && (
-        <div className="rounded-2xl bg-card p-6 text-sm text-muted-foreground text-center animate-pulse">
+        <div className="rounded-card bg-card p-6 text-sm text-muted-foreground text-center animate-pulse">
           Loading activities...
         </div>
       )}
 
       {/* ── Error ── */}
       {!loading && error && (
-        <div className="rounded-2xl bg-card p-6 text-sm text-destructive">{error}</div>
+        <div className="rounded-card bg-card p-6 text-sm text-destructive">{error}</div>
       )}
 
       {/* ── Main content ── */}
@@ -582,7 +582,7 @@ export default function FriendActivitiesPage() {
 
             {/* Empty state */}
             {allEvents.length === 0 && (
-              <div className="rounded-2xl bg-card p-6 sm:p-8 text-center mt-4">
+              <div className="rounded-card bg-card p-6 sm:p-8 text-center mt-4">
                 <div className="text-3xl mb-2">📅</div>
                 <p className="text-sm text-muted-foreground">
                   No upcoming activities on {displayName}&apos;s calendar yet.

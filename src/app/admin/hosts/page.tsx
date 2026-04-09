@@ -103,7 +103,7 @@ export default function AdminHostsPage() {
         <div className="page-container py-8">
           <div className="page-grid">
             <div className="span-8-center">
-              <div className="rounded-2xl bg-card shadow-sm p-8 text-center space-y-3">
+              <div className="rounded-card bg-card shadow-sm p-8 text-center space-y-3">
                 <span className="material-symbols-rounded text-4xl text-destructive">lock</span>
                 <h2 className="text-base font-semibold text-foreground">Access denied</h2>
                 <p className="text-sm text-muted-foreground">You need admin permissions to view this page.</p>
@@ -148,11 +148,11 @@ export default function AdminHostsPage() {
             {loading ? (
               <BlockSkeletons count={4} height="h-24" />
             ) : filtered.length === 0 ? (
-              <div className="rounded-xl border border-border bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+              <div className="rounded-xl bg-card px-6 py-10 text-center text-sm text-muted-foreground">
                 No {filter === "all" ? "" : filter} applications.
               </div>
             ) : (
-              <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden">
+              <div className="divide-y divide-border rounded-xl bg-card overflow-hidden">
                 {filtered.map((host) => {
                   const notes = host.settings?.application_notes ?? "";
                   const lines = notes.split("\n").slice(0, 10);

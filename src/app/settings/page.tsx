@@ -575,7 +575,7 @@ function SettingsPageInner({
         <div className="page-container py-8">
           <div className="page-grid">
             <div className="span-8-center">
-              <div className="rounded-2xl bg-card shadow-sm p-8 text-center space-y-4">
+              <div className="rounded-card bg-card shadow-sm p-8 text-center space-y-4">
                 <span className="material-symbols-rounded text-4xl text-muted-foreground">manage_accounts</span>
                 <div>
                   <h2 className="text-base font-semibold text-foreground">Sign in to manage your settings</h2>
@@ -1451,7 +1451,7 @@ function NotificationsTab({ userId }: { userId: string | null }) {
         </Card>
 
         {error && (
-          <div className="rounded-2xl bg-destructive/10 px-5 py-3 text-xs text-destructive">
+          <div className="rounded-card bg-destructive/10 px-5 py-3 text-xs text-destructive">
             {error}
           </div>
         )}

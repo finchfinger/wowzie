@@ -8,7 +8,7 @@ export default function TermsPage() {
           <div className="span-8-center">
       <PageHeader title="Terms of Service" />
 
-      <div className="rounded-2xl bg-card p-5 sm:p-6 prose prose-sm max-w-none text-foreground">
+      <div className="rounded-card bg-card p-5 sm:p-6 prose prose-sm max-w-none text-foreground">
         <p className="text-muted-foreground">
           Last updated: February 2025
         </p>

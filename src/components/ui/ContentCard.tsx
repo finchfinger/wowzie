@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
    A page-level content section card used in many places.
 
    Variants:
-   • bordered (default) — rounded-2xl border bg-card shadow-sm,
+   • bordered (default) — rounded-card border bg-card shadow-sm,
      header separated by a bottom border with px-5 py-4 padding.
    • borderless (bordered={false}) — no border or shadow,
      header flush with px-8 pt-8 pb-4 padding. Use for dashboard
@@ -48,7 +48,7 @@ export function ContentCard({
   return (
     <div
       className={cn(
-        "rounded-2xl bg-card overflow-hidden",
+        "rounded-card bg-card overflow-hidden",
         bordered && "shadow-sm",
         className,
       )}

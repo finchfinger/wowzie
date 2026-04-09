@@ -319,11 +319,11 @@ function ActionsMenu({ items }: { items: ActionItem[] }) {
   return (
     <div ref={ref} className="relative inline-flex">
       <button type="button" onClick={() => setOpen(p => !p)} aria-haspopup="menu" aria-expanded={open} aria-label="More actions"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-accent">
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-card text-muted-foreground hover:bg-accent">
         <MoreHorizontal className="h-4 w-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border bg-popover shadow-lg z-20 overflow-hidden" role="menu">
+        <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-popover shadow-lg z-20 overflow-hidden" role="menu">
           {items.map((item, idx) => (
             <button key={idx} type="button" role="menuitem" disabled={item.disabled}
               className={`block w-full px-3 py-2.5 text-left text-xs transition-colors ${item.disabled ? "text-muted-foreground/40 cursor-not-allowed" : item.tone === "destructive" ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-accent"}`}
@@ -352,7 +352,7 @@ function DeleteModal({ open, title, deleting, error, onClose, onConfirm }: { ope
   return (
     <div className="fixed inset-0 z-50">
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/30" />
-      <div className="relative mx-auto mt-24 w-[92%] max-w-md rounded-2xl border border-border bg-card p-5 shadow-lg">
+      <div className="relative mx-auto mt-24 w-[92%] max-w-md rounded-card bg-card p-5 shadow-lg">
         <p className="text-sm font-semibold">Delete event?</p>
         <p className="mt-1 text-xs text-muted-foreground">Permanently delete <span className="font-medium">{title}</span>. Cannot be undone.</p>
         {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
@@ -691,7 +691,7 @@ function AttendanceTab({ activity }: { activity: Activity }) {
 
   if (campDays.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-border/50 p-8 text-center">
+      <div className="bg-white rounded-card p-8 text-center">
         <p className="text-sm text-muted-foreground">No dates configured for this activity yet.</p>
         <p className="text-xs text-muted-foreground mt-1">Add session dates in the activity editor.</p>
       </div>
@@ -702,7 +702,7 @@ function AttendanceTab({ activity }: { activity: Activity }) {
   const pct = roster.length > 0 ? Math.round((checkedInCount / roster.length) * 100) : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-border/50">
+    <div className="bg-white rounded-card">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-border/40 space-y-4">
         <div className="flex items-center justify-between">
@@ -1081,25 +1081,25 @@ export default function ActivityDetailPage() {
 
           {/* Hero image */}
           {heroUrl && (
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
+            <div className="relative overflow-hidden rounded-card bg-muted aspect-video">
               <Image src={heroUrl} alt={activity.name} fill sizes="(max-width: 768px) 100vw, 700px" className="object-cover" />
             </div>
           )}
 
           {/* Quick stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-border bg-card px-4 py-3">
+            <div className="rounded-card bg-card px-4 py-3">
               <p className="text-[11px] text-muted-foreground mb-0.5">Price</p>
               <p className="text-lg font-semibold text-foreground leading-none">{priceValue ?? "—"}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{classPriceLabel ? "per class" : "per child"}</p>
             </div>
-            <div className="rounded-2xl border border-border bg-card px-4 py-3">
+            <div className="rounded-card bg-card px-4 py-3">
               <p className="text-[11px] text-muted-foreground mb-0.5">Registrations</p>
               <p className="text-lg font-semibold text-foreground leading-none">{capacityLabel}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{activity.capacity != null ? "filled" : "signed up"}</p>
             </div>
             {dateRange && (
-              <div className="rounded-2xl border border-border bg-card px-4 py-3">
+              <div className="rounded-card bg-card px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
                   <p className="text-[11px] text-muted-foreground">{dateRange.heading}</p>
@@ -1108,7 +1108,7 @@ export default function ActivityDetailPage() {
               </div>
             )}
             {timeValue && (
-              <div className="rounded-2xl border border-border bg-card px-4 py-3">
+              <div className="rounded-card bg-card px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <Clock className="h-3 w-3 text-muted-foreground" />
                   <p className="text-[11px] text-muted-foreground">Time</p>
@@ -1117,7 +1117,7 @@ export default function ActivityDetailPage() {
               </div>
             )}
             {pendingCount > 0 && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <div className="rounded-card border border-amber-200 bg-amber-50 px-4 py-3">
                 <p className="text-[11px] text-amber-700 mb-0.5">Pending</p>
                 <p className="text-lg font-semibold text-amber-900 leading-none">{pendingCount}</p>
                 <p className="text-[11px] text-amber-700 mt-0.5">need review</p>
@@ -1127,14 +1127,14 @@ export default function ActivityDetailPage() {
 
           {/* Description */}
           {activity.description && (
-            <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="rounded-card bg-card p-5">
               <SectionLabel>Description</SectionLabel>
               <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{activity.description}</p>
             </div>
           )}
 
           {/* Details */}
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="rounded-card bg-card p-5">
             <SectionLabel>Details</SectionLabel>
             <div>
               {dateRange && (
@@ -1163,11 +1163,11 @@ export default function ActivityDetailPage() {
 
           {/* Camp Sessions */}
           {campSessions.length > 0 && (
-            <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="rounded-card bg-card p-5">
               <SectionLabel>Sessions ({campSessions.length})</SectionLabel>
               <div className="space-y-2">
                 {campSessions.map((session: any, i: number) => (
-                  <div key={session.id ?? i} className="flex items-start justify-between gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
+                  <div key={session.id ?? i} className="flex items-start justify-between gap-3 rounded-xl bg-muted/30 px-4 py-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">{session.name || `Session ${i + 1}`}</p>
                       {(session.startDate || session.endDate) && (
@@ -1191,7 +1191,7 @@ export default function ActivityDetailPage() {
 
           {/* Activities / Itinerary */}
           {itinerary.length > 0 && (
-            <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="rounded-card bg-card p-5">
               <SectionLabel>What you&apos;ll do</SectionLabel>
               <div className="space-y-3">
                 {itinerary.map((act: any, i: number) => (
@@ -1209,7 +1209,7 @@ export default function ActivityDetailPage() {
 
           {/* Add-ons */}
           {hasAddOns && (
-            <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="rounded-card bg-card p-5">
               <SectionLabel>Add-ons</SectionLabel>
               <div>
                 {earlyDropoff.enabled && (
@@ -1230,7 +1230,7 @@ export default function ActivityDetailPage() {
 
           {/* Cancellation */}
           {cancellationPolicy && (
-            <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="rounded-card bg-card p-5">
               <SectionLabel>Cancellation policy</SectionLabel>
               <p className="text-sm text-foreground">{cancellationPolicy}</p>
             </div>
@@ -1238,11 +1238,11 @@ export default function ActivityDetailPage() {
 
           {/* Photos */}
           {allPhotos.length > 1 && (
-            <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="rounded-card bg-card p-5">
               <SectionLabel>Photos ({allPhotos.length})</SectionLabel>
               <div className="grid grid-cols-4 gap-2">
                 {allPhotos.slice(0, 8).map((url, i) => (
-                  <div key={url} className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+                  <div key={url} className="relative aspect-square overflow-hidden rounded-xl bg-muted">
                     <Image src={url} alt={`Photo ${i + 1}`} fill sizes="(max-width: 768px) 25vw, 160px" className="object-cover" />
                     {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">Cover</span>}
                   </div>
@@ -1253,7 +1253,7 @@ export default function ActivityDetailPage() {
 
           {/* Listing URL */}
           {activity.slug && (
-            <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="rounded-card bg-card p-4">
               <SectionLabel>Listing URL</SectionLabel>
               <div className="flex items-center gap-2">
                 <p className="flex-1 truncate text-xs text-muted-foreground">/camp/{activity.slug}</p>
@@ -1269,7 +1269,7 @@ export default function ActivityDetailPage() {
 
       {/* ===== GUESTS ===== */}
       {activeTab === "guests" && (
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-card bg-card p-5">
           {/* Card header */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-foreground">Guests</h2>
@@ -1391,7 +1391,7 @@ export default function ActivityDetailPage() {
           {activity.slug && (
             <div className="space-y-3">
               <h2 className="text-sm font-semibold">Event page URL</h2>
-              <div className="flex items-center gap-2 rounded-2xl bg-muted p-3">
+              <div className="flex items-center gap-2 rounded-card bg-muted p-3">
                 <p className="text-xs text-muted-foreground flex-1 truncate">/camp/{activity.slug}</p>
                 <Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(`${window.location.origin}/camp/${activity.slug}`)}>Copy</Button>
               </div>

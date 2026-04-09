@@ -215,7 +215,7 @@ export default function BookingDetailPage() {
 
       {/* Hero image */}
       {heroImage && (
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-muted aspect-video">
+        <div className="relative overflow-hidden rounded-card bg-muted aspect-video">
           <Image src={heroImage} alt={camp.name} fill sizes="(max-width: 768px) 100vw, 700px" className="object-cover" />
         </div>
       )}
@@ -230,7 +230,7 @@ export default function BookingDetailPage() {
       </div>
 
       {/* Booking status */}
-      <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="rounded-card bg-card p-4">
         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold
           ${booking.status === "confirmed" ? "bg-emerald-100 text-emerald-700"
             : booking.status === "pending" ? "bg-amber-100 text-amber-700"
@@ -244,7 +244,7 @@ export default function BookingDetailPage() {
 
       {/* Who's going */}
       {children.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="rounded-card bg-card p-4">
           <SectionLabel>Who&apos;s going</SectionLabel>
           <div className="space-y-2.5">
             {children.slice(0, booking.guests_count).map(child => (
@@ -265,7 +265,7 @@ export default function BookingDetailPage() {
 
       {/* Attendance */}
       {campDays.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="rounded-card bg-card p-4">
           <div className="flex items-center justify-between mb-3">
             <SectionLabel>Attendance</SectionLabel>
             {checkedInCount > 0 && (
@@ -315,7 +315,7 @@ export default function BookingDetailPage() {
       )}
 
       {/* Payment */}
-      <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="rounded-card bg-card p-4">
         <SectionLabel>Payment info</SectionLabel>
         <div className="flex items-baseline justify-between">
           <p className="text-sm text-muted-foreground">Amount paid</p>
@@ -333,7 +333,7 @@ export default function BookingDetailPage() {
       </div>
 
       {/* Actions */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="rounded-card bg-card overflow-hidden">
         {camp.host_id && (
           <button
             type="button"

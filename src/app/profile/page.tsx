@@ -26,7 +26,7 @@ export default function ProfileRedirect() {
         <div className="page-container py-8">
           <div className="page-grid">
             <div className="span-8-center">
-              <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+              <div className="rounded-xl bg-card px-4 py-3 text-sm text-muted-foreground">
                 Please sign in to view your profile.
               </div>
             </div>

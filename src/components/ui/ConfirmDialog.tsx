@@ -39,7 +39,7 @@ export function ConfirmDialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="w-full max-w-sm rounded-3xl bg-card border border-border shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-sm rounded-3xl bg-card shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-200">
         {/* Icon */}
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-full mx-auto ${

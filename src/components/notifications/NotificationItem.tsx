@@ -208,7 +208,7 @@ export function NotificationItem({
 
         {/* Expandable body box */}
         {showBodyBox && (
-          <div className="rounded-xl border border-border bg-background px-3 py-2.5 space-y-2.5">
+          <div className="rounded-xl bg-background px-3 py-2.5 space-y-2.5">
             {messageBody && showReply && (
               <p className="text-xs text-foreground leading-relaxed">
                 {messageBody}
@@ -219,7 +219,7 @@ export function NotificationItem({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onReply?.(id); }}
-                className="text-xs font-medium text-foreground border border-border rounded-lg px-3 py-1 hover:bg-muted transition-colors"
+                className="text-xs font-medium text-foreground rounded-lg px-3 py-1 hover:bg-muted transition-colors"
               >
                 Reply
               </button>

@@ -148,7 +148,7 @@ function StatusBadge({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-popover shadow-lg z-30 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl bg-popover shadow-lg z-30 overflow-hidden">
           {/* Live option */}
           <button
             type="button"
@@ -244,7 +244,7 @@ function ActionsMenu({ items }: { items: ActionItem[] }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-popover shadow-lg z-30 overflow-hidden py-1">
+        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl bg-popover shadow-lg z-30 overflow-hidden py-1">
           {items.map((item, idx) => (
             <div key={idx}>
               {item.separator && <div className="my-1 h-px bg-border" />}
@@ -318,7 +318,7 @@ export function ListingCard({
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") handleCardClick();
       }}
-      className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-4 py-4 hover:bg-muted/20 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="group flex items-center gap-4 rounded-card bg-card px-4 py-4 hover:bg-muted/20 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
     >
       {/* Thumbnail */}
       <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-muted">

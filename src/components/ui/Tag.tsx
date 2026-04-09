@@ -13,7 +13,7 @@ export function Tag({ label, onRemove, disabled, className }: TagProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-3 py-1.5 text-xs text-foreground",
+        "inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1.5 text-xs text-foreground",
         disabled && "opacity-60",
         className
       )}

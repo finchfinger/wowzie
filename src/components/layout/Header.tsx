@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { ScoutOverlay } from "@/components/scout/ScoutOverlay";
 import { HeaderBar } from "./HeaderBar";
 
 export function Header() {
@@ -28,6 +29,8 @@ export function Header() {
   const showHeaderSearch = !isHomepage || heroPassed;
 
   const [authOpen, setAuthOpen] = useState(false);
+  const [authReason, setAuthReason] = useState<"favorite" | "message" | "booking" | "default">("default");
+  const [scoutOpen, setScoutOpen] = useState(false);
   const [isApprovedHost, setIsApprovedHost] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -60,7 +63,11 @@ export function Header() {
 
   // Global sign-in trigger (e.g. from FavoriteButton when not logged in)
   useEffect(() => {
-    const handler = () => setAuthOpen(true);
+    const handler = (e: Event) => {
+      const reason = (e as CustomEvent).detail?.reason ?? "default";
+      setAuthReason(reason);
+      setAuthOpen(true);
+    };
     window.addEventListener("wowzi:open-auth", handler);
     return () => window.removeEventListener("wowzi:open-auth", handler);
   }, []);
@@ -146,6 +153,10 @@ export function Header() {
         unreadNotifCount={unreadNotifCount}
         activePath={pathname}
         onPlayToggle={() => window.dispatchEvent(new CustomEvent("wowzi:toggle-play"))}
+        onScoutClick={() => {
+          if (isLoggedIn) setScoutOpen(true);
+          else { setAuthReason("default"); setAuthOpen(true); }
+        }}
         onSignInClick={() => setAuthOpen(true)}
         onHostClick={() => {
           if (isLoggedIn) { router.push(isApprovedHost ? "/host/listings" : "/host"); }
@@ -155,7 +166,8 @@ export function Header() {
         onSearchSubmit={(q) => router.push(`/search?q=${encodeURIComponent(q)}`)}
       />
 
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
+      <AuthModal isOpen={authOpen} reason={authReason} onClose={() => setAuthOpen(false)} />
+      <ScoutOverlay open={scoutOpen} onClose={() => setScoutOpen(false)} />
     </>
   );
 }

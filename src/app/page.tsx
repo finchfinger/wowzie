@@ -36,12 +36,26 @@ const POPULAR_SEARCHES = [
 ];
 
 const ANIMATED_TERMS = [
-  "soccer camps",
-  "overnight camps",
-  "art classes",
-  "coding for kids",
-  "gymnastics classes",
-  "spring break camps",
+  "Search camps, classes, and ummmmmmmmm activities",
+  "Soccer camps near me",
+  "Art classes for 7-year-olds",
+  "Overnight camps this summer",
+  "Overnight camps in the Tri-State Area",
+  "Coding bootcamp for kids",
+  "STEM programs for teens",
+  "Dance classes this weekend",
+  "Theater camp near Chicago",
+  "Gymnastics for beginners",
+  "UFO building in Roswell",
+  "¯\\_(ツ)_/¯",
+  "anything that gets them off the couch",
+  "my kid won't stop talking about Minecraft",
+  "asking for a very energetic 9-year-old",
+  "idk something outdoorsy?",
+  "help",
+  "activities that don't involve screens",
+  "camp for kids who talk. a lot.",
+  "my mother-in-law is visiting all summer",
 ];
 
 const RECENT_SEARCHES_KEY = "wowzi_recent_searches";
@@ -151,6 +165,15 @@ const takeUniquePrograms = (
   }
   return out;
 };
+
+/* ── Featured camps that rotate in the hero image ── */
+const FEATURED_HERO_CAMPS: Array<{ name: string; slug: string; image: string }> = [
+  {
+    name: "Kids at camp having fun",
+    slug: "",
+    image: "/images/home-hero-kids.jpg",
+  },
+];
 
 const CATEGORY_CHIPS: Array<{ label: string; value: string }> = [
   { label: "All", value: "all" },
@@ -275,7 +298,7 @@ export default function HomePage() {
   const searchWrapperRef = useRef<HTMLDivElement>(null);
 
   // Animated placeholder
-  const [animatedPlaceholder, setAnimatedPlaceholder] = useState("");
+  const [animatedPlaceholder, setAnimatedPlaceholder] = useState(ANIMATED_TERMS[0]); // starts pre-filled
 
   // Grid controls
   const [sortMode, setSortMode] = useState<SortMode>("popular");
@@ -292,6 +315,29 @@ export default function HomePage() {
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
+
+  // Hero rotating camps — populated from featured camps in pool
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroCamps = useMemo<Array<{ name: string; slug: string; image: string }>>(() => {
+    const fromPool = pool
+      .filter((c) => c.featured && (c.hero_image_url || (Array.isArray(c.image_urls) && c.image_urls.length > 0) || c.image_url))
+      .slice(0, 5)
+      .map((c) => ({
+        name: c.name,
+        slug: c.slug,
+        image: c.hero_image_url ?? (Array.isArray(c.image_urls) ? c.image_urls[0] : null) ?? c.image_url ?? "",
+      }))
+      .filter((c) => c.image);
+    return fromPool.length >= 2 ? fromPool : FEATURED_HERO_CAMPS;
+  }, [pool]);
+
+  useEffect(() => {
+    if (heroCamps.length <= 1) return;
+    const id = setInterval(() => {
+      setHeroIndex((i) => (i + 1) % heroCamps.length);
+    }, 8000);
+    return () => clearInterval(id);
+  }, [heroCamps.length]);
 
   useEffect(() => {
     const load = async () => {
@@ -361,7 +407,7 @@ export default function HomePage() {
       const term = ANIMATED_TERMS[termIdx];
       if (!deleting) {
         charIdx++;
-        setAnimatedPlaceholder("Search for " + term.slice(0, charIdx));
+        setAnimatedPlaceholder(term.slice(0, charIdx));
         if (charIdx === term.length) {
           deleting = true;
           timeoutId = setTimeout(tick, 1800); // pause at full word
@@ -370,7 +416,7 @@ export default function HomePage() {
         }
       } else {
         charIdx--;
-        setAnimatedPlaceholder("Search for " + term.slice(0, charIdx));
+        setAnimatedPlaceholder(term.slice(0, charIdx));
         if (charIdx === 0) {
           deleting = false;
           termIdx = (termIdx + 1) % ANIMATED_TERMS.length;
@@ -498,36 +544,35 @@ export default function HomePage() {
         <div className="page-grid">
           <div className="span-12 space-y-10">
       {/* HERO */}
-      <section className="grid gap-8 lg:grid-cols-2 lg:items-center">
+      <section className="grid gap-8 lg:gap-16 lg:grid-cols-2 lg:items-center">
         <div className="space-y-4">
-          <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Camps &amp; classes near you
-          </p>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-foreground">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-foreground text-pretty">
             Where every kid finds their thing.
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground max-w-md">
-            From art to adventure, explore hand-picked camps and
-            classes in your neighborhood. Compare options, save
-            favorites, and book in a few taps.
+          <p className="text-sm sm:text-base text-muted-foreground">
+            From art to adventure, explore hand-picked camps and classes in your neighborhood.
           </p>
 
           <form onSubmit={onHeroSearch} className="pt-2 space-y-3">
             {/* Search input + dropdown */}
             <div ref={searchWrapperRef} className="relative">
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                placeholder={animatedPlaceholder || "Search camps, classes, and activities"}
-                className="h-11 w-full rounded-lg border border-input bg-white px-4 text-sm placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-colors"
-                aria-label="Search"
-                autoComplete="off"
-              />
+              <div className="relative flex items-center" style={{ background: "#fff", borderRadius: "9999px" }}>
+                <span className="material-symbols-rounded select-none absolute left-4 text-foreground" style={{ fontSize: 20, lineHeight: 1 }}>search</span>
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  placeholder={animatedPlaceholder}
+                  className="h-12 w-full bg-transparent pl-12 pr-4 text-sm outline-none placeholder:text-[#49454F]"
+                  style={{ color: "#1C1B1F", borderRadius: "9999px" }}
+                  aria-label="Search"
+                  autoComplete="off"
+                />
+              </div>
 
               {/* Dropdown */}
               {searchFocused && !q && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-white shadow-lg z-50 overflow-hidden py-2">
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl bg-white shadow-lg z-50 overflow-hidden py-2">
 
                   {/* Popular searches */}
                   <div className="px-4 py-2">
@@ -538,7 +583,7 @@ export default function HomePage() {
                           key={term}
                           type="button"
                           onMouseDown={(e) => { e.preventDefault(); doSearch(term); }}
-                          className="rounded-lg border border-border px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
+                          className="rounded-lg px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
                         >
                           {term}
                         </button>
@@ -592,7 +637,8 @@ export default function HomePage() {
                 value={locationText}
                 onChange={(val: string) => setLocationText(val)}
                 placeholder="Location"
-                className="bg-white"
+                className="h-12 rounded-full border-0 outline-none"
+                style={{ background: "#fff", color: "#1C1B1F" }}
                 onSelect={(selection) => {
                   const formatted =
                     selection?.formattedAddress?.trim();
@@ -605,7 +651,8 @@ export default function HomePage() {
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="h-11 w-full rounded-md border border-input bg-white px-3 text-left text-sm outline-none transition-colors hover:bg-gray-50 focus-visible:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10"
+                    className="h-12 w-full rounded-full px-4 text-left text-sm outline-none transition-colors"
+                    style={{ background: "#fff", color: startDate || endDate ? "#1C1B1F" : "#49454F" }}
                     aria-label="Dates"
                   >
                     <span
@@ -677,8 +724,8 @@ export default function HomePage() {
               <select
                 value={ageSelect}
                 onChange={(e) => setAgeSelect(e.target.value as AgeSelect)}
-                className="h-11 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition-colors hover:bg-gray-50 focus-visible:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 appearance-none cursor-pointer"
-                style={{ color: ageSelect ? undefined : "var(--muted-foreground)" }}
+                className="h-12 w-full rounded-full px-4 text-sm outline-none appearance-none cursor-pointer"
+                style={{ background: "#fff", color: ageSelect ? "#1C1B1F" : "#49454F", border: "none" }}
                 aria-label="Ages"
               >
                 <option value="" disabled hidden>Ages</option>
@@ -691,7 +738,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button type="submit" variant="default" className="px-5">
+              <Button type="submit" variant="default" className="h-12 px-6 rounded-full text-foreground" style={{ background: "#E3FA4F" }}>
                 Start exploring
               </Button>
             </div>
@@ -701,13 +748,56 @@ export default function HomePage() {
         <div className="relative">
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted">
             <Image
-              src="/images/home-hero-kids.jpg"
-              alt="Kids at camp having fun"
+              src={heroCamps[heroIndex]?.image ?? "/images/home-hero-kids.jpg"}
+              alt={heroCamps[heroIndex]?.name ?? "Kids at camp having fun"}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
               priority
             />
+            {/* Camp name chip */}
+            {heroCamps[heroIndex]?.slug ? (
+              <a
+                href={`/camp/${heroCamps[heroIndex].slug}`}
+                className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm hover:bg-white transition-colors"
+              >
+                <span className="text-xs font-semibold text-foreground leading-none">{heroCamps[heroIndex].name}</span>
+                {heroCamps.length > 1 && (
+                  <span className="flex gap-0.5 ml-1">
+                    {heroCamps.map((_, i) => (
+                      <span
+                        key={i}
+                        className="block rounded-full transition-all duration-300"
+                        style={{
+                          width: i === heroIndex ? "12px" : "5px",
+                          height: "5px",
+                          background: i === heroIndex ? "var(--brand)" : "oklch(0.75 0 0)",
+                        }}
+                      />
+                    ))}
+                  </span>
+                )}
+              </a>
+            ) : heroCamps.length > 1 ? (
+              <div
+                className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm"
+              >
+                <span className="text-xs font-semibold text-foreground leading-none">{heroCamps[heroIndex]?.name}</span>
+                <span className="flex gap-0.5 ml-1">
+                  {heroCamps.map((_, i) => (
+                    <span
+                      key={i}
+                      className="block rounded-full transition-all duration-300"
+                      style={{
+                        width: i === heroIndex ? "12px" : "5px",
+                        height: "5px",
+                        background: i === heroIndex ? "var(--brand)" : "oklch(0.75 0 0)",
+                      }}
+                    />
+                  ))}
+                </span>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -724,8 +814,8 @@ export default function HomePage() {
             value={sortMode}
             onValueChange={(v) => setSortMode(v as SortMode)}
           >
-            <SelectTrigger className="h-10 w-auto" aria-label="Sort">
-              <span className="text-foreground">{SORT_LABELS[sortMode]}</span>
+            <SelectTrigger className="w-auto rounded-full text-sm font-medium" style={{ height: "32px", padding: "0 12px 0 16px", border: "1px solid #CAC4D0", background: "transparent", color: "#49454F" }} aria-label="Sort">
+              <span>{SORT_LABELS[sortMode]}</span>
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectItem value="featured">{SORT_LABELS.featured}</SelectItem>
@@ -755,8 +845,8 @@ export default function HomePage() {
             </Select>
           </div>
 
-          {/* Category chips — sm+ only */}
-          <div className="hidden sm:flex items-center gap-2 overflow-x-auto py-2 sm:justify-end">
+          {/* Category chips — sm+ only, M3 filter chips */}
+          <div className="hidden sm:flex items-center gap-2 overflow-x-auto py-1 sm:justify-end">
             {CATEGORY_CHIPS.map((chip) => {
               const active = chip.value === activeCategory;
               return (
@@ -764,11 +854,14 @@ export default function HomePage() {
                   key={chip.value}
                   type="button"
                   onClick={() => setActiveCategory(chip.value)}
-                  className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
+                  className="whitespace-nowrap rounded-full text-sm font-medium transition-colors"
+                  style={{
+                    height: "32px",
+                    padding: "0 16px",
+                    background: active ? "#E8DEF8" : "transparent",
+                    color: active ? "#6750A4" : "#49454F",
+                    border: active ? "none" : "1px solid #CAC4D0",
+                  }}
                 >
                   {chip.label}
                 </button>

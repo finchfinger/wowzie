@@ -77,26 +77,26 @@ function ApprovalBanner({
   status: BookingStatus; busy: boolean; onApprove: () => void; onDecline: () => void;
 }) {
   if (status === "confirmed") return (
-    <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-800">
+    <div className="flex items-center gap-2 rounded-card bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-800">
       <CheckCircle2 className="h-4 w-4 text-emerald-600" />
       <p>This booking has been <span className="font-medium">confirmed</span>.</p>
     </div>
   );
   if (status === "declined") return (
-    <div className="flex items-center gap-2 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-800">
+    <div className="flex items-center gap-2 rounded-card bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-800">
       <XCircle className="h-4 w-4 text-red-600" />
       <p>This booking has been <span className="font-medium">declined</span>.</p>
     </div>
   );
   if (status === "cancelled" || status === "expired") return (
-    <div className="flex items-center gap-2 rounded-2xl bg-muted border border-border px-4 py-3 text-xs text-muted-foreground">
+    <div className="flex items-center gap-2 rounded-card bg-muted px-4 py-3 text-xs text-muted-foreground">
       <XCircle className="h-4 w-4" />
       <p>This booking was <span className="font-medium">{status}</span>.</p>
     </div>
   );
   // pending
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3">
+    <div className="flex items-center justify-between gap-4 rounded-card bg-amber-50 border border-amber-200 px-4 py-3">
       <div className="flex items-center gap-2 text-xs text-amber-900">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
         <p>This booking is <span className="font-medium">pending approval</span>.</p>
@@ -121,7 +121,7 @@ function InfoSection({ title, rows }: { title: string; rows: Array<{ label: stri
   return (
     <section className="space-y-2">
       <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-      <div className="rounded-2xl bg-card border border-border/50 divide-y divide-border/40">
+      <div className="rounded-card bg-card divide-y divide-border/40">
         {rows.map(({ label, value }) => (
           <div key={label} className="px-5 py-3 flex items-start gap-4">
             <span className="w-36 shrink-0 text-xs text-muted-foreground pt-0.5">{label}</span>
@@ -152,7 +152,7 @@ function ChildCard({ child }: { child: Child }) {
     ? `${child.preferred_name} (${child.legal_name})`
     : child.legal_name;
   return (
-    <div className="rounded-2xl bg-card border border-border/50 divide-y divide-border/40">
+    <div className="rounded-card bg-card divide-y divide-border/40">
       <div className="px-4 py-3 flex items-center gap-3">
         <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center text-lg shrink-0">
           {child.avatar_emoji || "🧒"}
@@ -288,7 +288,7 @@ export default function GuestDetailPage() {
 
   if (loading) return (
     <div className="max-w-screen-md mx-auto px-4 sm:px-6 py-10 space-y-4">
-      {[...Array(3)].map((_, i) => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
+      {[...Array(3)].map((_, i) => <div key={i} className="h-24 rounded-card bg-muted animate-pulse" />)}
     </div>
   );
 
@@ -329,7 +329,7 @@ export default function GuestDetailPage() {
           </div>
         </div>
         <button type="button" onClick={() => void handleMessage()}
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors">
+          className="inline-flex items-center gap-2 rounded-lg bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors">
           <MessageSquare className="h-4 w-4" />
           Message
         </button>
@@ -373,7 +373,7 @@ export default function GuestDetailPage() {
       )}
 
       {guest.children.length === 0 && (
-        <div className="rounded-2xl bg-muted/50 border border-border/50 px-5 py-4 text-xs text-muted-foreground">
+        <div className="rounded-card bg-muted/50 px-5 py-4 text-xs text-muted-foreground">
           No child profiles on file for this parent.
         </div>
       )}

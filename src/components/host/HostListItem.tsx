@@ -186,7 +186,7 @@ function StatusBadge({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-border bg-popover shadow-lg z-30 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl bg-popover shadow-lg z-30 overflow-hidden">
           <button
             type="button"
             onClick={(e) => {

@@ -200,6 +200,7 @@ export default function CampDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [alreadyReviewed, setAlreadyReviewed] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [authReason, setAuthReason] = useState<"favorite" | "message" | "booking" | "default">("default");
   const [pendingMessage, setPendingMessage] = useState(false);
 
   const { isFavorite, favoriteLoading, toggleFavorite } = useCampFavorite(camp?.id ?? null);
@@ -308,7 +309,7 @@ export default function CampDetailPage() {
                 <div className="space-y-4">
                   <div className="h-8 w-3/4 rounded-xl bg-muted" />
                   <div className="h-4 w-1/2 rounded-lg bg-muted" />
-                  <div className="h-32 rounded-2xl bg-muted" />
+                  <div className="h-32 rounded-card bg-muted" />
                 </div>
               </div>
             </div>
@@ -325,7 +326,7 @@ export default function CampDetailPage() {
           <div className="page-grid">
             <div className="span-10-center">
               <button type="button" className="mb-4 text-xs text-muted-foreground hover:text-foreground" onClick={() => router.back()}>← Back</button>
-              <div className="rounded-2xl bg-card px-6 py-8">
+              <div className="rounded-card bg-card px-6 py-8">
                 <p className="text-sm text-destructive">{campError || "We couldn't find that camp."}</p>
               </div>
             </div>
@@ -526,11 +527,30 @@ export default function CampDetailPage() {
     const url = typeof window !== "undefined" ? window.location.href : "";
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator.share({ title: name, url }).catch(() => {});
-    } else {
+    } else if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2000);
+      }).catch(() => {
+        // fallback: select a temp input
+        const el = document.createElement("input");
+        el.value = url;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
       });
+    } else {
+      const el = document.createElement("input");
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
     }
   }
 
@@ -539,6 +559,7 @@ export default function CampDetailPage() {
     if (!host_id) return;
     if (!user) {
       setPendingMessage(true);
+      setAuthReason("message");
       setAuthOpen(true);
       return;
     }
@@ -591,11 +612,9 @@ export default function CampDetailPage() {
       <div className="page-container py-8">
         <div className="page-grid">
           <div className="span-10-center">
-        <button type="button" className="mb-6 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={() => router.back()}>
-          ← Back
-        </button>
 
-        <div className="grid gap-10 lg:grid-cols-[360px_1fr] items-start">
+
+        <div className="grid gap-10 lg:grid-cols-2 items-start">
 
           {/* ── LEFT COLUMN ── */}
           <div className="space-y-4 lg:sticky lg:top-6">
@@ -624,7 +643,10 @@ export default function CampDetailPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={toggleFavorite}
+                  onClick={() => {
+                    if (!user) { setAuthReason("favorite"); setAuthOpen(true); return; }
+                    toggleFavorite();
+                  }}
                   disabled={favoriteLoading}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white transition-colors disabled:opacity-60"
                   aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -669,11 +691,6 @@ export default function CampDetailPage() {
                     <Tag className="h-3 w-3" /> {category}
                   </span>
                 )}
-                {ageLabel && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-foreground">
-                    <Baby className="h-3 w-3" /> {ageLabel}
-                  </span>
-                )}
                 {experienceLevels.length > 0 && !experienceLevels.includes("all_levels") && (
                   <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs text-foreground">
                     {levelLabel(experienceLevels)}
@@ -688,7 +705,7 @@ export default function CampDetailPage() {
           <div className="space-y-5">
 
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground leading-tight">
+            <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-tight">
               {name}
             </h1>
 
@@ -718,8 +735,16 @@ export default function CampDetailPage() {
               </div>
             )}
 
+            {/* Age label */}
+            {ageLabel && (
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Baby className="h-3.5 w-3.5 shrink-0" />
+                {ageLabel}
+              </div>
+            )}
+
             {/* ── Reservation card ── */}
-            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="rounded-card bg-card overflow-hidden">
               {/* Header */}
               <div className="px-5 py-3 border-b border-border">
                 <p className="text-sm font-semibold text-foreground">Reservation</p>
@@ -832,7 +857,7 @@ export default function CampDetailPage() {
                         <div className="mt-1">
                           <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-0.5">Guests</label>
                           <select
-                            className="w-full rounded-xl border border-border bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
+                            className="w-full rounded-xl bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
                             value={reservationGuests}
                             onChange={(e) => setReservationGuests(Number(e.target.value))}
                           >
@@ -850,7 +875,7 @@ export default function CampDetailPage() {
                           <div>
                             <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-1">Date</label>
                             <select
-                              className="w-full rounded-xl border border-border bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
+                              className="w-full rounded-xl bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
                               value={selectedSessionIds.size === 1 ? [...selectedSessionIds][0] : ""}
                               onChange={(e) => setSelectedSessionIds(e.target.value ? new Set([e.target.value]) : new Set())}
                             >
@@ -868,7 +893,7 @@ export default function CampDetailPage() {
                         <div>
                           <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-1">Guests</label>
                           <select
-                            className="w-full rounded-xl border border-border bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
+                            className="w-full rounded-xl bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
                             value={reservationGuests}
                             onChange={(e) => setReservationGuests(Number(e.target.value))}
                           >
@@ -882,7 +907,7 @@ export default function CampDetailPage() {
 
                     {/* ── Add-ons accordion ── */}
                     {hasAddons && (
-                      <div className="rounded-xl border border-border overflow-hidden">
+                      <div className="rounded-xl overflow-hidden">
                         <button
                           type="button"
                           className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors"
@@ -939,7 +964,7 @@ export default function CampDetailPage() {
                                   <div className="space-y-2">
                                     {/* Segmented control + cost inline */}
                                     <div className="flex items-center justify-between gap-3">
-                                      <div className="inline-flex rounded-lg border border-border overflow-hidden text-xs font-medium shrink-0">
+                                      <div className="inline-flex rounded-lg overflow-hidden text-xs font-medium shrink-0">
                                         <button
                                           type="button"
                                           onClick={() => setEarlyDropoffMode("all")}
@@ -1019,7 +1044,7 @@ export default function CampDetailPage() {
                                 {extendedDaySelected && (
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between gap-3">
-                                      <div className="inline-flex rounded-lg border border-border overflow-hidden text-xs font-medium shrink-0">
+                                      <div className="inline-flex rounded-lg overflow-hidden text-xs font-medium shrink-0">
                                         <button
                                           type="button"
                                           onClick={() => setExtendedDayMode("all")}
@@ -1063,7 +1088,7 @@ export default function CampDetailPage() {
 
                             {/* Sibling discount */}
                             {advanced?.siblingDiscount?.enabled && advanced.siblingDiscount.value && (
-                              <div className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 bg-muted/30">
+                              <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-muted/30">
                                 <BadgePercent className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 <div>
                                   <p className="text-sm font-semibold text-foreground">Sibling discount</p>
@@ -1124,7 +1149,7 @@ export default function CampDetailPage() {
                       <button
                         type="button"
                         onClick={() => router.push(host_id ? `/profile/${host_id}` : "#")}
-                        className="flex-1 rounded-xl border border-border px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+                        className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
                       >
                         Contact host
                       </button>
@@ -1149,7 +1174,7 @@ export default function CampDetailPage() {
                             navigator.clipboard.writeText(url);
                           }
                         }}
-                        className="flex-1 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                        className="flex-1 rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
                       >
                         Invite a friend
                       </button>
@@ -1162,7 +1187,7 @@ export default function CampDetailPage() {
                           await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
                           setBooking(null);
                         }}
-                        className="flex-1 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                        className="flex-1 rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
                       >
                         Cancel reservation
                       </button>
@@ -1200,7 +1225,7 @@ export default function CampDetailPage() {
 
             {/* Class schedule details */}
             {classSchedule?.frequency && (
-              <div className="rounded-2xl bg-card px-5 py-4 flex items-start gap-4">
+              <div className="flex items-start gap-4 py-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
                   <Repeat className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -1213,7 +1238,7 @@ export default function CampDetailPage() {
 
             {/* Capacity */}
             {totalCapacity != null && (
-              <div className="rounded-2xl bg-card px-5 py-4 flex items-start gap-4">
+              <div className="flex items-start gap-4 py-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -1228,8 +1253,8 @@ export default function CampDetailPage() {
 
             {/* Activities */}
             {campActivities && campActivities.length > 0 && (
-              <div className="rounded-2xl bg-card px-5 py-5 space-y-3">
-                <h2 className="text-sm font-semibold text-foreground">What you&apos;ll do</h2>
+              <div className="space-y-3 py-2">
+                <h2 className="text-base font-semibold text-foreground">What you&apos;ll do</h2>
                 <div className="space-y-2.5">
                   {campActivities.map((activity) => (
                     <div key={activity.id} className="flex items-start gap-2.5">
@@ -1246,8 +1271,8 @@ export default function CampDetailPage() {
 
             {/* About */}
             {description && (
-              <div className="rounded-2xl bg-card px-5 py-5 space-y-2">
-                <h2 className="text-sm font-semibold text-foreground">About</h2>
+              <div className="space-y-2 py-2">
+                <h2 className="text-base font-semibold text-foreground">About</h2>
                 <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
                   {description.split(/\n\n+/).map((para, i) => (
                     <p key={i}>{para.trim()}</p>
@@ -1258,8 +1283,8 @@ export default function CampDetailPage() {
 
             {/* Additional details */}
             {additionalDetails && (
-              <div className="rounded-2xl bg-card px-5 py-5 space-y-2">
-                <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <div className="space-y-2 py-2">
+                <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                   <BookOpen className="h-4 w-4" /> What to bring
                 </h2>
                 <p className="text-sm leading-relaxed text-muted-foreground">{additionalDetails}</p>
@@ -1268,7 +1293,7 @@ export default function CampDetailPage() {
 
             {/* Reviews */}
             {reviews.length > 0 && (
-              <div className="rounded-2xl bg-card px-5 py-5 space-y-5">
+              <div className="space-y-5 py-2">
                 {/* Header */}
                 <div className="flex items-center gap-2">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" strokeWidth="0.5" className="shrink-0">
@@ -1331,7 +1356,7 @@ export default function CampDetailPage() {
             )}
 
             {/* Cancellation + Accessibility */}
-            <div className="rounded-2xl bg-card px-5 py-4 divide-y divide-border">
+            <div className="divide-y divide-border py-2">
               {cancellationPolicy && (
                 <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
                   <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
@@ -1351,7 +1376,7 @@ export default function CampDetailPage() {
             </div>
 
             {/* Report */}
-            <button type="button" className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <button type="button" className="rounded-xl px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               Report this event
             </button>
           </div>
@@ -1475,7 +1500,7 @@ export default function CampDetailPage() {
             <button
               type="button"
               onClick={() => setPickDaysModal(null)}
-              className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              className="rounded-xl px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               Cancel
             </button>
@@ -1492,6 +1517,7 @@ export default function CampDetailPage() {
 
       <AuthModal
         isOpen={authOpen}
+        reason={authReason}
         onClose={() => { setAuthOpen(false); setPendingMessage(false); }}
         onSignedIn={() => setAuthOpen(false)}
       />

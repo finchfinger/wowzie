@@ -194,7 +194,7 @@ export default function FriendsPage() {
 
       {/* Card — only shown when there are friends or still loading */}
       {(loading || friends.length > 0) && (
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="rounded-card bg-card overflow-hidden">
 
           {/* Invite banner */}
           <div className="flex items-center justify-between gap-3 px-4 py-3 bg-muted/40 border-b border-border">
@@ -212,7 +212,7 @@ export default function FriendsPage() {
             <button
               type="button"
               onClick={() => setShareOpen(true)}
-              className="shrink-0 h-9 w-9 flex items-center justify-center rounded-xl border border-border bg-background hover:bg-muted transition-colors text-muted-foreground"
+              className="shrink-0 h-9 w-9 flex items-center justify-center rounded-xl bg-background hover:bg-muted transition-colors text-muted-foreground"
               aria-label="Share via QR / link"
             >
               <QrCode className="h-4 w-4" />

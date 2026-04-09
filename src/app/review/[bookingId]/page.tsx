@@ -292,7 +292,7 @@ export default function ReviewPage() {
       </div>
 
       {/* Camp summary */}
-      <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+      <div className="flex items-center gap-3 rounded-card bg-card px-4 py-3">
         <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted shrink-0">
           {booking.camp_thumb ? (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -318,7 +318,7 @@ export default function ReviewPage() {
       </div>
 
       {/* Review form */}
-      <div className="space-y-5 rounded-2xl border border-border bg-card p-5">
+      <div className="space-y-5 rounded-card bg-card p-5">
         {/* Stars */}
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">

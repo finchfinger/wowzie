@@ -78,7 +78,7 @@ export function CalendarMonthGrid({ viewMonth, setViewMonth, eventsByDate }: Pro
   const label = viewMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
   return (
-    <div className="bg-card rounded-2xl ring-1 ring-border p-4">
+    <div className="bg-card rounded-card p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <button

@@ -20,7 +20,7 @@ type Props = {
 export function PageHeader({ title, subtitle, action, actions, children }: Props) {
   const btnBase =
     "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition-colors shrink-0";
-  const btnOutline = `${btnBase} border border-border bg-transparent text-foreground hover:bg-accent`;
+  const btnOutline = `${btnBase} bg-transparent text-foreground hover:bg-accent`;
   const btnPrimary = `${btnBase} bg-foreground text-background hover:bg-foreground/90`;
 
   const btnClass = action?.variant === "primary" ? btnPrimary : btnOutline;

@@ -153,9 +153,9 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
     || (camp as unknown as { location?: string }).location || null;
 
   return (
-    <div className="flex items-center gap-3 sm:gap-4 py-4 border-b border-border last:border-0 min-w-0">
+    <div className="flex items-center gap-2 sm:gap-4 py-4 border-b border-border last:border-0 min-w-0 overflow-hidden">
       <Link href={`/camp/${camp.slug}`} className="shrink-0">
-        <div className="relative h-[72px] w-[72px] rounded-xl overflow-hidden bg-muted">
+        <div className="relative h-[56px] w-[56px] sm:h-[72px] sm:w-[72px] rounded-xl overflow-hidden bg-muted">
           {image
             ? <Image src={image} alt={camp.name} fill sizes="72px" className="object-cover" />
             : <div className="h-full w-full bg-muted" />}
@@ -185,9 +185,9 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
       </div>
 
       {price && (
-        <div className="text-right shrink-0">
+        <div className="text-right shrink-0 flex flex-col items-end min-w-0">
           <span className="font-semibold text-foreground text-sm">{price}</span>
-          <span className="text-muted-foreground text-sm"> {priceUnit}</span>
+          <span className="text-muted-foreground text-xs whitespace-nowrap">{priceUnit}</span>
         </div>
       )}
     </div>
@@ -196,8 +196,8 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-4 py-4 border-b border-border animate-pulse">
-      <div className="h-[72px] w-[72px] rounded-xl bg-muted shrink-0" />
+    <div className="flex items-center gap-2 sm:gap-4 py-4 border-b border-border animate-pulse">
+      <div className="h-[56px] w-[56px] sm:h-[72px] sm:w-[72px] rounded-xl bg-muted shrink-0" />
       <div className="flex-1 space-y-2">
         <div className="h-4 w-48 rounded bg-muted" />
         <div className="h-3 w-36 rounded bg-muted" />
@@ -302,7 +302,10 @@ function SearchContent() {
   }, [user?.id]);
 
   const toggleFav = async (campId: string) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      window.dispatchEvent(new CustomEvent("wowzi:open-auth"));
+      return;
+    }
     const next = new Set(favIds);
     if (next.has(campId)) {
       next.delete(campId);
@@ -412,7 +415,7 @@ function SearchContent() {
             </select>
 
             <select value={maxDollars ?? ""} onChange={(e) => pushParam("max", e.target.value)}
-              className="h-10 w-full rounded-lg border border-input bg-white px-3 text-sm outline-none hover:bg-gray-50 transition-colors appearance-none cursor-pointer"
+              className="col-span-2 sm:col-span-1 h-10 w-full rounded-lg border border-input bg-white px-3 text-sm outline-none hover:bg-gray-50 transition-colors appearance-none cursor-pointer"
               style={{ color: maxDollars ? undefined : "var(--muted-foreground)" }}>
               <option value="">Any price</option>
               <option value="100">Under $100</option>
@@ -455,7 +458,7 @@ function SearchContent() {
 
         {/* Loading */}
         {loading && (
-          <div className="rounded-2xl border border-border bg-card px-5">
+          <div className="rounded-card bg-card px-5">
             {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
           </div>
         )}
@@ -470,7 +473,7 @@ function SearchContent() {
             <p className="text-sm text-muted-foreground">Try adjusting or clearing your filters.</p>
             {hasActiveFilters && (
               <button type="button" onClick={clearAll}
-                className="mt-3 inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">
+                className="mt-3 inline-flex rounded-lg px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">
                 Clear all filters
               </button>
             )}
@@ -479,7 +482,7 @@ function SearchContent() {
 
         {/* Results */}
         {!loading && !error && displayedResults.length > 0 && (
-          <div className="rounded-2xl border border-border bg-card px-3 sm:px-5 overflow-hidden">
+          <div className="rounded-card bg-card px-3 sm:px-5 overflow-hidden">
             {displayedResults.map((camp) => (
               <SearchResultRow key={camp.id} camp={camp} favIds={favIds} onToggleFav={toggleFav} />
             ))}
@@ -496,7 +499,7 @@ function SearchContent() {
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <button type="button" onClick={onRemove}
-      className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted px-3 py-1 text-xs text-foreground hover:bg-muted/70 transition-colors">
+      className="inline-flex items-center gap-1 rounded-lg bg-muted px-3 py-1 text-xs text-foreground hover:bg-muted/70 transition-colors">
       {label}
       <X className="h-3 w-3 text-muted-foreground" />
     </button>

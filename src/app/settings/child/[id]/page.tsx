@@ -240,7 +240,7 @@ export default function ChildDetailPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-card text-2xl">
+          <div className="flex h-12 w-12 items-center justify-center rounded-card bg-card text-2xl">
             {form.avatarEmoji || "🧒"}
           </div>
           <div>
@@ -251,7 +251,7 @@ export default function ChildDetailPage() {
             {form.interests.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {form.interests.map((i) => (
-                  <span key={i} className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1 text-[11px] text-foreground">
+                  <span key={i} className="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1 text-[11px] text-foreground">
                     {i}
                     <button type="button" onClick={() => removeInterest(i)} className="ml-1 text-muted-foreground hover:text-foreground">&#10005;</button>
                   </span>
@@ -270,7 +270,7 @@ export default function ChildDetailPage() {
         </button>
       </div>
 
-      <section className="rounded-2xl bg-card px-4 sm:px-6 py-6 space-y-6 text-sm">
+      <section className="rounded-card bg-card px-4 sm:px-6 py-6 space-y-6 text-sm">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-foreground">Child details</h2>
           {message.text && (
@@ -304,7 +304,7 @@ export default function ChildDetailPage() {
                     type="button"
                     onClick={() => setField("avatarEmoji", emoji)}
                     disabled={saving}
-                    className={`h-9 w-9 flex items-center justify-center rounded-xl border border-border bg-card hover:bg-primary/5 ${
+                    className={`h-9 w-9 flex items-center justify-center rounded-xl bg-card hover:bg-primary/5 ${
                       form.avatarEmoji === emoji ? "ring-2 ring-primary bg-primary/5" : ""
                     } ${saving ? "opacity-70 cursor-not-allowed" : ""}`}
                   >

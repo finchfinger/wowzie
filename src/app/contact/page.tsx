@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,7 +66,7 @@ export default function ContactPage() {
           <div className="span-8-center">
       <PageHeader title="Contact" subtitle="Send us a note. We read every message." />
 
-      <div className="rounded-2xl bg-card p-5 sm:p-6">
+      <div className="rounded-card bg-card p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -107,26 +106,6 @@ export default function ContactPage() {
       {toast && (
         <Alert tone={toast.tone} className="mt-4">{toast.text}</Alert>
       )}
-
-      <div className="mt-6 rounded-2xl bg-card p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-foreground">Other ways to reach us</h2>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div className="rounded-xl border border-border bg-muted/30 p-4">
-            <p className="text-xs font-medium text-muted-foreground">Email</p>
-            <a href="mailto:flatmade@gmail.com" className="mt-1 inline-block text-sm text-foreground underline hover:text-primary">
-              flatmade@gmail.com
-            </a>
-            <p className="mt-2 text-[11px] text-muted-foreground">General support and product questions.</p>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/30 p-4">
-            <p className="text-xs font-medium text-muted-foreground">Help center</p>
-            <Link href="/help" className="mt-1 inline-block text-sm text-foreground underline hover:text-primary">
-              Browse help articles
-            </Link>
-            <p className="mt-2 text-[11px] text-muted-foreground">Booking, cancellations, hosting, and safety.</p>
-          </div>
-        </div>
-      </div>
           </div>
         </div>
       </div>

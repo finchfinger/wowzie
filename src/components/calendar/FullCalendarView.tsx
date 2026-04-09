@@ -58,7 +58,7 @@ export function FullCalendarView({
   }, [viewMonth, calendarTab, firstUpcomingDate]);
 
   return (
-    <div className="wowzi-fc overflow-hidden rounded-xl bg-card border border-border/60">
+    <div className="wowzi-fc overflow-hidden rounded-xl bg-card">
       <FullCalendar
         ref={calRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}

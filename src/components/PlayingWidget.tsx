@@ -442,7 +442,7 @@ export function PlayingWidget() {
                     type="button"
                     onClick={() => void handleStart()}
                     disabled={saving || !location.trim()}
-                    className="mt-2 w-full flex items-center justify-between rounded-2xl px-5 py-4 text-base font-semibold text-white disabled:opacity-40 transition-colors"
+                    className="mt-2 w-full flex items-center justify-between rounded-card px-5 py-4 text-base font-semibold text-white disabled:opacity-40 transition-colors"
                     style={{ background: "#00c41c" }}
                   >
                     <span>Start playing</span>

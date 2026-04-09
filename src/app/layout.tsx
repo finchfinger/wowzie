@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
 import { PlayingWidget } from "@/components/PlayingWidget";
 import { Toaster } from "sonner";
 import Script from "next/script";
@@ -11,7 +11,7 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
 
 export const metadata: Metadata = {
   title: {
-    default: "Wowzi — Find & Book Kids' Camps and Classes",
+    default: "Wowzi — Camps and classes near you",
     template: "%s | Wowzi",
   },
   description: "Browse, compare, and book the best kids' camps and classes near you. Everything from summer camps and STEM workshops to art programs and sports camps — all in one place.",
@@ -78,7 +78,7 @@ export default function RootLayout({
           <div className="flex min-h-screen flex-col">
             <Header />
             <div className="flex-1">{children}</div>
-            <Footer />
+            <ConditionalFooter />
           </div>
           {/* FEATURE FLAG: set NEXT_PUBLIC_ENABLE_PLAYING=true to re-enable */}
           {process.env.NEXT_PUBLIC_ENABLE_PLAYING === "true" && <PlayingWidget />}

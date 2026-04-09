@@ -306,13 +306,13 @@ export default function ProfilePage() {
             </div>
 
             {/* ── About card ── */}
-            <div className="rounded-2xl bg-card shadow-sm p-5 sm:p-6 space-y-4">
+            <div className="rounded-card bg-card shadow-sm p-5 sm:p-6 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-base font-semibold text-foreground">About</h2>
                 {isOwnProfile && (
                   <Link
                     href="/settings"
-                    className="shrink-0 rounded-lg border border-border bg-transparent px-3 py-1 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                    className="shrink-0 rounded-lg bg-transparent px-3 py-1 text-xs font-medium text-foreground hover:bg-accent transition-colors"
                   >
                     Edit
                   </Link>
@@ -333,7 +333,7 @@ export default function ProfilePage() {
             </div>
 
             {/* ── Upcoming activities card ── */}
-            <div className="rounded-2xl bg-card shadow-sm p-5 sm:p-6">
+            <div className="rounded-card bg-card shadow-sm p-5 sm:p-6">
               <h2 className="text-base font-semibold text-foreground mb-4">Upcoming activities</h2>
 
               {/* Search + sort */}
@@ -345,7 +345,7 @@ export default function ProfilePage() {
                     placeholder="Search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-full border border-border bg-muted/40 pl-9 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30"
+                    className="w-full rounded-full bg-muted/40 pl-9 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30"
                   />
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 text-sm text-muted-foreground">
@@ -387,7 +387,7 @@ export default function ProfilePage() {
               <div className="flex gap-3">
                 <Link
                   href={`/messages?to=${encodeURIComponent(profile.id)}`}
-                  className="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground text-center hover:bg-accent transition-colors"
+                  className="flex-1 rounded-xl bg-card px-4 py-2.5 text-sm font-medium text-foreground text-center hover:bg-accent transition-colors"
                 >
                   Message {profile.preferred_first_name || profile.legal_name || "parent"}
                 </Link>

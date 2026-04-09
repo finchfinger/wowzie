@@ -151,7 +151,7 @@ export default function HostGuestsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search"
-                  className="h-9 w-full rounded-full border border-border bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="h-9 w-full rounded-full bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
               <SortDropdown
@@ -192,7 +192,7 @@ export default function HostGuestsPage() {
             onClick={() => { setIsAddOpen(false); resetModal(); }}
             className="absolute inset-0 bg-black/30"
           />
-          <div className="relative mx-auto mt-24 w-[92%] max-w-md rounded-2xl bg-background p-5 shadow-lg">
+          <div className="relative mx-auto mt-24 w-[92%] max-w-md rounded-card bg-background p-5 shadow-lg">
             <div className="space-y-5">
               <div>
                 <h3 className="text-base font-semibold text-foreground">Add a person</h3>

@@ -38,10 +38,32 @@ type ChildDraft = {
   interests: string[];
 };
 
+type AuthReason = "favorite" | "booking" | "message" | "default";
+
 type AuthModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSignedIn?: () => void;
+  reason?: AuthReason;
+};
+
+const REASON_COPY: Record<AuthReason, { title: string; subtitle: string }> = {
+  favorite: {
+    title: "Save your favorites",
+    subtitle: "Sign in to save camps and classes you love, and come back to them anytime.",
+  },
+  booking: {
+    title: "Sign in to book",
+    subtitle: "Create an account to book camps, manage your kids' profiles, and track your bookings.",
+  },
+  message: {
+    title: "Sign in to send a message",
+    subtitle: "Create an account to message hosts and get answers to your questions.",
+  },
+  default: {
+    title: "Welcome to Wowzi",
+    subtitle: "Sign in or create an account to save camps, book classes, and manage your kids' profiles.",
+  },
 };
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -212,7 +234,7 @@ function friendlyOtpError(msg: string): string {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-export function AuthModal({ isOpen, onClose, onSignedIn }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onSignedIn, reason = "default" }: AuthModalProps) {
   const [step, setStep] = useState<Step>("email");
 
   // Email + code
@@ -293,6 +315,7 @@ export function AuthModal({ isOpen, onClose, onSignedIn }: AuthModalProps) {
         options: { shouldCreateUser: true },
       });
       if (otpError) {
+        console.error("OTP error:", otpError.message, otpError);
         setError(friendlyOtpError(otpError.message));
         return;
       }
@@ -518,7 +541,7 @@ export function AuthModal({ isOpen, onClose, onSignedIn }: AuthModalProps) {
   // ── Titles per step ──────────────────────────────────────────────────────
 
   const titles: Record<Step, string> = {
-    email: "Welcome to Wowzi",
+    email: REASON_COPY[reason].title,
     code: "Check your email",
     parent: "Tell us a little more",
     child: "Who are you booking for?",
@@ -535,7 +558,7 @@ export function AuthModal({ isOpen, onClose, onSignedIn }: AuthModalProps) {
         onClick={onClose}
         aria-label="Close"
       />
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-md rounded-card bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto">
 
         {/* Back arrow — code step only */}
         {step === "code" && (
@@ -557,7 +580,7 @@ export function AuthModal({ isOpen, onClose, onSignedIn }: AuthModalProps) {
         {step === "email" && (
           <>
             <p className="mb-5 text-sm text-muted-foreground">
-              Sign in or create an account to save camps, book classes, and manage your kids&apos; profiles.
+              {REASON_COPY[reason].subtitle}
             </p>
 
             {/* Email form */}
@@ -807,7 +830,7 @@ export function AuthModal({ isOpen, onClose, onSignedIn }: AuthModalProps) {
                 {children.map((child, idx) => (
                   <div
                     key={`${child.name}-${idx}`}
-                    className="rounded-lg border border-border bg-muted px-3 py-2"
+                    className="rounded-lg bg-muted px-3 py-2"
                   >
                     <div className="font-medium">{child.name}</div>
                     {child.birthdate && (

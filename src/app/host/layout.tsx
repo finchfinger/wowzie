@@ -353,7 +353,7 @@ function HostGatewayPage() {
 
           {/* Image */}
           <div className="mt-10 lg:mt-0 shrink-0 lg:flex-1">
-            <div className="rounded-2xl overflow-hidden aspect-[4/3]">
+            <div className="rounded-card overflow-hidden aspect-[4/3]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="https://images.unsplash.com/photo-1588075592446-265fd1e6e76f?w=900&q=80&auto=format&fit=crop"
@@ -487,7 +487,7 @@ function HostGatewayPage() {
             ].map((who) => (
               <div
                 key={who.label}
-                className="rounded-2xl border border-border bg-card p-5 sm:p-6"
+                className="rounded-card bg-card p-5 sm:p-6"
               >
                 <p className="text-sm font-semibold text-foreground mb-1.5">{who.label}</p>
                 <p className="text-xs text-muted-foreground leading-snug">{who.desc}</p>
@@ -514,7 +514,7 @@ function HostGatewayPage() {
             </p>
 
             {/* Example payout table */}
-            <div className="rounded-2xl border border-border overflow-hidden">
+            <div className="rounded-card overflow-hidden">
               <div className="px-5 py-3 bg-muted/50 border-b border-border">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Example payout
@@ -541,7 +541,7 @@ function HostGatewayPage() {
 
           {/* CTA card */}
           <div className="flex-1 lg:max-w-md">
-            <div className="rounded-2xl border border-border bg-card p-8 space-y-5">
+            <div className="rounded-card bg-card p-8 space-y-5">
               <div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">
                   Ready to get started?
@@ -584,7 +584,7 @@ function HostGatewayPage() {
               return (
                 <div
                   key={section.title}
-                  className="rounded-2xl border border-border overflow-hidden"
+                  className="rounded-card overflow-hidden"
                 >
                   {/* Section toggle */}
                   <button
