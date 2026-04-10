@@ -554,8 +554,9 @@ export default function HomePage() {
           </p>
 
           <form onSubmit={onHeroSearch} className="pt-2 space-y-3">
-            {/* Search input + dropdown */}
-            <div ref={searchWrapperRef} className="relative">
+            {/* Search input + submit button */}
+            <div className="flex items-center gap-2">
+              <div ref={searchWrapperRef} className="relative flex-1 min-w-0">
               <div className="relative flex items-center" style={{ background: "#fff", borderRadius: "9999px" }}>
                 <span className="material-symbols-rounded select-none absolute left-4 text-foreground" style={{ fontSize: 20, lineHeight: 1 }}>search</span>
                 <input
@@ -628,10 +629,21 @@ export default function HomePage() {
                   )}
                 </div>
               )}
+              </div>
+
+              {/* Arrow submit button — mobile only, desktop has "Start exploring" below */}
+              <button
+                type="submit"
+                aria-label="Start exploring"
+                className="sm:hidden flex items-center justify-center rounded-full shrink-0"
+                style={{ background: "#E3FA4F", width: 44, height: 44 }}
+              >
+                <span className="material-symbols-rounded select-none text-foreground" style={{ fontSize: 22, lineHeight: 1 }}>arrow_forward</span>
+              </button>
             </div>
 
-            {/* Under-search controls: Location, Dates, Ages */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {/* Under-search controls: Location, Dates, Ages — hidden on mobile */}
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* Location */}
               <AddressInput
                 value={locationText}
@@ -737,7 +749,8 @@ export default function HomePage() {
               </select>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            {/* Desktop: standalone submit button below sub-fields */}
+            <div className="hidden sm:flex flex-wrap gap-3">
               <Button type="submit" variant="default" className="h-12 px-6 rounded-full text-foreground" style={{ background: "#E3FA4F" }}>
                 Start exploring
               </Button>
@@ -745,7 +758,7 @@ export default function HomePage() {
           </form>
         </div>
 
-        <div className="relative">
+        <div className="hidden lg:block relative">
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted">
             <Image
               src={heroCamps[heroIndex]?.image ?? "/images/home-hero-kids.jpg"}
@@ -830,8 +843,8 @@ export default function HomePage() {
               value={activeCategory}
               onValueChange={(v) => setActiveCategory(v)}
             >
-              <SelectTrigger className="h-10 w-auto" aria-label="Category">
-                <span className="text-foreground">
+              <SelectTrigger className="w-auto rounded-full text-sm font-medium" style={{ height: "32px", padding: "0 12px 0 16px", border: "1px solid #CAC4D0", background: "transparent", color: "#49454F" }} aria-label="Category">
+                <span>
                   {CATEGORY_CHIPS.find((c) => c.value === activeCategory)?.label ?? "All"}
                 </span>
               </SelectTrigger>
