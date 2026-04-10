@@ -352,7 +352,7 @@ export default function HomePage() {
           .eq("is_active", true)
           .order("featured", { ascending: false })
           .order("created_at", { ascending: false })
-          .limit(120);
+          .limit(60);
 
         if (dbError) {
           setError("Could not load activities.");
