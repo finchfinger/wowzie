@@ -202,6 +202,7 @@ export default function CampDetailPage() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authReason, setAuthReason] = useState<"favorite" | "message" | "booking" | "default">("default");
   const [pendingMessage, setPendingMessage] = useState(false);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
   const { isFavorite, favoriteLoading, toggleFavorite } = useCampFavorite(camp?.id ?? null);
 
@@ -428,7 +429,13 @@ export default function CampDetailPage() {
   const campSessions = meta?.campSessions as Array<{
     id: string; startDate: string; endDate: string;
     startTime: string; endTime: string; capacity: string;
+    enableWaitlist?: boolean;
   }> | undefined;
+
+  const enableWaitlist: boolean =
+    campSessions?.[0]?.enableWaitlist ??
+    (meta?.enableWaitlist as boolean | undefined) ??
+    false;
 
   const campActivities = (meta?.activities as Array<{
     id: string; title: string; description: string;
@@ -457,9 +464,10 @@ export default function CampDetailPage() {
   const totalCapacity = typeof capacity === "number" && capacity > 0 ? capacity : null;
   const isFull = totalCapacity != null ? confirmed >= totalCapacity : false;
 
-  let statusVariant: "booked" | "full" | "ended" | null = null;
+  let statusVariant: "booked" | "full" | "ended" | "waitlisted" | null = null;
   if (hasEnded) statusVariant = "ended";
   else if (booking?.status === "confirmed") statusVariant = "booked";
+  else if (booking?.status === "waitlisted") statusVariant = "waitlisted";
   else if (isFull) statusVariant = "full";
 
   const spotsLeft = totalCapacity != null ? totalCapacity - confirmed : null;
@@ -1186,6 +1194,12 @@ export default function CampDetailPage() {
                           if (!confirmed) return;
                           await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
                           setBooking(null);
+                          // Notify waitlisted users that a spot opened up
+                          fetch("/api/waitlist/promote", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ campId: id }),
+                          }).catch(() => {});
                         }}
                         className="flex-1 rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
                       >
@@ -1194,10 +1208,71 @@ export default function CampDetailPage() {
                     </div>
                   </div>
                 )}
-                {statusVariant === "full" && (
-                  <div className="rounded-xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground text-center">
-                    This session is full.
+                {statusVariant === "waitlisted" && (
+                  <div className="space-y-3">
+                    <div className="rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700">
+                      🎟 You&apos;re on the waitlist! We&apos;ll email you if a spot opens up.
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!booking?.id) return;
+                        const ok = window.confirm("Leave the waitlist?");
+                        if (!ok) return;
+                        await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
+                        setBooking(null);
+                      }}
+                      className="w-full rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      Leave waitlist
+                    </button>
                   </div>
+                )}
+                {statusVariant === "full" && (
+                  enableWaitlist ? (
+                    <div className="space-y-3">
+                      <div className="rounded-xl bg-muted/60 px-4 py-3 text-sm text-muted-foreground text-center">
+                        This session is full — but you can join the waitlist.
+                      </div>
+                      <button
+                        type="button"
+                        disabled={joiningWaitlist}
+                        onClick={async () => {
+                          if (!user) { setAuthReason("booking"); setAuthOpen(true); return; }
+                          setJoiningWaitlist(true);
+                          try {
+                            const res = await fetch("/api/waitlist/join", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                campId: id,
+                                campName: name,
+                                userId: user.id,
+                                email: user.email,
+                                guests: reservationGuests,
+                                sessionIds: [...selectedSessionIds],
+                              }),
+                            });
+                            const json = await res.json();
+                            if (json.waitlisted) {
+                              setBooking({ id: json.bookingId, status: "waitlisted" });
+                            } else {
+                              alert(json.error ?? "Something went wrong. Please try again.");
+                            }
+                          } finally {
+                            setJoiningWaitlist(false);
+                          }
+                        }}
+                        className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                      >
+                        {joiningWaitlist ? "Joining…" : "Join Waitlist"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground text-center">
+                      This session is full.
+                    </div>
+                  )
                 )}
                 {statusVariant === "ended" && (
                   <div className="space-y-2">

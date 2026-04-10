@@ -355,17 +355,54 @@ export function HeaderBar({
                 </div>
               </>
             ) : (
-              /* Signed out — mobile: just dots grid, desktop: Become a Host + Sign In */
+              /* Signed out — mobile: dots opens menu, desktop: Become a Host + Sign In */
               <>
-                {/* Mobile: dots grid opens sign-in */}
-                <button
-                  type="button"
-                  onClick={onSignInClick}
-                  className="sm:hidden h-11 w-11 flex items-center justify-center rounded-full bg-foreground/10 hover:bg-foreground/15 transition-colors text-foreground"
-                  aria-label="Menu"
-                >
-                  <DotsGrid />
-                </button>
+                {/* Mobile: dots grid opens dropdown */}
+                <div className="relative sm:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen((p) => !p)}
+                    className="h-11 w-11 flex items-center justify-center rounded-full bg-foreground/10 hover:bg-foreground/15 transition-colors text-foreground"
+                    aria-label="Menu"
+                    aria-expanded={menuOpen}
+                  >
+                    <DotsGrid />
+                  </button>
+
+                  {menuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                      <div className="absolute right-0 top-14 z-50 w-64 rounded-card bg-card shadow-xl overflow-hidden">
+                        <nav className="py-1">
+                          <Link
+                            href="/help"
+                            onClick={() => setMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/70 transition-colors"
+                          >
+                            <span className="text-muted-foreground"><MI name="help" /></span>
+                            Help Center
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => { onHostClick?.(); setMenuOpen(false); }}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/70 transition-colors"
+                          >
+                            <span className="text-muted-foreground"><MI name="mood" /></span>
+                            Become a host
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { onSignInClick?.(); setMenuOpen(false); }}
+                            className="flex w-full items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted/70 transition-colors"
+                          >
+                            <span className="text-muted-foreground"><MI name="waving_hand" /></span>
+                            Log in or sign up
+                          </button>
+                        </nav>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 {/* Desktop Sign In */}
                 <Button

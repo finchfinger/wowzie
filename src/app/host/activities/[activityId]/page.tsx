@@ -1021,6 +1021,7 @@ export default function ActivityDetailPage() {
   const cancellationPolicy = meta.cancellation_policy;
   const activityKind: string = meta.activityKind ?? "camp";
   const pendingCount = guests.filter(g => g.status === "pending").length;
+  const waitlistedCount = guests.filter(g => g.status === "waitlisted").length;
 
   const tabs: Array<{ id: TabId; label: string; badge?: number }> = [
     { id: "overview", label: "Overview" },
@@ -1305,10 +1306,12 @@ export default function ActivityDetailPage() {
 
           {/* Status filter pills */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {["all", "pending", "confirmed", "declined"].map(s => (
+            {["all", "pending", "confirmed", "declined", "waitlisted"].map(s => (
               <button key={s} type="button" onClick={() => setStatusFilter(s)}
                 className={`rounded-lg px-3 py-1 text-xs font-medium border transition-colors ${statusFilter === s ? "bg-foreground text-background border-foreground" : "bg-transparent text-muted-foreground border-input hover:bg-muted"}`}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}{s === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {s === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
+                {s === "waitlisted" && waitlistedCount > 0 ? ` (${waitlistedCount})` : ""}
               </button>
             ))}
           </div>

@@ -149,14 +149,15 @@ export async function POST(req: NextRequest) {
         .update({ payment_status: "expired", status: "cancelled" })
         .eq("id", bookingId);
 
-      // Notify the parent that booking expired
+      // Fetch booking info for notifications and waitlist promotion
       const { data: booking } = await supabase
         .from("bookings")
-        .select("user_id, camps:camp_id(name)")
+        .select("user_id, camp_id, camps:camp_id(name, slug)")
         .eq("id", bookingId)
         .single();
 
-      const campName = (booking?.camps as unknown as { name: string } | null)?.name ?? "your camp";
+      const campInfo = booking?.camps as unknown as { name: string; slug: string } | null;
+      const campName = campInfo?.name ?? "your camp";
 
       if (booking?.user_id) {
         await supabase.from("notifications").insert({
@@ -166,6 +167,45 @@ export async function POST(req: NextRequest) {
           body: `Your booking for ${campName} was not completed and has expired.`,
           meta: { campName, bookingId },
         });
+      }
+
+      // Promote waitlisted users now that a spot opened up
+      if (booking?.camp_id) {
+        const campId = booking.camp_id as string;
+        const campSlug = campInfo?.slug ?? "";
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://golly-roan.vercel.app";
+
+        const { data: waitlisted } = await supabase
+          .from("bookings")
+          .select("id, user_id")
+          .eq("camp_id", campId)
+          .eq("status", "waitlisted")
+          .order("created_at", { ascending: true });
+
+        for (const entry of waitlisted ?? []) {
+          await supabase.from("notifications").insert({
+            user_id: entry.user_id,
+            type: "waitlist_promoted",
+            title: "A spot just opened up!",
+            body: `A spot opened for ${campName}. Book now before it's gone.`,
+            meta: { campName, campId, bookingId: entry.id, campSlug },
+          });
+
+          try {
+            const { data: userRecord } = await supabase.auth.admin.getUserById(entry.user_id);
+            const userEmail = userRecord?.user?.email;
+            if (userEmail) {
+              await resend.emails.send({
+                from: FROM_EMAIL,
+                to: userEmail,
+                subject: `A spot just opened up for ${campName}!`,
+                html: waitlistPromotedEmailHtml({ campName, campSlug, appUrl }),
+              });
+            }
+          } catch (e) {
+            console.error("[webhook] waitlist promotion email failed:", e);
+          }
+        }
       }
     }
   }
@@ -216,6 +256,54 @@ function bookingConfirmedEmailHtml({
           <td style="padding:20px 32px;border-top:1px solid #f0f0f0;">
             <p style="margin:0;font-size:12px;color:#aaa;">
               Questions? Visit <a href="${appUrl}/help" style="color:#666;">our help center</a> or reply to this email.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function waitlistPromotedEmailHtml({
+  campName,
+  campSlug,
+  appUrl,
+}: {
+  campName: string;
+  campSlug: string;
+  appUrl: string;
+}) {
+  const campUrl = `${appUrl}/camp/${campSlug}`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:#18181b;padding:28px 32px;">
+            <p style="margin:0;font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.5px;">Wowzi 🎉</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <h1 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#111;">A spot just opened up!</h1>
+            <p style="margin:0 0 20px;color:#666;font-size:15px;line-height:1.5;">
+              Good news — a spot is now available for <strong style="color:#111;">${campName}</strong>. Spots fill up fast, so book now before it's gone!
+            </p>
+            <a href="${campUrl}"
+               style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;padding:14px 28px;border-radius:100px;font-size:15px;font-weight:600;letter-spacing:-0.2px;">
+              Book your spot →
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px;border-top:1px solid #f0f0f0;">
+            <p style="margin:0;font-size:12px;color:#aaa;">
+              You received this because you joined the waitlist for ${campName} on <a href="${appUrl}" style="color:#666;">Wowzi</a>.
             </p>
           </td>
         </tr>
