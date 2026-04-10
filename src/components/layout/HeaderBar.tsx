@@ -83,8 +83,15 @@ const ACCOUNT_ITEMS: Array<{ label: string; href: string; icon: string }> = [
   { label: "Help Center", href: "/help",     icon: "help" },
 ];
 
-/* ── Dots icon (9-dot grid) ─────────────────────────── */
+/* ── Dots icon (Material) ───────────────────────────── */
 function DotsGrid() {
+  return (
+    <span className="material-symbols-rounded select-none" style={{ fontSize: 22, lineHeight: 1 }}>apps</span>
+  );
+}
+
+/* ── DEAD CODE BELOW — kept for reference ────────────── */
+function _DotsGridOld() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
       <circle cx="3"  cy="3"  r="1.6" />
@@ -100,15 +107,10 @@ function DotsGrid() {
   );
 }
 
-/* ── Search icon ────────────────────────────────────── */
+/* ── Search icon (Material) ─────────────────────────── */
 function SearchIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
+    <span className="material-symbols-rounded select-none" style={{ fontSize: 22, lineHeight: 1 }}>search</span>
   );
 }
 
@@ -147,7 +149,7 @@ export function HeaderBar({
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="header-container">
-        <div className="py-3 grid grid-cols-[auto_1fr_auto] items-center gap-2">
+        <div className="py-3 flex items-center justify-between gap-2">
 
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0" aria-label="Go to homepage">
@@ -220,7 +222,7 @@ export function HeaderBar({
                 <button
                   type="button"
                   onClick={() => onSearchSubmit?.("")}
-                  className="sm:hidden h-11 w-11 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-foreground"
+                  className="sm:hidden h-11 w-11 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors text-foreground"
                   aria-label="Search"
                 >
                   <SearchIcon />
@@ -244,7 +246,7 @@ export function HeaderBar({
                   <button
                     type="button"
                     onClick={() => setMenuOpen((p) => !p)}
-                    className="h-11 w-11 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-foreground shrink-0"
+                    className="h-11 w-11 flex items-center justify-center rounded-full bg-foreground/10 hover:bg-foreground/15 transition-colors text-foreground shrink-0"
                     aria-label="Menu"
                     aria-expanded={menuOpen}
                   >
@@ -359,7 +361,7 @@ export function HeaderBar({
                 <button
                   type="button"
                   onClick={onSignInClick}
-                  className="sm:hidden h-11 w-11 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-foreground"
+                  className="sm:hidden h-11 w-11 flex items-center justify-center rounded-full bg-foreground/10 hover:bg-foreground/15 transition-colors text-foreground"
                   aria-label="Menu"
                 >
                   <DotsGrid />
