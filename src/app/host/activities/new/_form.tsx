@@ -1977,7 +1977,7 @@ export default function CreateActivityPage({
               {/* Session header — always shown */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-foreground">
-                  {sessionLabel(idx + 1)}
+                  {sessionLabel(idx)}
                 </span>
                 <div className="flex gap-1">
                   <button
