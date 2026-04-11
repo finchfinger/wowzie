@@ -2070,7 +2070,7 @@ export default function CreateActivityPage({
               onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); }}
             >
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-sm">Lessons &amp; Tutoring</span>
+                <span className="font-semibold text-sm">Ongoing</span>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -2096,7 +2096,7 @@ export default function CreateActivityPage({
                   onClick={() => setShowOngoingTip(false)}
                 />
                 <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
-                  <p className="font-medium mb-1">Lessons &amp; Tutoring</p>
+                  <p className="font-medium mb-1">Ongoing</p>
                   <p className="leading-relaxed opacity-80">
                     Best for guitar lessons, math tutoring, or any recurring activity where students book individual time slots from your weekly availability.
                   </p>
@@ -2113,7 +2113,7 @@ export default function CreateActivityPage({
               onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); }}
             >
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-sm">Camps &amp; Classes</span>
+                <span className="font-semibold text-sm">Fixed</span>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -2139,7 +2139,7 @@ export default function CreateActivityPage({
                   onClick={() => setShowSessionsTip(false)}
                 />
                 <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
-                  <p className="font-medium mb-1">Camps &amp; Classes</p>
+                  <p className="font-medium mb-1">Fixed</p>
                   <p className="leading-relaxed opacity-80">
                     Best for summer camps, art classes, coding bootcamps, or any program where students enroll in a specific cohort with a set start and end date.
                   </p>
@@ -2745,7 +2745,7 @@ export default function CreateActivityPage({
                 onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); }}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-sm">Camps &amp; Classes</span>
+                  <span className="font-semibold text-sm">Fixed</span>
                   <button type="button" onClick={(e) => { e.stopPropagation(); setShowSessionsTip((p) => !p); }} className="text-muted-foreground hover:text-foreground transition-colors">
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
                   </button>
@@ -2758,7 +2758,7 @@ export default function CreateActivityPage({
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSessionsTip(false)} />
                   <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
-                    <p className="font-medium mb-1">Camps &amp; Classes</p>
+                    <p className="font-medium mb-1">Fixed</p>
                     <p className="leading-relaxed opacity-80">Best for summer camps, art classes, coding bootcamps, or any program where students enroll in a specific cohort with a set start and end date.</p>
                     <div className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground" />
                   </div>
@@ -2773,7 +2773,7 @@ export default function CreateActivityPage({
                 onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); }}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-sm">Lessons &amp; Tutoring</span>
+                  <span className="font-semibold text-sm">Ongoing</span>
                   <button type="button" onClick={(e) => { e.stopPropagation(); setShowOngoingTip((p) => !p); }} className="text-muted-foreground hover:text-foreground transition-colors">
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
                   </button>
@@ -2786,7 +2786,7 @@ export default function CreateActivityPage({
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowOngoingTip(false)} />
                   <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
-                    <p className="font-medium mb-1">Lessons &amp; Tutoring</p>
+                    <p className="font-medium mb-1">Ongoing</p>
                     <p className="leading-relaxed opacity-80">Best for guitar lessons, math tutoring, or any recurring activity where students book individual time slots from your weekly availability.</p>
                     <div className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground" />
                   </div>
