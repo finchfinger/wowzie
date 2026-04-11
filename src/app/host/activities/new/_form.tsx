@@ -1962,26 +1962,21 @@ export default function CreateActivityPage({
 
   /** Unified sessions list used by the new schedule renderer */
   const renderUnifiedSessions = () => {
-    const hasMultiple = campSessions.length > 1;
     const addLabel = dateEntryMode === "individual" ? "Add another date" : "Add another session";
     const sessionLabel = (idx: number) =>
       dateEntryMode === "individual" ? `Date ${idx + 1}` : `Session ${idx + 1}`;
 
     return (
-      <div className="space-y-4">
-        {/* Single session — card wrapper, no header */}
-        {!hasMultiple && campSessions[0] && (
-          <div className="rounded-card bg-card p-5 sm:p-6 space-y-4">
-            {renderCampSessionFields(campSessions[0])}
-          </div>
-        )}
+      <div className="rounded-card bg-card overflow-hidden">
+        {campSessions.map((session, idx) => (
+          <div key={session.id}>
+            {/* Divider between sessions */}
+            {idx > 0 && <div className="border-t border-border" />}
 
-        {/* Multiple sessions — each with a header + actions */}
-        {hasMultiple &&
-          campSessions.map((session, idx) => (
-            <div key={session.id} className="rounded-card bg-card p-5 sm:p-6 space-y-4">
-              <div className="flex items-center justify-between -mb-1">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="px-5 py-5 sm:px-6 space-y-4">
+              {/* Session header — always shown */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-foreground">
                   {sessionLabel(idx + 1)}
                 </span>
                 <div className="flex gap-1">
@@ -2007,20 +2002,25 @@ export default function CreateActivityPage({
                   </button>
                 </div>
               </div>
+
               {renderCampSessionFields(session)}
             </div>
-          ))}
+          </div>
+        ))}
 
-        <button
-          type="button"
-          onClick={addCampSession}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-input px-4 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full justify-center"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          {addLabel}
-        </button>
+        {/* Add session button — inside card, separated by border */}
+        <div className="border-t border-border px-5 py-4 sm:px-6">
+          <button
+            type="button"
+            onClick={addCampSession}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            {addLabel}
+          </button>
+        </div>
       </div>
     );
   };
