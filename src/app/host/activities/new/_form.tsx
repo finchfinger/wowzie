@@ -123,6 +123,7 @@ type CampMeta = {
     pricePerClass?: string;
     frequency?: ClassFrequency;
     sessionLength?: string;
+    sessionEndDate?: string;
     meetingLength?: string;
     sessionStartDate?: string;
     pricePerMeeting?: string;
@@ -929,6 +930,7 @@ export default function CreateActivityPage({
 
   /* Class sessions mode fields */
   const [classSessionLength, setClassSessionLength] = useState("");
+  const [classSessionEndDate, setClassSessionEndDate] = useState("");
   const [classMeetingLength, setClassMeetingLength] = useState("");
   const [classSessionStartDate, setClassSessionStartDate] = useState("");
   const [classPricePerMeeting, setClassPricePerMeeting] = useState("");
@@ -1233,6 +1235,7 @@ export default function CreateActivityPage({
         if (cs.pricePerClass) setClassPricePerClass(cs.pricePerClass);
         if (cs.frequency) setClassFrequency(cs.frequency);
         if (cs.sessionLength) setClassSessionLength(cs.sessionLength);
+        if (cs.sessionEndDate) setClassSessionEndDate(cs.sessionEndDate);
         if (cs.meetingLength) setClassMeetingLength(cs.meetingLength);
         if (cs.sessionStartDate) setClassSessionStartDate(cs.sessionStartDate);
         if (cs.pricePerMeeting) setClassPricePerMeeting(cs.pricePerMeeting);
@@ -1376,6 +1379,7 @@ export default function CreateActivityPage({
             pricePerClass: classPricePerClass || undefined,
             frequency: classFrequency,
             sessionLength: classSessionLength || undefined,
+            sessionEndDate: classSessionEndDate || undefined,
             meetingLength: classMeetingLength || undefined,
             sessionStartDate: classSessionStartDate || undefined,
             pricePerMeeting: classPricePerMeeting || undefined,
@@ -2373,21 +2377,27 @@ export default function CreateActivityPage({
                     onChange={(e) => setClassSessionStartDate(e.target.value)}
                   />
                 </Field>
-                <Field label="Session length">
-                  <Select value={classSessionLength} onValueChange={setClassSessionLength}>
-                    <SelectTrigger className="h-11 w-full text-sm">
-                      <SelectValue placeholder="Select length" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SESSION_LENGTH_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <Field label="End date">
+                  <DateInput
+                    value={classSessionEndDate}
+                    onChange={(e) => setClassSessionEndDate(e.target.value)}
+                  />
                 </Field>
               </div>
+
+              {/* Computed duration hint */}
+              {(() => {
+                if (!classSessionStartDate || !classSessionEndDate) return null;
+                const s = new Date(classSessionStartDate);
+                const e = new Date(classSessionEndDate);
+                const days = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+                if (days < 1) return null;
+                const weeks = Math.round(days / 7);
+                const label = days === 1 ? "1 day" : weeks >= 1 ? `${weeks} week${weeks !== 1 ? "s" : ""}` : `${days} days`;
+                return (
+                  <p className="text-xs text-muted-foreground -mt-1">{label}</p>
+                );
+              })()}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Meeting length">
@@ -2404,7 +2414,7 @@ export default function CreateActivityPage({
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Price per meeting">
+                <Field label="Price per session">
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
                       $
@@ -2414,7 +2424,7 @@ export default function CreateActivityPage({
                       onChange={(e) =>
                         setClassPricePerMeeting(sanitizeMoneyInput(e.target.value))
                       }
-                      placeholder="e.g. 25"
+                      placeholder="e.g. 450"
                       className="pl-8 h-11"
                       inputMode="decimal"
                       autoComplete="off"
