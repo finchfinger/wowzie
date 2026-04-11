@@ -1629,11 +1629,13 @@ export default function CreateActivityPage({
   /* ---------------------------------------------------------------- */
 
   const goNext = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     if (stepIndex < STEPS.length - 1) setStepIndex(stepIndex + 1);
     else void handleSubmit();
   };
 
   const goBack = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     if (stepIndex > 0) setStepIndex(stepIndex - 1);
   };
 
@@ -1967,13 +1969,17 @@ export default function CreateActivityPage({
 
     return (
       <div className="space-y-4">
-        {/* Single session — no header */}
-        {!hasMultiple && campSessions[0] && renderCampSessionFields(campSessions[0])}
+        {/* Single session — card wrapper, no header */}
+        {!hasMultiple && campSessions[0] && (
+          <div className="rounded-card bg-card p-5 sm:p-6 space-y-4">
+            {renderCampSessionFields(campSessions[0])}
+          </div>
+        )}
 
         {/* Multiple sessions — each with a header + actions */}
         {hasMultiple &&
           campSessions.map((session, idx) => (
-            <div key={session.id} className="rounded-xl border border-input p-4 space-y-4">
+            <div key={session.id} className="rounded-card bg-card p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between -mb-1">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   {sessionLabel(idx + 1)}
