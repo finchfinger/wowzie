@@ -1898,7 +1898,7 @@ export default function CreateActivityPage({
       </div>
 
       {/* Capacity + waitlist */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Capacity">
           <Input
             type="number"
@@ -1911,8 +1911,8 @@ export default function CreateActivityPage({
             className="h-11"
           />
         </Field>
-        <div className="pb-1">
-          <label className="inline-flex items-center gap-2 text-xs font-medium cursor-pointer">
+        <Field label=" ">
+          <label className="flex h-11 items-center gap-2 text-sm font-medium cursor-pointer">
             <Checkbox
               checked={session.enableWaitlist}
               onCheckedChange={(checked) =>
@@ -1921,7 +1921,7 @@ export default function CreateActivityPage({
             />
             Enable waitlist
           </label>
-        </div>
+        </Field>
       </div>
 
       {/* Price per child */}
@@ -2020,7 +2020,7 @@ export default function CreateActivityPage({
           <button
             type="button"
             onClick={addCampSession}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground/8 hover:bg-foreground/12 px-4 py-2 text-sm font-medium text-foreground transition-colors"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
