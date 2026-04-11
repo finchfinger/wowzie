@@ -24,16 +24,17 @@ import type { DateRange } from "react-day-picker";
 
 const LIMIT = 25;
 
-const POPULAR_SEARCHES = [
-  "Summer camp",
-  "Soccer",
-  "Art classes",
-  "Coding for kids",
-  "Gymnastics",
-  "Swimming",
-  "Theater",
-  "Dance",
-];
+const CATEGORY_LABELS: Record<string, string> = {
+  arts:    "Art",
+  music:   "Music",
+  sports:  "Sports",
+  outdoor: "Outdoor",
+  stem:    "STEM",
+  drama:   "Theater",
+  dance:   "Dance",
+  cooking: "Cooking",
+  academic:"Academic",
+};
 
 const ANIMATED_TERMS = [
   "Search camps, classes, and ummmmmmmmm activities",
@@ -304,6 +305,9 @@ export default function HomePage() {
   const [sortMode, setSortMode] = useState<SortMode>("popular");
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
+  // Popular categories — fetched live, only show ones with camps
+  const [popularCategories, setPopularCategories] = useState<Array<{ value: string; label: string }>>([]);
+
   const todayRef = useRef<Date>(new Date());
 
   // Mobile detection
@@ -365,6 +369,19 @@ export default function HomePage() {
           "newest",
         );
         setPool(deduped);
+
+        // Derive popular categories from the fetched pool — only show ones with camps
+        const categoryCounts: Record<string, number> = {};
+        for (const camp of (data || []) as CampRow[]) {
+          const cat = (camp.category as string | undefined)?.toLowerCase();
+          if (cat && cat !== "general" && CATEGORY_LABELS[cat]) {
+            categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
+          }
+        }
+        const sorted = Object.entries(categoryCounts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([value]) => ({ value, label: CATEGORY_LABELS[value] }));
+        setPopularCategories(sorted);
       } catch {
         setError("Something went wrong while loading activities.");
         setPool([]);
@@ -575,22 +592,28 @@ export default function HomePage() {
               {searchFocused && !q && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-xl bg-white shadow-lg z-50 overflow-hidden py-2">
 
-                  {/* Popular searches */}
-                  <div className="px-4 py-2">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Popular searches</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {POPULAR_SEARCHES.map((term) => (
-                        <button
-                          key={term}
-                          type="button"
-                          onMouseDown={(e) => { e.preventDefault(); doSearch(term); }}
-                          className="rounded-lg px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
-                        >
-                          {term}
-                        </button>
-                      ))}
+                  {/* Popular categories — only shown if we have data */}
+                  {popularCategories.length > 0 && (
+                    <div className="px-4 py-2">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">Browse by category</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {popularCategories.map(({ value, label }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setSearchFocused(false);
+                              router.push(`/search?category=${encodeURIComponent(value)}`);
+                            }}
+                            className="rounded-lg px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Recent searches */}
                   {recentSearches.length > 0 && (
