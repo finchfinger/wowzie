@@ -96,10 +96,10 @@ export const DateInput: React.FC<DateInputProps> = ({
           type="button"
           disabled={disabled}
           className={cn(
-            "h-11 w-full rounded-md border bg-white px-3 text-left text-sm outline-none transition-colors",
-            "hover:bg-gray-50 focus-visible:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10",
+            "h-11 w-full rounded border-0 bg-[#f1f3f4] px-3 text-left text-sm outline-none transition-colors",
+            "hover:bg-[#e8eaed] focus-visible:ring-2 focus-visible:ring-foreground/20",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            error ? "border-destructive" : "border-input",
+            error ? "ring-2 ring-destructive/40" : "",
             className,
           )}
           aria-label={
