@@ -42,6 +42,8 @@ type SiblingDiscountType = "none" | "percent" | "amount";
 type AgeBucket = "all" | "3-5" | "6-8" | "9-12" | "13+";
 type ExperienceLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 type ClassScheduleMode = "ongoing" | "sessions";
+type DateEntryMode = "range" | "individual";
+type EnrollmentMode = "full_program" | "choose_sessions";
 type ClassFrequency =
   | "once_week"
   | "twice_week"
@@ -763,6 +765,8 @@ export default function CreateActivityPage({
 
   /* Basics */
   const [activityKind, setActivityKind] = useState<ActivityKind>("camp");
+  const [dateEntryMode, setDateEntryMode] = useState<DateEntryMode>("range");
+  const [enrollmentMode, setEnrollmentMode] = useState<EnrollmentMode>("full_program");
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -1137,7 +1141,11 @@ export default function CreateActivityPage({
       if (meta.isVirtual) setLocationType("virtual");
       if (meta.meetingUrl) setMeetingUrl(meta.meetingUrl);
       setActivityType(meta.activityType ?? "fixed");
-      if (meta.activityKind) setActivityKind(meta.activityKind);
+      if (meta.activityKind) {
+        setActivityKind(meta.activityKind);
+        setEnrollmentMode(meta.activityKind === "class" ? "choose_sessions" : "full_program");
+      }
+      if ((meta as any).dateEntryMode) setDateEntryMode((meta as any).dateEntryMode as DateEntryMode);
       if (meta.experienceLevel) setExperienceLevels(meta.experienceLevel);
       if (meta.category) setCategory(meta.category);
 
@@ -1323,6 +1331,7 @@ export default function CreateActivityPage({
       meetingUrl: locationType === "virtual" ? meetingUrl || undefined : undefined,
       activityType,
       activityKind,
+      ...(activityKind === "camp" ? { dateEntryMode } as any : {}),
       experienceLevel: experienceLevels.length ? experienceLevels : undefined,
       category: category || undefined,
       cancellation_policy: cancellationPolicy || null,
@@ -1654,22 +1663,6 @@ export default function CreateActivityPage({
 
   const renderBasics = () => (
     <div className="space-y-6">
-      {/* Activity type */}
-      <FormCard title="What kind of activity is this?">
-        <div className="grid grid-cols-2 gap-3">
-          <RadioCard selected={activityKind === "camp"} onClick={() => setActivityKind("camp")}>
-            <Tent className="h-5 w-5 mb-1 text-muted-foreground" />
-            <div className="font-semibold">Camp</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Multi-day program with fixed dates</div>
-          </RadioCard>
-          <RadioCard selected={activityKind === "class"} onClick={() => setActivityKind("class")}>
-            <BookOpen className="h-5 w-5 mb-1 text-muted-foreground" />
-            <div className="font-semibold">Class</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Recurring lessons or one-time workshops</div>
-          </RadioCard>
-        </div>
-      </FormCard>
-
       {/* Basics card */}
       <FormCard title="Let's fill in the basics" subtitle="This information helps families find and understand your activity.">
         <div className="space-y-4">
@@ -1833,46 +1826,56 @@ export default function CreateActivityPage({
   /* Schedule renderers                                               */
   /* ---------------------------------------------------------------- */
 
-  /** Render a single camp session's form fields */
+  /** Render a single camp session's date + time + capacity + price fields */
   const renderCampSessionFields = (session: CampSession) => (
     <div className="space-y-4">
-      {/* Dates row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Start date">
+      {/* Date field(s) — adapts to dateEntryMode */}
+      {dateEntryMode === "range" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Start date">
+            <DateInput
+              value={session.startDate}
+              onChange={(e) =>
+                updateCampSession(session.id, { startDate: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="End date">
+            <DateInput
+              value={session.endDate}
+              onChange={(e) =>
+                updateCampSession(session.id, { endDate: e.target.value })
+              }
+            />
+          </Field>
+        </div>
+      ) : (
+        <Field label="Date">
           <DateInput
             value={session.startDate}
             onChange={(e) =>
-              updateCampSession(session.id, { startDate: e.target.value })
+              updateCampSession(session.id, {
+                startDate: e.target.value,
+                endDate: e.target.value,
+              })
             }
           />
         </Field>
-        <Field label="End date">
-          <DateInput
-            value={session.endDate}
-            onChange={(e) =>
-              updateCampSession(session.id, { endDate: e.target.value })
-            }
-          />
-        </Field>
-      </div>
+      )}
 
       {/* Times row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Daily start time">
+        <Field label="Start time">
           <TimeSelect
             value={session.startTime}
-            onChange={(v) =>
-              updateCampSession(session.id, { startTime: v })
-            }
+            onChange={(v) => updateCampSession(session.id, { startTime: v })}
             placeholder="Select time"
           />
         </Field>
-        <Field label="Daily end time">
+        <Field label="End time">
           <TimeSelect
             value={session.endTime}
-            onChange={(v) =>
-              updateCampSession(session.id, { endTime: v })
-            }
+            onChange={(v) => updateCampSession(session.id, { endTime: v })}
             placeholder="Select time"
           />
         </Field>
@@ -1897,9 +1900,7 @@ export default function CreateActivityPage({
             <Checkbox
               checked={session.enableWaitlist}
               onCheckedChange={(checked) =>
-                updateCampSession(session.id, {
-                  enableWaitlist: checked === true,
-                })
+                updateCampSession(session.id, { enableWaitlist: checked === true })
               }
             />
             Enable waitlist
@@ -1943,41 +1944,31 @@ export default function CreateActivityPage({
     </div>
   );
 
-  /** Camp schedule — session-based */
-  const renderCampSchedule = () => {
+  /** Unified sessions list used by the new schedule renderer */
+  const renderUnifiedSessions = () => {
     const hasMultiple = campSessions.length > 1;
+    const addLabel = dateEntryMode === "individual" ? "Add another date" : "Add another session";
+    const sessionLabel = (idx: number) =>
+      dateEntryMode === "individual" ? `Date ${idx + 1}` : `Session ${idx + 1}`;
 
     return (
-      <div className="space-y-6">
-        {/* Single session — clean card without session header */}
-        {!hasMultiple && campSessions[0] && (
-          <FormCard
-            title="When does this camp run?"
-            subtitle="Set the dates, times, and capacity for your camp session."
-          >
-            {renderCampSessionFields(campSessions[0])}
-          </FormCard>
-        )}
+      <div className="space-y-4">
+        {/* Single session — no header */}
+        {!hasMultiple && campSessions[0] && renderCampSessionFields(campSessions[0])}
 
-        {/* Multiple sessions — each in its own card with header + actions */}
+        {/* Multiple sessions — each with a header + actions */}
         {hasMultiple &&
           campSessions.map((session, idx) => (
-            <FormCard
-              key={session.id}
-              title={`Session ${idx + 1}`}
-              subtitle={
-                idx === 0
-                  ? "Each session has its own dates, times, and capacity."
-                  : undefined
-              }
-            >
-              <div className="space-y-4">
-                {/* Session actions */}
-                <div className="flex items-center gap-1 justify-end -mt-1">
+            <div key={session.id} className="rounded-xl border border-input p-4 space-y-4">
+              <div className="flex items-center justify-between -mb-1">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {sessionLabel(idx + 1)}
+                </span>
+                <div className="flex gap-1">
                   <button
                     type="button"
                     onClick={() => copyCampSession(session.id)}
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors"
+                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                   >
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
@@ -1995,22 +1986,20 @@ export default function CreateActivityPage({
                     Remove
                   </button>
                 </div>
-
-                {renderCampSessionFields(session)}
               </div>
-            </FormCard>
+              {renderCampSessionFields(session)}
+            </div>
           ))}
 
-        {/* Add session button */}
         <button
           type="button"
           onClick={addCampSession}
-          className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-input px-4 py-2.5 text-xs font-medium text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors w-full justify-center"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-input px-4 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full justify-center"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          Add Another Session
+          {addLabel}
         </button>
       </div>
     );
@@ -2679,8 +2668,81 @@ export default function CreateActivityPage({
     </div>
   );
 
-  const renderSchedule = () =>
-    activityKind === "camp" ? renderCampSchedule() : renderClassSchedule();
+  const renderSchedule = () => (
+    <div className="space-y-6">
+      {/* ── Enrollment mode ─────────────────────────────────────── */}
+      <FormCard
+        title="How do parents enroll?"
+        subtitle="This controls how families book spots in your activity."
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <RadioCard
+            selected={enrollmentMode === "full_program"}
+            onClick={() => {
+              setEnrollmentMode("full_program");
+              setActivityKind("camp");
+            }}
+          >
+            <Tent className="h-5 w-5 mb-1.5 text-muted-foreground" />
+            <div className="font-semibold text-sm">Full program</div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              One booking covers all dates — e.g. a 5-day camp or 3-day intensive
+            </div>
+          </RadioCard>
+          <RadioCard
+            selected={enrollmentMode === "choose_sessions"}
+            onClick={() => {
+              setEnrollmentMode("choose_sessions");
+              setActivityKind("class");
+            }}
+          >
+            <BookOpen className="h-5 w-5 mb-1.5 text-muted-foreground" />
+            <div className="font-semibold text-sm">Choose sessions</div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              Parents pick which dates to attend — e.g. weekly classes or drop-ins
+            </div>
+          </RadioCard>
+        </div>
+      </FormCard>
+
+      {/* ── Scheduling UI — adapts to enrollment mode ───────────── */}
+      {enrollmentMode === "full_program" ? (
+        <FormCard
+          title="When does this run?"
+          subtitle="Set the dates, times, and capacity."
+        >
+          <div className="space-y-5">
+            {/* Date format toggle */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Date format</p>
+              <div className="grid grid-cols-2 gap-3">
+                <RadioCard
+                  selected={dateEntryMode === "range"}
+                  onClick={() => setDateEntryMode("range")}
+                >
+                  <CalendarDays className="h-4 w-4 mb-1 text-muted-foreground" />
+                  <div className="font-semibold text-sm">Date range</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">e.g. Jun 9 – Jun 13</div>
+                </RadioCard>
+                <RadioCard
+                  selected={dateEntryMode === "individual"}
+                  onClick={() => setDateEntryMode("individual")}
+                >
+                  <CalendarDays className="h-4 w-4 mb-1 text-muted-foreground" />
+                  <div className="font-semibold text-sm">Individual dates</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">e.g. Mon, Wed, Fri</div>
+                </RadioCard>
+              </div>
+            </div>
+
+            {renderUnifiedSessions()}
+          </div>
+        </FormCard>
+      ) : (
+        renderClassSchedule()
+      )}
+    </div>
+  );
 
   const renderDetails = () => (
     <div className="space-y-8">
@@ -3204,9 +3266,7 @@ export default function CreateActivityPage({
                 : stepIndex === 1
                   ? "Describe your activity"
                   : stepIndex === 2
-                    ? activityKind === "camp"
-                      ? "Set your camp schedule"
-                      : "Set your class schedule"
+                    ? "Set your schedule"
                     : stepIndex === 3
                       ? "Add photos"
                       : stepIndex === 4
@@ -3221,9 +3281,7 @@ export default function CreateActivityPage({
                 : stepIndex === 1
                   ? "Share what makes your activity special and what kids will do."
                   : stepIndex === 2
-                    ? activityKind === "camp"
-                      ? "Add sessions with dates, times, and capacity for your camp."
-                      : "Set your weekly availability and class logistics."
+                    ? "Add your dates, times, capacity, and enrollment style."
                     : stepIndex === 3
                       ? "Great photos help families get excited about your activity."
                       : stepIndex === 4
