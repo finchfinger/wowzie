@@ -1969,6 +1969,11 @@ export default function CreateActivityPage({
 
     return (
       <div className="rounded-card bg-card overflow-hidden">
+        {/* Card title */}
+        <div className="px-5 pt-5 pb-1 sm:px-6">
+          <p className="text-sm font-semibold text-foreground">When does this activity run?</p>
+        </div>
+
         {campSessions.map((session, idx) => (
           <div key={session.id}>
             {idx > 0 && <div className="border-t border-border" />}
