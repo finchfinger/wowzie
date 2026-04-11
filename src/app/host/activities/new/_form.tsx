@@ -2059,7 +2059,7 @@ export default function CreateActivityPage({
           <div className="relative flex flex-col">
             <RadioCard
               selected={classScheduleMode === "ongoing"}
-              onClick={() => setClassScheduleMode("ongoing")}
+              onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); }}
             >
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-sm">Ongoing</span>
@@ -2103,7 +2103,7 @@ export default function CreateActivityPage({
           <div className="relative flex flex-col">
             <RadioCard
               selected={classScheduleMode === "sessions"}
-              onClick={() => setClassScheduleMode("sessions")}
+              onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); }}
             >
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-sm">Sessions</span>
@@ -2361,189 +2361,8 @@ export default function CreateActivityPage({
         </>
       )}
 
-      {/* ---- SESSIONS MODE ---- */}
-      {classScheduleMode === "sessions" && (
-        <>
-          {/* Session overview */}
-          <FormCard
-            title="Session overview"
-            subtitle="Define the structure of your class session."
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Start date">
-                  <DateInput
-                    value={classSessionStartDate}
-                    onChange={(e) => setClassSessionStartDate(e.target.value)}
-                  />
-                </Field>
-                <Field label="End date">
-                  <DateInput
-                    value={classSessionEndDate}
-                    onChange={(e) => setClassSessionEndDate(e.target.value)}
-                  />
-                </Field>
-              </div>
-
-              {/* Computed duration hint */}
-              {(() => {
-                if (!classSessionStartDate || !classSessionEndDate) return null;
-                const s = new Date(classSessionStartDate);
-                const e = new Date(classSessionEndDate);
-                const days = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-                if (days < 1) return null;
-                const weeks = Math.round(days / 7);
-                const label = days === 1 ? "1 day" : weeks >= 1 ? `${weeks} week${weeks !== 1 ? "s" : ""}` : `${days} days`;
-                return (
-                  <p className="text-xs text-muted-foreground -mt-1">{label}</p>
-                );
-              })()}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Meeting length">
-                  <Select value={classMeetingLength} onValueChange={setClassMeetingLength}>
-                    <SelectTrigger className="h-11 w-full text-sm">
-                      <SelectValue placeholder="Select length" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MEETING_LENGTH_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Price per session">
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-                      $
-                    </span>
-                    <Input
-                      value={classPricePerMeeting}
-                      onChange={(e) =>
-                        setClassPricePerMeeting(sanitizeMoneyInput(e.target.value))
-                      }
-                      placeholder="e.g. 450"
-                      className="pl-8 h-11"
-                      inputMode="decimal"
-                      autoComplete="off"
-                    />
-                  </div>
-                </Field>
-              </div>
-            </div>
-          </FormCard>
-
-          {/* Weekly time options — sections */}
-          <FormCard
-            title="Weekly time options"
-            subtitle="Add the days and times your class meets."
-          >
-            <div className="space-y-4">
-              {classSections.map((section, idx) => (
-                <div key={section.id} className="space-y-3">
-                  {idx > 0 && <div className="border-t border-border" />}
-
-                  {/* Section header with actions */}
-                  {classSections.length > 1 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-foreground">
-                        Section {idx + 1}
-                      </span>
-                      <div className="flex items-center gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => copyClassSection(section.id)}
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors"
-                        >
-                          <IconCopy />
-                          Copy
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeClassSection(section.id)}
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-destructive hover:bg-destructive/5 transition-colors"
-                        >
-                          <IconTrash />
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Field label="Day">
-                      <Select
-                        value={section.day}
-                        onValueChange={(v) =>
-                          updateClassSection(section.id, { day: v as DayKey })
-                        }
-                      >
-                        <SelectTrigger className="h-11 w-full text-sm">
-                          <SelectValue placeholder="Select day" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DAY_SELECT_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <Field label="Capacity">
-                      <Input
-                        type="number"
-                        min={1}
-                        value={section.capacity}
-                        onChange={(e) =>
-                          updateClassSection(section.id, {
-                            capacity: e.target.value,
-                          })
-                        }
-                        placeholder="e.g. 12"
-                        className="h-11"
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Field label="Start time">
-                      <TimeSelect
-                        value={section.startTime}
-                        onChange={(v) =>
-                          updateClassSection(section.id, { startTime: v })
-                        }
-                        placeholder="Select time"
-                      />
-                    </Field>
-                    <Field label="End time">
-                      <TimeSelect
-                        value={section.endTime}
-                        onChange={(v) =>
-                          updateClassSection(section.id, { endTime: v })
-                        }
-                        placeholder="Select time"
-                      />
-                    </Field>
-                  </div>
-                </div>
-              ))}
-
-              {/* Add another section */}
-              <button
-                type="button"
-                onClick={addClassSection}
-                className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-input px-4 py-2.5 text-xs font-medium text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors w-full justify-center"
-              >
-                <IconPlus className="h-4 w-4" />
-                Add Another Section
-              </button>
-            </div>
-          </FormCard>
-        </>
-      )}
+      {/* ---- SESSIONS MODE — uses campSessions (start/end date per session) ---- */}
+      {classScheduleMode === "sessions" && renderUnifiedSessions()}
     </div>
   );
 
