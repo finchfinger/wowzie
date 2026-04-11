@@ -64,6 +64,7 @@ type CampSession = {
   id: string;
   startDate: string;
   endDate: string;
+  days: DayKey[];             // which days of the week this session runs
   startTime: string;
   endTime: string;
   capacity: string;
@@ -429,6 +430,7 @@ const makeDefaultCampSession = (): CampSession => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   startDate: "",
   endDate: "",
+  days: ["mon", "tue", "wed", "thu", "fri"],
   startTime: "",
   endTime: "",
   capacity: "",
@@ -1878,6 +1880,35 @@ export default function CreateActivityPage({
           />
         </Field>
       )}
+
+      {/* Days of the week */}
+      <Field label="Days">
+        <div className="flex gap-1.5 flex-wrap">
+          {(["sun","mon","tue","wed","thu","fri","sat"] as DayKey[]).map((d) => {
+            const label = d.charAt(0).toUpperCase() + d.slice(1, 3);
+            const active = session.days.includes(d);
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => {
+                  const next = active
+                    ? session.days.filter((x) => x !== d)
+                    : [...session.days, d];
+                  updateCampSession(session.id, { days: next });
+                }}
+                className={`h-9 w-11 rounded-lg text-xs font-semibold transition-colors ${
+                  active
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:bg-muted/70"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </Field>
 
       {/* Times row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
