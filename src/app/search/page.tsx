@@ -399,7 +399,7 @@ function SearchContent() {
           </div>
 
           {/* Dropdowns */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <select value={localCategory} onChange={(e) => handleCategoryChange(e.target.value)}
               className="h-10 w-full rounded-lg border border-input bg-white px-3 text-sm outline-none hover:bg-gray-50 transition-colors appearance-none cursor-pointer"
               style={{ color: localCategory ? undefined : "var(--muted-foreground)" }}>
@@ -415,7 +415,7 @@ function SearchContent() {
             </select>
 
             <select value={maxDollars ?? ""} onChange={(e) => pushParam("max", e.target.value)}
-              className="col-span-2 sm:col-span-1 h-10 w-full rounded-lg border border-input bg-white px-3 text-sm outline-none hover:bg-gray-50 transition-colors appearance-none cursor-pointer"
+              className="h-10 w-full rounded-lg border border-input bg-white px-3 text-sm outline-none hover:bg-gray-50 transition-colors appearance-none cursor-pointer"
               style={{ color: maxDollars ? undefined : "var(--muted-foreground)" }}>
               <option value="">Any price</option>
               <option value="100">Under $100</option>
@@ -423,7 +423,6 @@ function SearchContent() {
               <option value="500">Under $500</option>
               <option value="1000">Under $1,000</option>
             </select>
-
           </div>
 
           {/* Active filter chips */}

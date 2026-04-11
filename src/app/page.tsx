@@ -26,13 +26,13 @@ const LIMIT = 25;
 
 const POPULAR_SEARCHES = [
   "Summer camp",
-  "Spring break camp",
   "Soccer",
   "Art classes",
   "Coding for kids",
   "Gymnastics",
   "Swimming",
   "Theater",
+  "Dance",
 ];
 
 const ANIMATED_TERMS = [
