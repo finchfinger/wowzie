@@ -199,18 +199,16 @@ function TimeSelect({
   onChange,
   placeholder = "Select time",
   disabled,
-  className,
 }: {
   id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  className?: string;
 }) {
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger id={id} className={className ?? "h-11 w-full text-sm"}>
+      <SelectTrigger id={id} className="h-11 w-full text-sm">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
@@ -1845,113 +1843,122 @@ export default function CreateActivityPage({
   /* ---------------------------------------------------------------- */
 
   /** Render a single camp session's date + time + capacity + price fields */
-  const renderCampSessionFields = (session: CampSession) => {
-    // Shared Material filled-style classes for inputs in session cards
-    const mInput = "h-13 rounded-xl bg-muted/60 border-0 border-b-2 border-transparent focus-visible:border-foreground/40 focus-visible:ring-0 px-4 text-sm placeholder:text-muted-foreground/60 transition-colors";
-    const mDate  = "h-13 rounded-xl bg-muted/60 border-0 border-b-2 border-transparent hover:bg-muted/80 focus-visible:border-foreground/40 px-4";
-    const mSelect = "h-13 rounded-xl bg-muted/60 border-0 border-b-2 border-transparent focus-visible:ring-0 text-sm";
-
-    return (
-      <div className="space-y-3">
-        {/* Date field(s) */}
-        {dateEntryMode === "range" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Start date">
-              <DateInput
-                value={session.startDate}
-                onChange={(e) => updateCampSession(session.id, { startDate: e.target.value })}
-                className={mDate}
-              />
-            </Field>
-            <Field label="End date">
-              <DateInput
-                value={session.endDate}
-                onChange={(e) => updateCampSession(session.id, { endDate: e.target.value })}
-                className={mDate}
-              />
-            </Field>
-          </div>
-        ) : (
-          <Field label="Date">
+  const renderCampSessionFields = (session: CampSession) => (
+    <div className="space-y-4">
+      {/* Date field(s) — adapts to dateEntryMode */}
+      {dateEntryMode === "range" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Start date">
             <DateInput
               value={session.startDate}
-              onChange={(e) => updateCampSession(session.id, { startDate: e.target.value, endDate: e.target.value })}
-              className={mDate}
+              onChange={(e) =>
+                updateCampSession(session.id, { startDate: e.target.value })
+              }
             />
           </Field>
-        )}
-
-        {/* Times */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Start time">
-            <TimeSelect
-              value={session.startTime}
-              onChange={(v) => updateCampSession(session.id, { startTime: v })}
-              placeholder="Select time"
-              className={mSelect}
-            />
-          </Field>
-          <Field label="End time">
-            <TimeSelect
-              value={session.endTime}
-              onChange={(v) => updateCampSession(session.id, { endTime: v })}
-              placeholder="Select time"
-              className={mSelect}
+          <Field label="End date">
+            <DateInput
+              value={session.endDate}
+              onChange={(e) =>
+                updateCampSession(session.id, { endDate: e.target.value })
+              }
             />
           </Field>
         </div>
+      ) : (
+        <Field label="Date">
+          <DateInput
+            value={session.startDate}
+            onChange={(e) =>
+              updateCampSession(session.id, {
+                startDate: e.target.value,
+                endDate: e.target.value,
+              })
+            }
+          />
+        </Field>
+      )}
 
-        {/* Capacity + waitlist */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-          <Field label="Capacity">
-            <Input
-              type="number"
-              min={1}
-              value={session.capacity}
-              onChange={(e) => updateCampSession(session.id, { capacity: e.target.value })}
-              placeholder="e.g. 20"
-              className={mInput}
-            />
-          </Field>
-          <div className="pb-2">
-            <label className="inline-flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <Checkbox
-                checked={session.enableWaitlist}
-                onCheckedChange={(checked) =>
-                  updateCampSession(session.id, { enableWaitlist: checked === true })
-                }
-              />
-              Enable waitlist
-            </label>
-          </div>
-        </div>
-
-        {/* Price per child */}
-        <Field label="Price per child">
-          <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground z-10">$</span>
-            <Input
-              value={session.priceText}
-              onChange={(e) => {
-                const next = sanitizeMoneyInput(e.target.value);
-                updateCampSession(session.id, { priceText: next, price_cents: parseMoneyToCents(next) });
-              }}
-              onBlur={() => {
-                if (!session.priceText.trim()) return;
-                if (session.price_cents == null) { updateCampSession(session.id, { priceText: "" }); return; }
-                updateCampSession(session.id, { priceText: formatCentsToMoneyText(session.price_cents) });
-              }}
-              placeholder="e.g. 450"
-              className={`${mInput} pl-9`}
-              inputMode="decimal"
-              autoComplete="off"
-              aria-label="Price per child"
-            />
-          </div>
+      {/* Times row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="Start time">
+          <TimeSelect
+            value={session.startTime}
+            onChange={(v) => updateCampSession(session.id, { startTime: v })}
+            placeholder="Select time"
+          />
+        </Field>
+        <Field label="End time">
+          <TimeSelect
+            value={session.endTime}
+            onChange={(v) => updateCampSession(session.id, { endTime: v })}
+            placeholder="Select time"
+          />
         </Field>
       </div>
-    );
-  };
+
+      {/* Capacity + waitlist */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+        <Field label="Capacity">
+          <Input
+            type="number"
+            min={1}
+            value={session.capacity}
+            onChange={(e) =>
+              updateCampSession(session.id, { capacity: e.target.value })
+            }
+            placeholder="e.g. 20"
+            className="h-11"
+          />
+        </Field>
+        <div className="pb-1">
+          <label className="inline-flex items-center gap-2 text-xs font-medium cursor-pointer">
+            <Checkbox
+              checked={session.enableWaitlist}
+              onCheckedChange={(checked) =>
+                updateCampSession(session.id, { enableWaitlist: checked === true })
+              }
+            />
+            Enable waitlist
+          </label>
+        </div>
+      </div>
+
+      {/* Price per child */}
+      <Field label="Price per child">
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
+            $
+          </span>
+          <Input
+            value={session.priceText}
+            onChange={(e) => {
+              const next = sanitizeMoneyInput(e.target.value);
+              updateCampSession(session.id, {
+                priceText: next,
+                price_cents: parseMoneyToCents(next),
+              });
+            }}
+            onBlur={() => {
+              if (!session.priceText.trim()) return;
+              if (session.price_cents == null) {
+                updateCampSession(session.id, { priceText: "" });
+                return;
+              }
+              updateCampSession(session.id, {
+                priceText: formatCentsToMoneyText(session.price_cents),
+              });
+            }}
+            placeholder="e.g. 450"
+            className="pl-8 text-left h-11"
+            inputMode="decimal"
+            autoComplete="off"
+            aria-label="Price per child"
+          />
+        </div>
+      </Field>
+    </div>
+  );
 
   /** Unified sessions list used by the new schedule renderer */
   const renderUnifiedSessions = () => {
