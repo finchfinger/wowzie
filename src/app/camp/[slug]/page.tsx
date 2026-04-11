@@ -428,9 +428,14 @@ export default function CampDetailPage() {
 
   const campSessions = meta?.campSessions as Array<{
     id: string; startDate: string; endDate: string;
+    days?: string[];
     startTime: string; endTime: string; capacity: string;
     enableWaitlist?: boolean;
   }> | undefined;
+
+  // True when all sessions share the same date range — time is the distinguishing factor
+  const sessionsShareDates = !!campSessions && campSessions.length > 1 &&
+    campSessions.every((s) => s.startDate === campSessions[0].startDate && s.endDate === campSessions[0].endDate);
 
   const enableWaitlist: boolean =
     campSessions?.[0]?.enableWaitlist ??
@@ -831,14 +836,34 @@ export default function CampDetailPage() {
                                       Session {idx + 1}
                                     </p>
                                   )}
-                                  <p className="text-sm font-semibold text-foreground">
-                                    {isCamp
-                                      ? formatDateRange(session.startDate, session.endDate)
-                                      : formatDate(session.startDate).full}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
-                                  </p>
+                                  {sessionsShareDates ? (
+                                    /* Same date range — lead with time, show days + date as context */
+                                    <>
+                                      <p className="text-sm font-semibold text-foreground">
+                                        {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {session.days && session.days.length > 0
+                                          ? session.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(", ")
+                                          : formatDateRange(session.startDate, session.endDate)}
+                                      </p>
+                                    </>
+                                  ) : (
+                                    /* Different date ranges — lead with date, show time below */
+                                    <>
+                                      <p className="text-sm font-semibold text-foreground">
+                                        {isCamp
+                                          ? formatDateRange(session.startDate, session.endDate)
+                                          : formatDate(session.startDate).full}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {session.days && session.days.length > 0 && (
+                                          <span>{session.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(", ")} · </span>
+                                        )}
+                                        {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
+                                      </p>
+                                    </>
+                                  )}
                                 </div>
 
                                 {session.capacity && (
