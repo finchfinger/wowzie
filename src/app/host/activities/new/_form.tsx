@@ -767,6 +767,8 @@ export default function CreateActivityPage({
   const [activityKind, setActivityKind] = useState<ActivityKind>("camp");
   const [dateEntryMode, setDateEntryMode] = useState<DateEntryMode>("range");
   const [enrollmentMode, setEnrollmentMode] = useState<EnrollmentMode>("full_program");
+  // True only for existing "class" listings created with the old scheduler
+  const [isLegacyClassListing, setIsLegacyClassListing] = useState(false);
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -1144,8 +1146,17 @@ export default function CreateActivityPage({
       if (meta.activityKind) {
         setActivityKind(meta.activityKind);
         setEnrollmentMode(meta.activityKind === "class" ? "choose_sessions" : "full_program");
+        // Legacy: old "class" listing that used classSchedule instead of campSessions
+        const hasCampSessionDates =
+          Array.isArray(meta.campSessions) &&
+          meta.campSessions.length > 0 &&
+          Boolean((meta.campSessions[0] as any)?.startDate);
+        if (meta.activityKind === "class" && meta.classSchedule && !hasCampSessionDates) {
+          setIsLegacyClassListing(true);
+        }
       }
       if ((meta as any).dateEntryMode) setDateEntryMode((meta as any).dateEntryMode as DateEntryMode);
+      if ((meta as any).enrollmentMode) setEnrollmentMode((meta as any).enrollmentMode as EnrollmentMode);
       if (meta.experienceLevel) setExperienceLevels(meta.experienceLevel);
       if (meta.category) setCategory(meta.category);
 
@@ -1307,11 +1318,11 @@ export default function CreateActivityPage({
   const buildPayloadAndSave = async (hostId: string) => {
     const { min, max } = deriveMinMaxFromBuckets(ageBuckets);
 
-    /* Derive effective price: per-session min for camps, top-level for classes */
-    const sessionPrices = activityKind === "camp"
+    /* Derive effective price: per-session min for all unified listings, top-level for legacy class */
+    const sessionPrices = !isLegacyClassListing
       ? campSessions.map((s) => s.price_cents).filter((p): p is number => p != null)
       : [];
-    const effectivePriceCents = activityKind === "camp"
+    const effectivePriceCents = !isLegacyClassListing
       ? (sessionPrices.length > 0 ? Math.min(...sessionPrices) : null)
       : priceCents;
 
@@ -1331,7 +1342,7 @@ export default function CreateActivityPage({
       meetingUrl: locationType === "virtual" ? meetingUrl || undefined : undefined,
       activityType,
       activityKind,
-      ...(activityKind === "camp" ? { dateEntryMode } as any : {}),
+      ...(!isLegacyClassListing ? { enrollmentMode, dateEntryMode } as any : {}),
       experienceLevel: experienceLevels.length ? experienceLevels : undefined,
       category: category || undefined,
       cancellation_policy: cancellationPolicy || null,
@@ -1353,25 +1364,24 @@ export default function CreateActivityPage({
         endDate: ongoingEndDate || null,
       },
       weeklySchedule,
-      campSessions: activityKind === "camp"
-        ? campSessions.map(({ priceText: _pt, ...rest }) => rest) as CampSession[]
+      // Always persist campSessions — used by both full_program and choose_sessions modes
+      campSessions: campSessions.map(({ priceText: _pt, ...rest }) => rest) as CampSession[],
+      // Only preserve classSchedule for legacy class listings edited via the old UI
+      classSchedule: isLegacyClassListing
+        ? {
+            mode: classScheduleMode,
+            weekly: classWeekly,
+            duration: classDuration || undefined,
+            studentsPerClass: classStudentsPerClass || undefined,
+            pricePerClass: classPricePerClass || undefined,
+            frequency: classFrequency,
+            sessionLength: classSessionLength || undefined,
+            meetingLength: classMeetingLength || undefined,
+            sessionStartDate: classSessionStartDate || undefined,
+            pricePerMeeting: classPricePerMeeting || undefined,
+            sections: classSections.length ? classSections : undefined,
+          }
         : undefined,
-      classSchedule:
-        activityKind === "class"
-          ? {
-              mode: classScheduleMode,
-              weekly: classWeekly,
-              duration: classDuration || undefined,
-              studentsPerClass: classStudentsPerClass || undefined,
-              pricePerClass: classPricePerClass || undefined,
-              frequency: classFrequency,
-              sessionLength: classSessionLength || undefined,
-              meetingLength: classMeetingLength || undefined,
-              sessionStartDate: classSessionStartDate || undefined,
-              pricePerMeeting: classPricePerMeeting || undefined,
-              sections: classSections.length ? classSections : undefined,
-            }
-          : undefined,
       advanced: {
         earlyDropoff: {
           enabled: offerEarlyDropoff,
@@ -1546,7 +1556,7 @@ export default function CreateActivityPage({
       return;
     }
 
-    if (activityKind !== "camp" && priceText.trim() && priceCents === null) {
+    if (isLegacyClassListing && priceText.trim() && priceCents === null) {
       setSubmitError("Please enter a valid price (for example 450 or 450.00).");
       return;
     }
@@ -2668,48 +2678,49 @@ export default function CreateActivityPage({
     </div>
   );
 
-  const renderSchedule = () => (
-    <div className="space-y-6">
-      {/* ── Enrollment mode ─────────────────────────────────────── */}
-      <FormCard
-        title="How do parents enroll?"
-        subtitle="This controls how families book spots in your activity."
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <RadioCard
-            selected={enrollmentMode === "full_program"}
-            onClick={() => {
-              setEnrollmentMode("full_program");
-              setActivityKind("camp");
-            }}
-          >
-            <Tent className="h-5 w-5 mb-1.5 text-muted-foreground" />
-            <div className="font-semibold text-sm">Full program</div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              One booking covers all dates — e.g. a 5-day camp or 3-day intensive
-            </div>
-          </RadioCard>
-          <RadioCard
-            selected={enrollmentMode === "choose_sessions"}
-            onClick={() => {
-              setEnrollmentMode("choose_sessions");
-              setActivityKind("class");
-            }}
-          >
-            <BookOpen className="h-5 w-5 mb-1.5 text-muted-foreground" />
-            <div className="font-semibold text-sm">Choose sessions</div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              Parents pick which dates to attend — e.g. weekly classes or drop-ins
-            </div>
-          </RadioCard>
-        </div>
-      </FormCard>
+  const renderSchedule = () => {
+    // Legacy class listings (created with the old scheduler) keep the old UI in edit mode
+    if (isLegacyClassListing) return renderClassSchedule();
 
-      {/* ── Scheduling UI — adapts to enrollment mode ───────────── */}
-      {enrollmentMode === "full_program" ? (
+    return (
+      <div className="space-y-6">
+        {/* ── Enrollment mode ───────────────────────────────────── */}
+        <FormCard
+          title="How do parents enroll?"
+          subtitle="This controls how families book spots in your activity."
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <RadioCard
+              selected={enrollmentMode === "full_program"}
+              onClick={() => { setEnrollmentMode("full_program"); setActivityKind("camp"); }}
+            >
+              <Tent className="h-5 w-5 mb-1.5 text-muted-foreground" />
+              <div className="font-semibold text-sm">Full program</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                One booking covers all dates — e.g. a 5-day camp or 3-day intensive
+              </div>
+            </RadioCard>
+            <RadioCard
+              selected={enrollmentMode === "choose_sessions"}
+              onClick={() => { setEnrollmentMode("choose_sessions"); setActivityKind("class"); }}
+            >
+              <BookOpen className="h-5 w-5 mb-1.5 text-muted-foreground" />
+              <div className="font-semibold text-sm">Choose sessions</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Parents pick which dates to attend — e.g. weekly classes or drop-ins
+              </div>
+            </RadioCard>
+          </div>
+        </FormCard>
+
+        {/* ── Date entry — same UI for both enrollment modes ────── */}
         <FormCard
           title="When does this run?"
-          subtitle="Set the dates, times, and capacity."
+          subtitle={
+            enrollmentMode === "choose_sessions"
+              ? "Add each date parents can choose from. They'll select which ones they want."
+              : "Set the dates, times, and capacity for your program."
+          }
         >
           <div className="space-y-5">
             {/* Date format toggle */}
@@ -2738,18 +2749,16 @@ export default function CreateActivityPage({
             {renderUnifiedSessions()}
           </div>
         </FormCard>
-      ) : (
-        renderClassSchedule()
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const renderDetails = () => (
     <div className="space-y-8">
       {/* Pricing & visibility */}
       <FormCard title="Pricing &amp; visibility">
         <div className="space-y-4">
-          {activityKind !== "camp" && (
+          {isLegacyClassListing && (
             <Field label="Price per child">
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
