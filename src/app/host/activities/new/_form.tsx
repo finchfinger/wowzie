@@ -199,16 +199,18 @@ function TimeSelect({
   onChange,
   placeholder = "Select time",
   disabled,
+  className,
 }: {
   id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  className?: string;
 }) {
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger id={id} className="h-11 w-full text-sm">
+      <SelectTrigger id={id} className={className ?? "h-11 w-full text-sm"}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
@@ -1843,125 +1845,117 @@ export default function CreateActivityPage({
   /* ---------------------------------------------------------------- */
 
   /** Render a single camp session's date + time + capacity + price fields */
-  const renderCampSessionFields = (session: CampSession) => (
-    <div className="space-y-4">
-      {/* Date field(s) — adapts to dateEntryMode */}
-      {dateEntryMode === "range" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Start date">
+  const renderCampSessionFields = (session: CampSession) => {
+    // Shared Material filled-style classes for inputs in session cards
+    const mInput = "h-13 rounded-xl bg-muted/60 border-0 border-b-2 border-transparent focus-visible:border-foreground/40 focus-visible:ring-0 px-4 text-sm placeholder:text-muted-foreground/60 transition-colors";
+    const mDate  = "h-13 rounded-xl bg-muted/60 border-0 border-b-2 border-transparent hover:bg-muted/80 focus-visible:border-foreground/40 px-4";
+    const mSelect = "h-13 rounded-xl bg-muted/60 border-0 border-b-2 border-transparent focus-visible:ring-0 text-sm";
+
+    return (
+      <div className="space-y-3">
+        {/* Date field(s) */}
+        {dateEntryMode === "range" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Start date">
+              <DateInput
+                value={session.startDate}
+                onChange={(e) => updateCampSession(session.id, { startDate: e.target.value })}
+                className={mDate}
+              />
+            </Field>
+            <Field label="End date">
+              <DateInput
+                value={session.endDate}
+                onChange={(e) => updateCampSession(session.id, { endDate: e.target.value })}
+                className={mDate}
+              />
+            </Field>
+          </div>
+        ) : (
+          <Field label="Date">
             <DateInput
               value={session.startDate}
-              onChange={(e) =>
-                updateCampSession(session.id, { startDate: e.target.value })
-              }
+              onChange={(e) => updateCampSession(session.id, { startDate: e.target.value, endDate: e.target.value })}
+              className={mDate}
             />
           </Field>
-          <Field label="End date">
-            <DateInput
-              value={session.endDate}
-              onChange={(e) =>
-                updateCampSession(session.id, { endDate: e.target.value })
-              }
+        )}
+
+        {/* Times */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Start time">
+            <TimeSelect
+              value={session.startTime}
+              onChange={(v) => updateCampSession(session.id, { startTime: v })}
+              placeholder="Select time"
+              className={mSelect}
+            />
+          </Field>
+          <Field label="End time">
+            <TimeSelect
+              value={session.endTime}
+              onChange={(v) => updateCampSession(session.id, { endTime: v })}
+              placeholder="Select time"
+              className={mSelect}
             />
           </Field>
         </div>
-      ) : (
-        <Field label="Date">
-          <DateInput
-            value={session.startDate}
-            onChange={(e) =>
-              updateCampSession(session.id, {
-                startDate: e.target.value,
-                endDate: e.target.value,
-              })
-            }
-          />
-        </Field>
-      )}
 
-      {/* Times row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Start time">
-          <TimeSelect
-            value={session.startTime}
-            onChange={(v) => updateCampSession(session.id, { startTime: v })}
-            placeholder="Select time"
-          />
-        </Field>
-        <Field label="End time">
-          <TimeSelect
-            value={session.endTime}
-            onChange={(v) => updateCampSession(session.id, { endTime: v })}
-            placeholder="Select time"
-          />
-        </Field>
-      </div>
-
-      {/* Capacity + waitlist */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-        <Field label="Capacity">
-          <Input
-            type="number"
-            min={1}
-            value={session.capacity}
-            onChange={(e) =>
-              updateCampSession(session.id, { capacity: e.target.value })
-            }
-            placeholder="e.g. 20"
-            className="h-11"
-          />
-        </Field>
-        <div className="pb-1">
-          <label className="inline-flex items-center gap-2 text-xs font-medium cursor-pointer">
-            <Checkbox
-              checked={session.enableWaitlist}
-              onCheckedChange={(checked) =>
-                updateCampSession(session.id, { enableWaitlist: checked === true })
-              }
+        {/* Capacity + waitlist */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+          <Field label="Capacity">
+            <Input
+              type="number"
+              min={1}
+              value={session.capacity}
+              onChange={(e) => updateCampSession(session.id, { capacity: e.target.value })}
+              placeholder="e.g. 20"
+              className={mInput}
             />
-            Enable waitlist
-          </label>
+          </Field>
+          <div className="pb-2">
+            <label className="inline-flex items-center gap-2 text-sm font-medium cursor-pointer">
+              <Checkbox
+                checked={session.enableWaitlist}
+                onCheckedChange={(checked) =>
+                  updateCampSession(session.id, { enableWaitlist: checked === true })
+                }
+              />
+              Enable waitlist
+            </label>
+          </div>
         </div>
-      </div>
 
-      {/* Price per child */}
-      <Field label="Price per child">
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-            $
-          </span>
-          <Input
-            value={session.priceText}
-            onChange={(e) => {
-              const next = sanitizeMoneyInput(e.target.value);
-              updateCampSession(session.id, {
-                priceText: next,
-                price_cents: parseMoneyToCents(next),
-              });
-            }}
-            onBlur={() => {
-              if (!session.priceText.trim()) return;
-              if (session.price_cents == null) {
-                updateCampSession(session.id, { priceText: "" });
-                return;
-              }
-              updateCampSession(session.id, {
-                priceText: formatCentsToMoneyText(session.price_cents),
-              });
-            }}
-            placeholder="e.g. 450"
-            className="pl-8 text-left h-11"
-            inputMode="decimal"
-            autoComplete="off"
-            aria-label="Price per child"
-          />
-        </div>
-      </Field>
-    </div>
-  );
+        {/* Price per child */}
+        <Field label="Price per child">
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground z-10">$</span>
+            <Input
+              value={session.priceText}
+              onChange={(e) => {
+                const next = sanitizeMoneyInput(e.target.value);
+                updateCampSession(session.id, { priceText: next, price_cents: parseMoneyToCents(next) });
+              }}
+              onBlur={() => {
+                if (!session.priceText.trim()) return;
+                if (session.price_cents == null) { updateCampSession(session.id, { priceText: "" }); return; }
+                updateCampSession(session.id, { priceText: formatCentsToMoneyText(session.price_cents) });
+              }}
+              placeholder="e.g. 450"
+              className={`${mInput} pl-9`}
+              inputMode="decimal"
+              autoComplete="off"
+              aria-label="Price per child"
+            />
+          </div>
+        </Field>
+      </div>
+    );
+  };
 
   /** Unified sessions list used by the new schedule renderer */
   const renderUnifiedSessions = () => {
+    const hasMultiple = campSessions.length > 1;
     const addLabel = dateEntryMode === "individual" ? "Add another date" : "Add another session";
     const sessionLabel = (idx: number) =>
       dateEntryMode === "individual" ? `Date ${idx + 1}` : `Session ${idx + 1}`;
@@ -1970,38 +1964,39 @@ export default function CreateActivityPage({
       <div className="rounded-card bg-card overflow-hidden">
         {campSessions.map((session, idx) => (
           <div key={session.id}>
-            {/* Divider between sessions */}
             {idx > 0 && <div className="border-t border-border" />}
 
             <div className="px-5 py-5 sm:px-6 space-y-4">
-              {/* Session header — always shown */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-foreground">
-                  {sessionLabel(idx)}
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => copyCampSession(session.id)}
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
-                    </svg>
-                    Copy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeCampSession(session.id)}
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/5 transition-colors"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                    Remove
-                  </button>
+              {/* Session header — only when multiple sessions exist */}
+              {hasMultiple && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-foreground">
+                    {sessionLabel(idx)}
+                  </span>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => copyCampSession(session.id)}
+                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+                      </svg>
+                      Copy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeCampSession(session.id)}
+                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/5 transition-colors"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                      Remove
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {renderCampSessionFields(session)}
             </div>
