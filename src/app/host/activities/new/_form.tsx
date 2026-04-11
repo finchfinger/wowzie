@@ -2016,7 +2016,7 @@ export default function CreateActivityPage({
         ))}
 
         {/* Add session button — inside card, separated by border */}
-        <div className="border-t border-border px-5 py-4 sm:px-6">
+        <div className="px-5 py-4 sm:px-6">
           <button
             type="button"
             onClick={addCampSession}
