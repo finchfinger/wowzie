@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
           hostProfile?.stripe_account_id &&
           hostProfile?.stripe_connect_status === "connected"
         ) {
-          const fee = Math.round(booking.total_cents * 0.05);
+          const fee = Math.round(booking.total_cents * 0.10);
           const payout = booking.total_cents - fee;
           await stripe.transfers.create({
             amount: payout,

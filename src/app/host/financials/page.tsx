@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-const FEE_RATE = 0.05;
+const FEE_RATE = 0.10;
 
 type BookingRow = {
   id: string;
@@ -167,7 +167,7 @@ export default function HostFinancialsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: "Gross earned", value: loading ? "—" : fmt(totalGross) },
-          { label: "Wowzi fee (5%)", value: loading ? "—" : fmt(totalFee), muted: true },
+          { label: "Wowzi fee (10%)", value: loading ? "—" : fmt(totalFee), muted: true },
           { label: "Net payout", value: loading ? "—" : fmt(totalNet), highlight: true },
         ].map(({ label, value, muted, highlight }) => (
           <div key={label} className="rounded-card bg-card px-5 py-4 space-y-1">
@@ -258,7 +258,7 @@ export default function HostFinancialsPage() {
       <div>
         <h2 className="text-sm font-semibold text-foreground mb-2">Payments</h2>
         <p className="text-xs text-muted-foreground max-w-xl mb-3">
-          Wowzi charges a 5% host fee on each booking, automatically deducted from your payout.
+          Wowzi charges a 10% host fee on each booking, automatically deducted from your payout.
           This covers payment processing, customer support, and platform maintenance.
         </p>
 
