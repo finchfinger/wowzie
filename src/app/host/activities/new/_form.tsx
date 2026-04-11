@@ -2507,77 +2507,296 @@ export default function CreateActivityPage({
     </div>
   );
 
+  /** Ongoing mode: weekly availability grid + class details (no inner toggle) */
+  const renderOngoingContent = () => (
+    <>
+      {/* Tip banner */}
+      <div className="flex gap-3 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-900">
+        <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+        <p>
+          <span className="font-medium">New to scheduling?</span>{" "}
+          Start with 2–3 availability blocks. You can always add more later
+          as demand grows.
+        </p>
+      </div>
+
+      <FormCard
+        title="Weekly availability"
+        subtitle="Set when you're available each week."
+      >
+        {/* Purple tip banner */}
+        <div className="mb-4 flex gap-2.5 rounded-lg bg-violet-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-violet-800">
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 mt-0.5 text-violet-600" />
+          <p>
+            You can add multiple time blocks within a day to accommodate
+            different schedules. Use the{" "}
+            <span className="font-semibold">+</span> icon to add another
+            time slot.
+          </p>
+        </div>
+        <div className="space-y-0">
+          {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
+            const day = classWeekly[dayKey];
+            return (
+              <div
+                key={dayKey}
+                className="flex items-start gap-3 border-b border-border/50 py-3 last:border-0 last:pb-0 first:pt-0"
+              >
+                <span className="w-20 shrink-0 pt-2 text-xs font-medium text-foreground">
+                  {dayLabelFull}
+                </span>
+
+                {day.available ? (
+                  <div className="flex-1 space-y-2">
+                    {day.blocks.map((block) => (
+                      <div key={block.id} className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <TimeSelect
+                            value={block.start}
+                            onChange={(v) =>
+                              updateClassTimeBlock(dayKey, block.id, "start", v)
+                            }
+                            placeholder="Start"
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground">–</span>
+                        <div className="flex-1">
+                          <TimeSelect
+                            value={block.end}
+                            onChange={(v) =>
+                              updateClassTimeBlock(dayKey, block.id, "end", v)
+                            }
+                            placeholder="End"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex-1">
+                    <div className="flex h-11 items-center rounded-lg bg-rose-50 px-3">
+                      <span className="text-xs font-medium text-rose-400">
+                        Unavailable
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-0.5 shrink-0 pt-1.5">
+                  {day.available ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => toggleClassDayAvailable(dayKey)}
+                        className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors"
+                        title="Disable day"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addClassTimeBlock(dayKey)}
+                        className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors"
+                        title="Add time block"
+                      >
+                        <IconPlus />
+                      </button>
+                      {day.blocks.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            copyClassTimeBlock(
+                              dayKey,
+                              day.blocks[day.blocks.length - 1].id,
+                            )
+                          }
+                          className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors"
+                          title="Copy time block"
+                        >
+                          <IconCopy />
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => toggleClassDayAvailable(dayKey)}
+                      className="rounded p-1.5 text-muted-foreground/50 hover:bg-gray-50 hover:text-foreground transition-colors"
+                      title="Enable day"
+                    >
+                      <IconPlus />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </FormCard>
+
+      <FormCard
+        title="Class details"
+        subtitle="Help families understand the logistics."
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="How long is each class?">
+              <Select value={classDuration} onValueChange={setClassDuration}>
+                <SelectTrigger className="h-11 w-full text-sm">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLASS_DURATION_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="How many students per class?">
+              <Input
+                type="number"
+                min={1}
+                value={classStudentsPerClass}
+                onChange={(e) => setClassStudentsPerClass(e.target.value)}
+                placeholder="e.g. 8"
+                className="h-11"
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Price per class">
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
+                  $
+                </span>
+                <Input
+                  value={classPricePerClass}
+                  onChange={(e) =>
+                    setClassPricePerClass(sanitizeMoneyInput(e.target.value))
+                  }
+                  placeholder="e.g. 35"
+                  className="pl-8 h-11"
+                  inputMode="decimal"
+                  autoComplete="off"
+                />
+              </div>
+            </Field>
+
+            <Field label="Frequency">
+              <Select
+                value={classFrequency}
+                onValueChange={(v) => setClassFrequency(v as ClassFrequency)}
+              >
+                <SelectTrigger className="h-11 w-full text-sm">
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLASS_FREQUENCY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+
+          <Field
+            label="Enrollment start date"
+            hint="Leave blank for rolling enrollment — students join at the next available class"
+          >
+            <DateInput
+              value={classSessionStartDate}
+              onChange={(e) => setClassSessionStartDate(e.target.value)}
+            />
+          </Field>
+        </div>
+      </FormCard>
+    </>
+  );
+
   const renderSchedule = () => {
-    // Legacy class listings (created with the old scheduler) keep the old UI in edit mode
+    // Legacy listings keep the old UI
     if (isLegacyClassListing) return renderClassSchedule();
+
+    const isOngoing = classScheduleMode === "ongoing";
 
     return (
       <div className="space-y-6">
-        {/* ── Enrollment mode ───────────────────────────────────── */}
-        <FormCard
-          title="How do parents enroll?"
-          subtitle="This controls how families book spots in your activity."
-        >
+        {/* ── Single top-level toggle ───────────────────────────── */}
+        <FormCard title="Scheduling details" subtitle="Choose how students will book your activity.">
           <div className="grid grid-cols-2 gap-3">
-            <RadioCard
-              selected={enrollmentMode === "full_program"}
-              onClick={() => { setEnrollmentMode("full_program"); setActivityKind("camp"); }}
-            >
-              <Tent className="h-5 w-5 mb-1.5 text-muted-foreground" />
-              <div className="font-semibold text-sm">Full program</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                One booking covers all dates — e.g. a 5-day camp or 3-day intensive
-              </div>
-            </RadioCard>
-            <RadioCard
-              selected={enrollmentMode === "choose_sessions"}
-              onClick={() => { setEnrollmentMode("choose_sessions"); setActivityKind("class"); }}
-            >
-              <BookOpen className="h-5 w-5 mb-1.5 text-muted-foreground" />
-              <div className="font-semibold text-sm">Choose sessions</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                Parents pick which dates to attend — e.g. weekly classes or drop-ins
-              </div>
-            </RadioCard>
-          </div>
-        </FormCard>
 
-        {/* ── Date entry — same UI for both enrollment modes ────── */}
-        <FormCard
-          title="When does this run?"
-          subtitle={
-            enrollmentMode === "choose_sessions"
-              ? "Add each date parents can choose from. They'll select which ones they want."
-              : "Set the dates, times, and capacity for your program."
-          }
-        >
-          <div className="space-y-5">
-            {/* Date format toggle */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">Date format</p>
-              <div className="grid grid-cols-2 gap-3">
-                <RadioCard
-                  selected={dateEntryMode === "range"}
-                  onClick={() => setDateEntryMode("range")}
-                >
-                  <CalendarDays className="h-4 w-4 mb-1 text-muted-foreground" />
-                  <div className="font-semibold text-sm">Date range</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">e.g. Jun 9 – Jun 13</div>
-                </RadioCard>
-                <RadioCard
-                  selected={dateEntryMode === "individual"}
-                  onClick={() => setDateEntryMode("individual")}
-                >
-                  <CalendarDays className="h-4 w-4 mb-1 text-muted-foreground" />
-                  <div className="font-semibold text-sm">Individual dates</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">e.g. Mon, Wed, Fri</div>
-                </RadioCard>
-              </div>
+            {/* Sessions */}
+            <div className="relative flex flex-col">
+              <RadioCard
+                selected={!isOngoing}
+                onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); }}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-sm">Sessions</span>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setShowSessionsTip((p) => !p); }} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                  </button>
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Classes run in fixed cohorts with start dates (e.g., Fall session, Spring session)
+                </div>
+              </RadioCard>
+              {showSessionsTip && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowSessionsTip(false)} />
+                  <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
+                    <p className="font-medium mb-1">Ideal</p>
+                    <p className="leading-relaxed opacity-80">Best for: Structured courses, seasonal camps, or programs that run as a complete series with a group</p>
+                    <div className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground" />
+                  </div>
+                </>
+              )}
             </div>
 
-            {renderUnifiedSessions()}
+            {/* Ongoing */}
+            <div className="relative flex flex-col">
+              <RadioCard
+                selected={isOngoing}
+                onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); }}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-sm">Ongoing</span>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setShowOngoingTip((p) => !p); }} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                  </button>
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Students book individual time slots based on your availability
+                </div>
+              </RadioCard>
+              {showOngoingTip && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowOngoingTip(false)} />
+                  <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
+                    <p className="font-medium mb-1">Ongoing classes</p>
+                    <p className="leading-relaxed opacity-80">Ongoing classes are best for Private lessons, tutoring, consultations, or drop-in activities where students book one session at a time</p>
+                    <div className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground" />
+                  </div>
+                </>
+              )}
+            </div>
+
           </div>
         </FormCard>
+
+        {/* ── Content based on mode ─────────────────────────────── */}
+        {!isOngoing
+          ? renderUnifiedSessions()
+          : renderOngoingContent()
+        }
       </div>
     );
   };
