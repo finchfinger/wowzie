@@ -242,10 +242,11 @@ function TimeSelect({
     return TIME_OPTIONS.filter((o) => o.label.replace(/\s/g, "").startsWith(q) || o.label.replace(/\s/g, "").includes(q));
   }, [inputText]);
 
-  // Scroll selected item into view when dropdown opens
+  // Scroll selected item (or 9am fallback) into view when dropdown opens
   useEffect(() => {
-    if (open && listRef.current && value) {
-      const idx = TIME_OPTIONS.findIndex((o) => o.value === value);
+    if (open && listRef.current) {
+      const target = value || "09:00";
+      const idx = TIME_OPTIONS.findIndex((o) => o.value === target);
       if (idx >= 0) {
         const item = listRef.current.children[idx] as HTMLElement | undefined;
         item?.scrollIntoView({ block: "nearest" });
@@ -509,8 +510,8 @@ const DAY_LABELS: Array<[DayKey, string, string]> = [
 
 const makeDefaultBlock = (): TimeBlock => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-  start: "",
-  end: "",
+  start: "09:00",
+  end: "10:00",
 });
 
 const makeDefaultClassWeekly = (): ClassWeeklySchedule => ({
