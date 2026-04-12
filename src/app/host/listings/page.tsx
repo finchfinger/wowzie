@@ -46,7 +46,7 @@ export default function HostListingsPage() {
       const { data, error: dbError } = await supabase
         .from("camps")
         .select(
-          "id, slug, name, image_url, hero_image_url, status, meta, capacity, start_time, end_time"
+          "id, slug, name, image_url, hero_image_url, status, is_published, meta, capacity, start_time, end_time"
         )
         .eq("host_id", user.id)
         .order("name", { ascending: true });

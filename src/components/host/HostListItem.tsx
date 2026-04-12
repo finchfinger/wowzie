@@ -21,6 +21,7 @@ export type HostListItemData = {
   image_url: string | null;
   hero_image_url: string | null;
   status: string | null;
+  is_published: boolean | null;
   meta: any;
   capacity: number | null;
   start_time: string | null;
@@ -137,14 +138,25 @@ function getStartBadge(listing: HostListItemData): string | null {
 
 function StatusBadge({
   status,
+  isDraft,
   onStatusChange,
 }: {
   status: "active" | "inactive";
+  isDraft: boolean;
   onStatusChange: (s: "active" | "inactive") => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const isLive = status === "active";
+  const isLive = status === "active" && !isDraft;
+
+  if (isDraft) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+        Draft
+      </span>
+    );
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -245,6 +257,7 @@ export function HostListItem({
   const status = (listing.status === "active" ? "active" : "inactive") as
     | "active"
     | "inactive";
+  const isDraft = listing.is_published === false;
 
   const priceLabel = getPriceLabel(listing.meta);
   const scheduleLabel = getScheduleLabel(listing);
@@ -351,6 +364,7 @@ export function HostListItem({
       >
         <StatusBadge
           status={status}
+          isDraft={isDraft}
           onStatusChange={(s) => onStatusChange(listing.id, s)}
         />
         <ActionsMenu
