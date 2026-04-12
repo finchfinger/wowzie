@@ -182,24 +182,11 @@ const toAmPmLabel = (valueHHMM: string) => {
   return `${hh12}:${pad2(mm)}${suffix}`;
 };
 
-const buildQuarterHourOptions = () => {
-  const options: Array<{ value: string; label: string }> = [];
-  for (let minutes = 0; minutes < 24 * 60; minutes += 15) {
-    const hh = Math.floor(minutes / 60);
-    const mm = minutes % 60;
-    const value = `${pad2(hh)}:${pad2(mm)}`;
-    options.push({ value, label: toAmPmLabel(value) });
-  }
-  return options;
-};
-
-const TIME_OPTIONS = buildQuarterHourOptions();
 
 function TimeSelect({
   id,
   value,
   onChange,
-  placeholder = "Select time",
   disabled,
 }: {
   id?: string;
@@ -209,18 +196,14 @@ function TimeSelect({
   disabled?: boolean;
 }) {
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger id={id} className="h-11 w-full text-sm">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {TIME_OPTIONS.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value}>
-            {opt.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <input
+      id={id}
+      type="time"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      className="h-11 w-full rounded bg-[#f1f3f4] border-0 px-3 text-sm outline-none transition-colors hover:bg-[#e8eaed] focus:ring-2 focus:ring-foreground/20 disabled:opacity-50 disabled:cursor-not-allowed"
+    />
   );
 }
 
@@ -433,8 +416,8 @@ const makeDefaultCampSession = (): CampSession => ({
   startDate: "",
   endDate: "",
   days: ["mon", "tue", "wed", "thu", "fri"],
-  startTime: "",
-  endTime: "",
+  startTime: "09:00",
+  endTime: "10:00",
   capacity: "",
   enableWaitlist: false,
   price_cents: null,
@@ -2013,17 +1996,19 @@ export default function CreateActivityPage({
   /* ---------------------------------------------------------------- */
 
   /** Render a single camp session's date + time + capacity + price fields */
-  const renderCampSessionFields = (session: CampSession) => (
+  const renderCampSessionFields = (session: CampSession, hasMultiple: boolean) => (
     <div className="space-y-4">
-      {/* Optional session label */}
-      <Field label="Session name (optional)">
-        <Input
-          value={session.label}
-          onChange={(e) => updateCampSession(session.id, { label: e.target.value })}
-          placeholder='e.g. "Week 1", "Beginner Track", "Morning Group"'
-          className="h-11"
-        />
-      </Field>
+      {/* Optional session label — only shown when there are multiple sessions */}
+      {hasMultiple && (
+        <Field label="Session name (optional)">
+          <Input
+            value={session.label}
+            onChange={(e) => updateCampSession(session.id, { label: e.target.value })}
+            placeholder='e.g. "Week 1", "Beginner Track", "Morning Group"'
+            className="h-11"
+          />
+        </Field>
+      )}
 
       {/* Date field(s) — adapts to dateEntryMode */}
       {dateEntryMode === "range" ? (
@@ -2219,7 +2204,7 @@ export default function CreateActivityPage({
                 </div>
               )}
 
-              {renderCampSessionFields(session)}
+              {renderCampSessionFields(session, hasMultiple)}
             </div>
           </div>
         ))}
