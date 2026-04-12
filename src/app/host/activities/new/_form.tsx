@@ -72,6 +72,7 @@ type CampSession = {
   enableWaitlist: boolean;
   price_cents: number | null; // persisted per-session price
   priceText: string;          // UI-only shadow, stripped at save
+  experienceLevel: ExperienceLevel[];
 };
 
 /** A class session section (day + capacity + time) for sessions mode */
@@ -327,25 +328,40 @@ const CANCELLATION_OPTIONS: Array<{
   helper: string;
 }> = [
   {
+    value: "Cancel at least 1 hour before the start time for a full refund.",
+    label: "1 hour",
+    helper: "Full refund up to 1 hour before start time. Good for drop-in classes.",
+  },
+  {
     value: "Cancel at least 1 day before the start time for a full refund.",
-    label: "Flexible",
+    label: "24 hours",
     helper: "Full refund up to 24 hours before start time.",
   },
   {
+    value: "Cancel at least 2 days before the start time for a full refund.",
+    label: "48 hours",
+    helper: "Full refund up to 48 hours before start time.",
+  },
+  {
     value: "Cancel at least 7 days before the start time for a full refund.",
-    label: "Moderate",
+    label: "7 days",
     helper: "Full refund up to 7 days before start time.",
   },
   {
     value: "Cancel at least 14 days before the start time for a full refund.",
-    label: "Firm",
+    label: "14 days",
     helper: "Full refund up to 14 days before start time.",
+  },
+  {
+    value: "Cancel at least 30 days before the start time for a full refund.",
+    label: "30 days",
+    helper: "Full refund up to 30 days before start time. Good for multi-week programs.",
   },
   {
     value:
       "All sales are final. If you can't attend, message the host to ask about a credit or transfer.",
-    label: "Strict",
-    helper: "No guaranteed refunds.",
+    label: "No refunds",
+    helper: "All sales final. Hosts may offer credits or transfers at their discretion.",
   },
 ];
 
@@ -535,6 +551,7 @@ const makeDefaultCampSession = (): CampSession => ({
   capacity: "",
   enableWaitlist: false,
   price_cents: null,
+  experienceLevel: [],
   priceText: "",
 });
 
@@ -874,6 +891,7 @@ export default function CreateActivityPage({
   const [activityKind, setActivityKind] = useState<ActivityKind>("camp");
   const [dateEntryMode, setDateEntryMode] = useState<DateEntryMode>("range");
   const [enrollmentMode, setEnrollmentMode] = useState<EnrollmentMode>("full_program");
+  const [bookingModel, setBookingModel] = useState<"per_session" | "per_class">("per_session");
   // True only for existing "class" listings created with the old scheduler
   const [isLegacyClassListing, setIsLegacyClassListing] = useState(false);
   const [visibility, setVisibility] = useState<Visibility>("public");
@@ -1275,6 +1293,7 @@ export default function CreateActivityPage({
       }
       if ((meta as any).dateEntryMode) setDateEntryMode((meta as any).dateEntryMode as DateEntryMode);
       if ((meta as any).enrollmentMode) setEnrollmentMode((meta as any).enrollmentMode as EnrollmentMode);
+      if ((meta as any).bookingModel) setBookingModel((meta as any).bookingModel as "per_session" | "per_class");
       if (meta.experienceLevel) setExperienceLevels(meta.experienceLevel);
       if (meta.category) setCategory(meta.category);
 
@@ -1331,6 +1350,7 @@ export default function CreateActivityPage({
             ...s,
             price_cents: s.price_cents ?? null,
             priceText: s.price_cents != null ? formatCentsToMoneyText(s.price_cents) : "",
+            experienceLevel: s.experienceLevel ?? [],
           })),
         );
       }
@@ -1461,7 +1481,7 @@ export default function CreateActivityPage({
       meetingUrl: locationType === "virtual" ? meetingUrl || undefined : undefined,
       activityType,
       activityKind,
-      ...(!isLegacyClassListing ? { enrollmentMode, dateEntryMode } as any : {}),
+      ...(!isLegacyClassListing ? { enrollmentMode, dateEntryMode, bookingModel } as any : {}),
       experienceLevel: experienceLevels.length ? experienceLevels : undefined,
       category: category || undefined,
       cancellation_policy: cancellationPolicy || null,
@@ -1761,7 +1781,7 @@ export default function CreateActivityPage({
       meetingUrl: locationType === "virtual" ? meetingUrl || undefined : undefined,
       activityType,
       activityKind,
-      ...(!isLegacyClassListing ? { enrollmentMode, dateEntryMode } as any : {}),
+      ...(!isLegacyClassListing ? { enrollmentMode, dateEntryMode, bookingModel } as any : {}),
       experienceLevel: experienceLevels.length ? experienceLevels : undefined,
       category: category || undefined,
       cancellation_policy: cancellationPolicy || null,
@@ -2124,6 +2144,34 @@ export default function CreateActivityPage({
         </Field>
       )}
 
+      {/* Experience level — per-session when multiple, hidden when single (uses global) */}
+      {hasMultiple && (
+        <Field label="Experience level">
+          <div className="flex flex-wrap gap-2">
+            {EXPERIENCE_LEVELS.map((lvl) => {
+              const active = session.experienceLevel.includes(lvl.value);
+              return (
+                <button
+                  key={lvl.value}
+                  type="button"
+                  onClick={() => {
+                    const next = lvl.value === "all_levels"
+                      ? (active ? [] : ["all_levels" as ExperienceLevel])
+                      : (active
+                          ? session.experienceLevel.filter((v) => v !== lvl.value)
+                          : [...session.experienceLevel.filter((v) => v !== "all_levels"), lvl.value as ExperienceLevel]);
+                    updateCampSession(session.id, { experienceLevel: next });
+                  }}
+                  className={`h-8 rounded-lg px-3 text-xs font-semibold transition-colors ${active ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}
+                >
+                  {lvl.label}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+      )}
+
       {/* Date field(s) — adapts to dateEntryMode */}
       {dateEntryMode === "range" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2276,11 +2324,33 @@ export default function CreateActivityPage({
       dateEntryMode === "individual" ? `Date ${idx + 1}` : `Session ${idx + 1}`;
 
     return (
-      <div className="rounded-card bg-card overflow-hidden">
-        {/* Card title */}
-        <div className="px-5 pt-5 pb-1 sm:px-6">
-          <p className="text-sm font-semibold text-foreground">When does this activity run?</p>
+      <div className="space-y-4">
+        {/* Booking model */}
+        <div className="rounded-card bg-card px-5 py-4 sm:px-6">
+          <p className="text-sm font-semibold text-foreground mb-3">How do families book?</p>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { value: "per_session", label: "Per session", desc: "One enrollment covers the whole program" },
+              { value: "per_class", label: "Per class", desc: "Pay each time — drop-in or flexible" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setBookingModel(opt.value)}
+                className={`rounded-xl border px-4 py-3 text-left transition-colors ${bookingModel === opt.value ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/30"}`}
+              >
+                <p className="text-sm font-semibold">{opt.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
         </div>
+
+        <div className="rounded-card bg-card overflow-hidden">
+          {/* Card title */}
+          <div className="px-5 pt-5 pb-1 sm:px-6">
+            <p className="text-sm font-semibold text-foreground">When does this activity run?</p>
+          </div>
 
         {campSessions.map((session, idx) => (
           <div key={session.id}>
@@ -2335,6 +2405,7 @@ export default function CreateActivityPage({
             </svg>
             {addLabel}
           </button>
+        </div>
         </div>
       </div>
     );
@@ -2454,7 +2525,7 @@ export default function CreateActivityPage({
                 <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
                   <p className="font-medium mb-1">Fixed</p>
                   <p className="leading-relaxed opacity-80">
-                    Best for summer camps, art classes, coding bootcamps, or any program where students enroll in a specific cohort with a set start and end date.
+                    Best for summer camps, coding bootcamps, art classes, or any activity where students enroll in a specific cohort with a set start and end date.
                   </p>
                   <div
                     className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground"
@@ -2693,15 +2764,15 @@ export default function CreateActivityPage({
     <div className="space-y-6">
       {/* Description */}
       <FormCard
-        title="Describe your camp"
-        subtitle="Help families understand what makes your camp special."
+        title="Describe your activity"
+        subtitle="Help families understand what makes your activity special."
       >
         <div className="space-y-1.5">
           <Textarea
             rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="2–3 short paragraphs about what makes this camp special."
+            placeholder="2–3 short paragraphs about what makes this activity special."
           />
         </div>
       </FormCard>
@@ -3072,7 +3143,7 @@ export default function CreateActivityPage({
                   <div className="fixed inset-0 z-10" onClick={() => setShowSessionsTip(false)} />
                   <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
                     <p className="font-medium mb-1">Fixed</p>
-                    <p className="leading-relaxed opacity-80">Best for summer camps, art classes, coding bootcamps, or any program where students enroll in a specific cohort with a set start and end date.</p>
+                    <p className="leading-relaxed opacity-80">Best for summer camps, coding bootcamps, art classes, or any activity where students enroll in a specific cohort with a set start and end date.</p>
                     <div className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground" />
                   </div>
                 </>
