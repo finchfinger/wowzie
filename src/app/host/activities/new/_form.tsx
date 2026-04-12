@@ -751,6 +751,7 @@ function Tip({ children }: { children: React.ReactNode }) {
 
 export type CreateActivityPageProps = {
   activityId?: string | null;
+  initialStep?: number;
 };
 
 /* ------------------------------------------------------------------ */
@@ -759,6 +760,7 @@ export type CreateActivityPageProps = {
 
 export default function CreateActivityPage({
   activityId: propActivityId,
+  initialStep,
 }: CreateActivityPageProps = {}) {
   const router = useRouter();
 
@@ -769,7 +771,7 @@ export default function CreateActivityPage({
   const [draftId, setDraftId] = useState<string | null>(activityId ?? null);
 
   /* Step state */
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(initialStep ?? 0);
 
   /* Basics */
   const [activityKind, setActivityKind] = useState<ActivityKind>("camp");
@@ -1085,6 +1087,16 @@ export default function CreateActivityPage({
     );
     return found?.helper ?? "";
   }, [cancellationPolicy]);
+
+  /* Sync stepIndex with browser back/forward */
+  useEffect(() => {
+    const handlePop = () => {
+      const match = window.location.pathname.match(/\/host\/activities\/new\/[^/]+\/(\d+)$/);
+      setStepIndex(match ? Number(match[1]) : 0);
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
 
   /* Cleanup object URLs */
   useEffect(() => {
@@ -1739,23 +1751,29 @@ export default function CreateActivityPage({
   };
 
   /** Auto-save draft to Supabase — fire and forget, does not redirect */
-  const saveDraft = async () => {
+  const saveDraft = async (): Promise<string | null> => {
     try {
       const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
+      if (!userData.user) return draftId;
       const payload = buildPayload(false, userData.user.id);
       if (draftId) {
         await supabase.from("camps").update(payload).eq("id", draftId);
+        return draftId;
       } else {
         const { data } = await supabase
           .from("camps")
           .insert(payload)
           .select("id")
           .single();
-        if (data?.id) setDraftId(data.id);
+        if (data?.id) {
+          setDraftId(data.id);
+          return data.id;
+        }
+        return null;
       }
     } catch {
       // silent — draft save failures don't block the user
+      return draftId;
     }
   };
 
@@ -1768,11 +1786,15 @@ export default function CreateActivityPage({
   /* Navigation                                                       */
   /* ---------------------------------------------------------------- */
 
-  const goNext = () => {
+  const goNext = async () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+    const newStep = stepIndex + 1;
     if (stepIndex < STEPS.length - 1) {
-      void saveDraft(); // fire-and-forget
-      setStepIndex(stepIndex + 1);
+      // Await on first save to get draftId for URL; subsequent saves are fire-and-forget
+      const id = draftId ?? await saveDraft();
+      if (draftId) void saveDraft();
+      setStepIndex(newStep);
+      if (id) window.history.pushState(null, "", `/host/activities/new/${id}/${newStep}`);
     } else {
       void handleSubmit();
     }
@@ -1780,7 +1802,11 @@ export default function CreateActivityPage({
 
   const goBack = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    if (stepIndex > 0) setStepIndex(stepIndex - 1);
+    if (stepIndex === 0) {
+      router.push("/host/listings");
+    } else {
+      window.history.back(); // triggers popstate → syncs stepIndex
+    }
   };
 
   /* ---------------------------------------------------------------- */
