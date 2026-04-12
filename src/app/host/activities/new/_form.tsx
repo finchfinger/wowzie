@@ -62,6 +62,7 @@ type ClassWeeklySchedule = Record<DayKey, ClassDaySchedule>;
 /** A single camp session (camps can have multiple sessions) */
 type CampSession = {
   id: string;
+  label: string;              // optional host-defined name, e.g. "Week 1" or "Beginner Track"
   startDate: string;
   endDate: string;
   days: DayKey[];             // which days of the week this session runs
@@ -428,6 +429,7 @@ const makeDefaultClassWeekly = (): ClassWeeklySchedule => ({
 
 const makeDefaultCampSession = (): CampSession => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  label: "",
   startDate: "",
   endDate: "",
   days: ["mon", "tue", "wed", "thu", "fri"],
@@ -762,6 +764,9 @@ export default function CreateActivityPage({
 
   const activityId = propActivityId ?? null;
   const isEditMode = Boolean(activityId);
+
+  // Tracks the Supabase ID for the current draft (set on first auto-save if new listing)
+  const [draftId, setDraftId] = useState<string | null>(activityId ?? null);
 
   /* Step state */
   const [stepIndex, setStepIndex] = useState(0);
@@ -1527,13 +1532,15 @@ export default function CreateActivityPage({
       end_time: endTimeISO,
     };
 
-    let savedId = activityId ?? null;
+    // Use draftId (may have been created by auto-save) or fall back to activityId
+    const existingId = draftId ?? activityId;
+    let savedId = existingId ?? null;
 
-    if (isEditMode && activityId) {
+    if (existingId) {
       const { data, error } = await supabase
         .from("camps")
         .update(payload)
-        .eq("id", activityId)
+        .eq("id", existingId)
         .select("id, slug")
         .single();
 
@@ -1622,8 +1629,139 @@ export default function CreateActivityPage({
     }
   };
 
-  const handleSaveForLater = () => {
-    router.push("/host");
+  /** Build the full meta + payload without validation — used by both draft and publish */
+  const buildPayload = (publish: boolean, hostId: string) => {
+    const { min, max } = deriveMinMaxFromBuckets(ageBuckets);
+
+    const sessionPrices = !isLegacyClassListing
+      ? campSessions.map((s) => s.price_cents).filter((p): p is number => p != null)
+      : [];
+    const effectivePriceCents = !isLegacyClassListing
+      ? (sessionPrices.length > 0 ? Math.min(...sessionPrices) : null)
+      : priceCents;
+
+    const legacyAgeBucket: AgeBucket = ageBuckets.length === 1 ? ageBuckets[0] : "all";
+    const effectiveSiblingType: SiblingDiscountType =
+      offerSiblingDiscount
+        ? siblingDiscountType === "none" ? "percent" : siblingDiscountType
+        : "none";
+
+    const meta: CampMeta = {
+      visibility,
+      isVirtual: locationType === "virtual",
+      meetingUrl: locationType === "virtual" ? meetingUrl || undefined : undefined,
+      activityType,
+      activityKind,
+      ...(!isLegacyClassListing ? { enrollmentMode, dateEntryMode } as any : {}),
+      experienceLevel: experienceLevels.length ? experienceLevels : undefined,
+      category: category || undefined,
+      cancellation_policy: cancellationPolicy || null,
+      additionalDetails: additionalDetails || undefined,
+      age_buckets: ageBuckets,
+      age_bucket: legacyAgeBucket,
+      min_age: min,
+      max_age: max,
+      fixedSchedule: {
+        startDate: fixedStartDate || null,
+        endDate: fixedEndDate || null,
+        startTime: fixedAllDay ? null : fixedStartTime || null,
+        endTime: fixedAllDay ? null : fixedEndTime || null,
+        allDay: fixedAllDay,
+        repeatRule: fixedRepeatRule,
+      },
+      ongoingSchedule: { startDate: ongoingStartDate || null, endDate: ongoingEndDate || null },
+      weeklySchedule,
+      campSessions: campSessions.map(({ priceText: _pt, ...rest }) => rest) as CampSession[],
+      classSchedule: isLegacyClassListing
+        ? {
+            mode: classScheduleMode,
+            weekly: classWeekly,
+            duration: classDuration || undefined,
+            studentsPerClass: classStudentsPerClass || undefined,
+            pricePerClass: classPricePerClass || undefined,
+            frequency: classFrequency,
+            sessionLength: classSessionLength || undefined,
+            sessionEndDate: classSessionEndDate || undefined,
+            meetingLength: classMeetingLength || undefined,
+            sessionStartDate: classSessionStartDate || undefined,
+            pricePerMeeting: classPricePerMeeting || undefined,
+            sections: classSections.length ? classSections : undefined,
+          }
+        : undefined,
+      advanced: {
+        earlyDropoff: {
+          enabled: offerEarlyDropoff,
+          price: offerEarlyDropoff ? earlyDropoffPrice || null : null,
+          start: offerEarlyDropoff ? earlyDropoffStart || null : null,
+          end: offerEarlyDropoff ? earlyDropoffEnd || null : null,
+        },
+        extendedDay: {
+          enabled: offerExtendedDay,
+          price: offerExtendedDay ? extendedDayPrice || null : null,
+          start: offerExtendedDay ? extendedDayStart || null : null,
+          end: offerExtendedDay ? extendedDayEnd || null : null,
+        },
+        siblingDiscount: {
+          enabled: offerSiblingDiscount && effectiveSiblingType !== "none",
+          type: offerSiblingDiscount ? effectiveSiblingType : "none",
+          value: offerSiblingDiscount && effectiveSiblingType !== "none"
+            ? siblingDiscountValue || null : null,
+        },
+        multiSessionDiscount: activityKind === "camp" ? {
+          enabled: offerMultiSessionDiscount && campSessions.length >= 2 && Boolean(multiSessionDiscountPercent),
+          percent: offerMultiSessionDiscount ? multiSessionDiscountPercent || null : null,
+        } : undefined,
+      },
+      pricing: { display: effectivePriceCents != null ? `$${(effectivePriceCents / 100).toFixed(0)}` : "" },
+    } as CampMeta;
+
+    const slug = existingSlug ?? slugify(title || `draft-${Date.now()}`);
+
+    return {
+      name: title.trim() || "Untitled draft",
+      slug,
+      description: description || null,
+      location: locationType === "virtual" ? "Virtual" : location || null,
+      price_cents: effectivePriceCents,
+      host_id: hostId,
+      is_published: publish,
+      is_active: publish,
+      hero_image_url: null,
+      image_urls: null,
+      image_url: null,
+      meta,
+      schedule_tz: "America/Chicago",
+      start_local: null,
+      end_local: null,
+      start_time: null,
+      end_time: null,
+    };
+  };
+
+  /** Auto-save draft to Supabase — fire and forget, does not redirect */
+  const saveDraft = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const payload = buildPayload(false, userData.user.id);
+      if (draftId) {
+        await supabase.from("camps").update(payload).eq("id", draftId);
+      } else {
+        const { data } = await supabase
+          .from("camps")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (data?.id) setDraftId(data.id);
+      }
+    } catch {
+      // silent — draft save failures don't block the user
+    }
+  };
+
+  const handleSaveForLater = async () => {
+    await saveDraft();
+    router.push("/host/listings");
   };
 
   /* ---------------------------------------------------------------- */
@@ -1632,8 +1770,12 @@ export default function CreateActivityPage({
 
   const goNext = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    if (stepIndex < STEPS.length - 1) setStepIndex(stepIndex + 1);
-    else void handleSubmit();
+    if (stepIndex < STEPS.length - 1) {
+      void saveDraft(); // fire-and-forget
+      setStepIndex(stepIndex + 1);
+    } else {
+      void handleSubmit();
+    }
   };
 
   const goBack = () => {
@@ -1847,6 +1989,16 @@ export default function CreateActivityPage({
   /** Render a single camp session's date + time + capacity + price fields */
   const renderCampSessionFields = (session: CampSession) => (
     <div className="space-y-4">
+      {/* Optional session label */}
+      <Field label="Session name (optional)">
+        <Input
+          value={session.label}
+          onChange={(e) => updateCampSession(session.id, { label: e.target.value })}
+          placeholder='e.g. "Week 1", "Beginner Track", "Morning Group"'
+          className="h-11"
+        />
+      </Field>
+
       {/* Date field(s) — adapts to dateEntryMode */}
       {dateEntryMode === "range" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

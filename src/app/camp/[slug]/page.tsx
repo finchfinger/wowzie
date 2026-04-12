@@ -427,7 +427,7 @@ export default function CampDetailPage() {
   })();
 
   const campSessions = meta?.campSessions as Array<{
-    id: string; startDate: string; endDate: string;
+    id: string; label?: string; startDate: string; endDate: string;
     days?: string[];
     startTime: string; endTime: string; capacity: string;
     enableWaitlist?: boolean;
@@ -833,7 +833,7 @@ export default function CampDetailPage() {
                                 <div className="flex-1 min-w-0">
                                   {isCamp && (
                                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
-                                      Session {idx + 1}
+                                      {session.label?.trim() || `Session ${idx + 1}`}
                                     </p>
                                   )}
                                   {sessionsShareDates ? (
