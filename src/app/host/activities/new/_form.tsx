@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { uploadActivityImages } from "@/lib/images";
@@ -182,6 +182,39 @@ const toAmPmLabel = (valueHHMM: string) => {
   return `${hh12}:${pad2(mm)}${suffix}`;
 };
 
+const TIME_OPTIONS = (() => {
+  const opts: Array<{ value: string; label: string }> = [];
+  for (let m = 0; m < 24 * 60; m += 15) {
+    const hh = Math.floor(m / 60);
+    const mm = m % 60;
+    const value = `${pad2(hh)}:${pad2(mm)}`;
+    opts.push({ value, label: toAmPmLabel(value) });
+  }
+  return opts;
+})();
+
+/** Parse a typed string like "9am", "9:30", "930", "14:00" → "HH:MM" or null */
+function parseTypedTime(raw: string): string | null {
+  const s = raw.trim().toLowerCase().replace(/\s/g, "");
+  if (!s) return null;
+  const ampm = s.endsWith("am") ? "am" : s.endsWith("pm") ? "pm" : null;
+  const digits = s.replace(/[^0-9:]/g, "");
+  let hh: number, mm: number;
+  if (digits.includes(":")) {
+    const [a, b] = digits.split(":");
+    hh = Number(a); mm = Number(b ?? "0");
+  } else if (digits.length <= 2) {
+    hh = Number(digits); mm = 0;
+  } else {
+    hh = Number(digits.slice(0, digits.length - 2));
+    mm = Number(digits.slice(-2));
+  }
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  if (ampm === "pm" && hh < 12) hh += 12;
+  if (ampm === "am" && hh === 12) hh = 0;
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return `${pad2(hh)}:${pad2(mm)}`;
+}
 
 function TimeSelect({
   id,
@@ -195,15 +228,95 @@ function TimeSelect({
   placeholder?: string;
   disabled?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  const [inputText, setInputText] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const displayLabel = value ? toAmPmLabel(value) : "";
+
+  const filtered = useMemo(() => {
+    if (!inputText) return TIME_OPTIONS;
+    const q = inputText.toLowerCase().replace(/\s/g, "");
+    return TIME_OPTIONS.filter((o) => o.label.replace(/\s/g, "").startsWith(q) || o.label.replace(/\s/g, "").includes(q));
+  }, [inputText]);
+
+  // Scroll selected item into view when dropdown opens
+  useEffect(() => {
+    if (open && listRef.current && value) {
+      const idx = TIME_OPTIONS.findIndex((o) => o.value === value);
+      if (idx >= 0) {
+        const item = listRef.current.children[idx] as HTMLElement | undefined;
+        item?.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [open, value]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const select = (v: string) => {
+    onChange(v);
+    setOpen(false);
+    setInputText("");
+  };
+
+  const handleBlur = () => {
+    // Try to parse whatever the user typed
+    if (inputText) {
+      const parsed = parseTypedTime(inputText);
+      if (parsed) onChange(parsed);
+    }
+    setInputText("");
+  };
+
   return (
-    <input
-      id={id}
-      type="time"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled}
-      className="h-11 w-full rounded bg-[#f1f3f4] border-0 px-3 text-sm outline-none transition-colors hover:bg-[#e8eaed] focus:ring-2 focus:ring-foreground/20 disabled:opacity-50 disabled:cursor-not-allowed"
-    />
+    <div ref={containerRef} className="relative">
+      <input
+        ref={inputRef}
+        id={id}
+        type="text"
+        disabled={disabled}
+        value={open ? inputText : displayLabel}
+        placeholder="Add time"
+        onFocus={() => { setOpen(true); setInputText(""); }}
+        onChange={(e) => setInputText(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") { setOpen(false); setInputText(""); }
+          if (e.key === "Enter" && filtered.length > 0) { e.preventDefault(); select(filtered[0]!.value); }
+        }}
+        className="h-11 w-full rounded bg-[#f1f3f4] border-0 px-3 text-sm outline-none transition-colors hover:bg-[#e8eaed] focus:ring-2 focus:ring-foreground/20 disabled:opacity-50 disabled:cursor-not-allowed"
+      />
+      {open && (
+        <ul
+          ref={listRef}
+          className="absolute z-50 mt-1 max-h-52 w-40 overflow-y-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 text-sm"
+          onMouseDown={(e) => e.preventDefault()} // keep input focused
+        >
+          {filtered.map((opt) => (
+            <li
+              key={opt.value}
+              onClick={() => select(opt.value)}
+              className={`cursor-pointer px-4 py-1.5 ${opt.value === value ? "bg-[#e8eaed] font-medium" : "hover:bg-[#f1f3f4]"}`}
+            >
+              {opt.label}
+            </li>
+          ))}
+          {filtered.length === 0 && (
+            <li className="px-4 py-2 text-muted-foreground">No results</li>
+          )}
+        </ul>
+      )}
+    </div>
   );
 }
 
