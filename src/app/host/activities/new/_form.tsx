@@ -2960,9 +2960,9 @@ export default function CreateActivityPage({
               >
                 <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-sm">Fixed</span>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); setShowSessionsTip((p) => !p); }} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setShowSessionsTip((p) => !p); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setShowSessionsTip((p) => !p); }}} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-                  </button>
+                  </span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   Week-long programs, class series, or workshops with set dates
@@ -2988,9 +2988,9 @@ export default function CreateActivityPage({
               >
                 <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-sm">Ongoing</span>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); setShowOngoingTip((p) => !p); }} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setShowOngoingTip((p) => !p); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setShowOngoingTip((p) => !p); }}} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-                  </button>
+                  </span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   Private lessons, tutoring, and drop-in classes with flexible booking
