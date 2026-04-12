@@ -3400,17 +3400,15 @@ export default function CreateActivityPage({
         {/* Bottom navigation */}
         <div className="flex items-center justify-between gap-3 pt-8 pb-4">
           <div>
-            {stepIndex > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={goBack}
-                disabled={submitting}
-              >
-                ← Back
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={stepIndex === 0 ? () => router.push("/host/listings") : goBack}
+              disabled={submitting}
+            >
+              ← Back
+            </Button>
           </div>
 
           <div className="flex items-center gap-3">
