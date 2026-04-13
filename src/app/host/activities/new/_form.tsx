@@ -1950,7 +1950,7 @@ export default function CreateActivityPage({
       }
     }
     if (step === "details") {
-      if (!basePrice.trim()) return "Please set a price for your activity.";
+      if (!priceText.trim()) return "Please set a price for your activity.";
     }
     return null;
   };
