@@ -8,7 +8,7 @@ import { SortDropdown } from "@/components/ui/SortDropdown";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { HostListItem, type HostListItemData } from "@/components/host/HostListItem";
-import { ContentCard } from "@/components/ui/ContentCard";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ListingSkeletons } from "@/components/ui/skeleton";
 
@@ -186,9 +186,14 @@ export default function HostListingsPage() {
   /* ── loading skeleton ── */
   if (loading) {
     return (
-      <ContentCard title="My Listings" bordered={false} bodyClassName="px-8 pb-8">
-        <ListingSkeletons count={3} className="mt-4" />
-      </ContentCard>
+      <Card className="py-0">
+        <CardHeader className="px-8 pt-8 pb-4">
+          <CardTitle>My Listings</CardTitle>
+        </CardHeader>
+        <CardContent className="px-8 pb-8">
+          <ListingSkeletons count={3} className="mt-4" />
+        </CardContent>
+      </Card>
     );
   }
 
@@ -216,41 +221,46 @@ export default function HostListingsPage() {
 
   return (
     <>
-      <ContentCard title="My Listings" bordered={false} bodyClassName="px-8 pb-8">
-        {/* Search + sort row */}
-        <div className="mt-4 flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search"
-              className="h-9 w-full rounded-full bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-          </div>
-          <SortDropdown options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />
-        </div>
-
-        {/* Listing rows */}
-        <div className="mt-6 divide-y divide-border/50">
-          {filtered.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No listings match &ldquo;{search}&rdquo;
-            </p>
-          ) : (
-            filtered.map((listing) => (
-              <HostListItem
-                key={listing.id}
-                listing={listing}
-                onStatusChange={handleStatusChange}
-                onDelete={handleDeleteRequest}
-                onDuplicate={handleDuplicate}
+      <Card className="py-0">
+        <CardHeader className="px-8 pt-8 pb-4">
+          <CardTitle>My Listings</CardTitle>
+        </CardHeader>
+        <CardContent className="px-8 pb-8">
+          {/* Search + sort row */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search"
+                className="h-9 w-full rounded-full bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
-            ))
-          )}
-        </div>
-      </ContentCard>
+            </div>
+            <SortDropdown options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />
+          </div>
+
+          {/* Listing rows */}
+          <div className="mt-6 divide-y divide-border/50">
+            {filtered.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No listings match &ldquo;{search}&rdquo;
+              </p>
+            ) : (
+              filtered.map((listing) => (
+                <HostListItem
+                  key={listing.id}
+                  listing={listing}
+                  onStatusChange={handleStatusChange}
+                  onDelete={handleDeleteRequest}
+                  onDuplicate={handleDuplicate}
+                />
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {deleteTarget && (
         <ConfirmDialog

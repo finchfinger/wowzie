@@ -155,6 +155,7 @@ type CampMeta = {
       enabled?: boolean;
       percent?: string | null;
     };
+    customAddOns?: Array<{ id: string; name: string; price: string }>;
   };
   pricing?: {
     price_cents?: number | null;
@@ -369,11 +370,13 @@ const CATEGORIES = [
   "Arts & crafts",
   "Sports & fitness",
   "Music & dance",
+  "Theater & performing arts",
   "STEM & technology",
   "Nature & outdoor",
   "Cooking & baking",
   "Language & culture",
   "Academic tutoring",
+  "Yoga & wellness",
   "Life skills",
   "Social & play",
 ];
@@ -821,9 +824,11 @@ function ExpandableCheckboxCard({
       }`}
     >
       {/* Header — always visible */}
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onCheckedChange(!checked)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCheckedChange(!checked); } }}
         className="flex w-full items-start gap-3 px-4 py-4 text-left cursor-pointer"
       >
         <Checkbox
@@ -837,7 +842,7 @@ function ExpandableCheckboxCard({
             {description}
           </div>
         </div>
-      </button>
+      </div>
 
       {/* Expanded content */}
       {checked && (
@@ -1174,6 +1179,8 @@ export default function CreateActivityPage({
   const [extendedDayStart, setExtendedDayStart] = useState("");
   const [extendedDayEnd, setExtendedDayEnd] = useState("");
 
+  const [customAddOns, setCustomAddOns] = useState<Array<{ id: string; name: string; price: string }>>([]);
+
   /* Sibling discount */
   const [offerSiblingDiscount, setOfferSiblingDiscount] = useState(false);
   const [siblingDiscountType, setSiblingDiscountType] =
@@ -1188,6 +1195,9 @@ export default function CreateActivityPage({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [savedToast, setSavedToast] = useState(false);
+  const [stepError, setStepError] = useState<string | null>(null);
   const [initialError, setInitialError] = useState<string | null>(null);
   const [existingSlug, setExistingSlug] = useState<string | null>(null);
 
@@ -1393,6 +1403,7 @@ export default function CreateActivityPage({
       setExtendedDayPrice(ext.price ?? "");
       setExtendedDayStart(ext.start ?? "");
       setExtendedDayEnd(ext.end ?? "");
+      setCustomAddOns(Array.isArray(adv.customAddOns) ? adv.customAddOns : []);
 
       const msd = adv.multiSessionDiscount || {};
       setOfferMultiSessionDiscount(Boolean(msd.enabled));
@@ -1551,6 +1562,9 @@ export default function CreateActivityPage({
             Boolean(multiSessionDiscountPercent),
           percent: offerMultiSessionDiscount ? multiSessionDiscountPercent || null : null,
         } : undefined,
+        customAddOns: customAddOns.filter(a => a.name.trim()).length > 0
+          ? customAddOns.filter(a => a.name.trim())
+          : undefined,
       },
       pricing: {
         price_cents: effectivePriceCents ?? null,
@@ -1608,7 +1622,7 @@ export default function CreateActivityPage({
     const primaryCardUrl = heroUrl ?? galleryUrls[0] ?? null;
 
     /* Scheduling fields */
-    const scheduleTz = "America/Chicago";
+    const scheduleTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago";
 
     const startLocal =
       activityType === "fixed" &&
@@ -1841,6 +1855,9 @@ export default function CreateActivityPage({
           enabled: offerMultiSessionDiscount && campSessions.length >= 2 && Boolean(multiSessionDiscountPercent),
           percent: offerMultiSessionDiscount ? multiSessionDiscountPercent || null : null,
         } : undefined,
+        customAddOns: customAddOns.filter(a => a.name.trim()).length > 0
+          ? customAddOns.filter(a => a.name.trim())
+          : undefined,
       },
       pricing: { display: effectivePriceCents != null ? `$${(effectivePriceCents / 100).toFixed(0)}` : "" },
     } as CampMeta;
@@ -1861,7 +1878,7 @@ export default function CreateActivityPage({
       image_urls: null,
       image_url: null,
       meta,
-      schedule_tz: "America/Chicago",
+      schedule_tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago",
       start_local: null,
       end_local: null,
       start_time: null,
@@ -1897,15 +1914,51 @@ export default function CreateActivityPage({
   };
 
   const handleSaveForLater = async () => {
-    await saveDraft();
-    router.push("/host/listings");
+    setSavingDraft(true);
+    try {
+      await saveDraft();
+      setSavedToast(true);
+      setTimeout(() => {
+        router.push("/host/listings");
+      }, 800);
+    } catch {
+      setSavingDraft(false);
+    }
   };
 
   /* ---------------------------------------------------------------- */
   /* Navigation                                                       */
   /* ---------------------------------------------------------------- */
 
+  const validateStep = (): string | null => {
+    const step = STEPS[stepIndex]?.key;
+    if (step === "basics") {
+      if (!title.trim()) return "Please add a title for your activity.";
+      if (!activityCategory) return "Please select a category.";
+      if (ageBuckets.length === 0) return "Please select at least one age group.";
+    }
+    if (step === "description") {
+      if (!description.trim()) return "Please add a description.";
+    }
+    if (step === "schedule") {
+      if (activityKind === "camp") {
+        for (const s of campSessions) {
+          if (!s.startDate) return "Please set a start date for all sessions.";
+          if (!s.endDate) return "Please set an end date for all sessions.";
+          if (s.endDate < s.startDate) return "End date must be after start date.";
+        }
+      }
+    }
+    if (step === "details") {
+      if (!basePrice.trim()) return "Please set a price for your activity.";
+    }
+    return null;
+  };
+
   const goNext = async () => {
+    const err = validateStep();
+    if (err) { setStepError(err); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    setStepError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
     const newStep = stepIndex + 1;
     if (stepIndex < STEPS.length - 1) {
@@ -1920,6 +1973,7 @@ export default function CreateActivityPage({
   };
 
   const goBack = () => {
+    setStepError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (stepIndex === 0) {
       router.push("/host/listings");
@@ -2148,7 +2202,7 @@ export default function CreateActivityPage({
 
       {/* Experience level — per-session when multiple, hidden when single (uses global) */}
       {hasMultiple && (
-        <Field label="Experience level">
+        <Field label="Experience level" hint="Override the level for this session. If left blank, the level set in Basics applies to all sessions.">
           <div className="flex flex-wrap gap-2">
             {EXPERIENCE_LEVELS.map((lvl) => {
               const active = session.experienceLevel.includes(lvl.value);
@@ -2176,23 +2230,28 @@ export default function CreateActivityPage({
 
       {/* Date field(s) — adapts to dateEntryMode */}
       {dateEntryMode === "range" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Start date">
-            <DateInput
-              value={session.startDate}
-              onChange={(e) =>
-                updateCampSession(session.id, { startDate: e.target.value })
-              }
-            />
-          </Field>
-          <Field label="End date">
-            <DateInput
-              value={session.endDate}
-              onChange={(e) =>
-                updateCampSession(session.id, { endDate: e.target.value })
-              }
-            />
-          </Field>
+        <div className="space-y-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Start date">
+              <DateInput
+                value={session.startDate}
+                onChange={(e) =>
+                  updateCampSession(session.id, { startDate: e.target.value })
+                }
+              />
+            </Field>
+            <Field label="End date">
+              <DateInput
+                value={session.endDate}
+                onChange={(e) =>
+                  updateCampSession(session.id, { endDate: e.target.value })
+                }
+              />
+            </Field>
+          </div>
+          {session.startDate && session.endDate && session.endDate < session.startDate && (
+            <p className="text-xs text-destructive">End date must be after start date.</p>
+          )}
         </div>
       ) : (
         <Field label="Date">
@@ -2378,7 +2437,11 @@ export default function CreateActivityPage({
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeCampSession(session.id)}
+                      onClick={() => {
+                        if (window.confirm("Remove this session? This cannot be undone.")) {
+                          removeCampSession(session.id);
+                        }
+                      }}
                       className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/5 transition-colors"
                     >
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -2719,23 +2782,6 @@ export default function CreateActivityPage({
                   </div>
                 </Field>
 
-                <Field label="Frequency">
-                  <Select
-                    value={classFrequency}
-                    onValueChange={(v) => setClassFrequency(v as ClassFrequency)}
-                  >
-                    <SelectTrigger className="h-11 w-full text-sm">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CLASS_FREQUENCY_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
               </div>
 
               <Field
@@ -2855,6 +2901,19 @@ export default function CreateActivityPage({
           </button>
         </div>
       </FormCard>
+
+      {/* Additional details */}
+      <FormCard
+        title="Anything else families should know? (Optional)"
+        subtitle="What to bring, parking info, dress code — anything helpful."
+      >
+        <Textarea
+          rows={3}
+          value={additionalDetails}
+          onChange={(e) => setAdditionalDetails(e.target.value)}
+          placeholder="e.g. Please bring a water bottle and wear comfortable shoes. Parking is available in Lot B."
+        />
+      </FormCard>
     </div>
   );
 
@@ -2901,6 +2960,27 @@ export default function CreateActivityPage({
   /** Ongoing mode: weekly availability grid + class details (no inner toggle) */
   const renderOngoingContent = () => (
     <>
+      {/* Booking model */}
+      <div className="rounded-card bg-card px-5 py-4 sm:px-6">
+        <p className="text-sm font-semibold text-foreground mb-3">How do families book?</p>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { value: "per_session", label: "Per session", desc: "One enrollment covers the whole program" },
+            { value: "per_class", label: "Per class", desc: "Pay each time — drop-in or flexible" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setBookingModel(opt.value)}
+              className={`rounded-xl border px-4 py-3 text-left transition-colors ${bookingModel === opt.value ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/30"}`}
+            >
+              <p className="text-sm font-semibold">{opt.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Tip banner */}
       <div className="flex gap-3 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-900">
         <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
@@ -3079,23 +3159,6 @@ export default function CreateActivityPage({
               </div>
             </Field>
 
-            <Field label="Frequency">
-              <Select
-                value={classFrequency}
-                onValueChange={(v) => setClassFrequency(v as ClassFrequency)}
-              >
-                <SelectTrigger className="h-11 w-full text-sm">
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLASS_FREQUENCY_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
           </div>
 
           <Field
@@ -3333,6 +3396,54 @@ export default function CreateActivityPage({
               additional fee.
             </Tip>
           </ExpandableCheckboxCard>
+
+          {/* Custom add-ons */}
+          {customAddOns.map((addon, i) => (
+            <div key={addon.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-foreground">Custom fee</p>
+                <button
+                  type="button"
+                  onClick={() => setCustomAddOns(prev => prev.filter((_, j) => j !== i))}
+                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Fee name">
+                  <Input
+                    value={addon.name}
+                    onChange={e => setCustomAddOns(prev => prev.map((a, j) => j === i ? { ...a, name: e.target.value } : a))}
+                    placeholder="e.g. Costume fee, Materials kit"
+                    className="h-11"
+                  />
+                </Field>
+                <Field label="Price per student">
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">$</span>
+                    <Input
+                      value={addon.price}
+                      onChange={e => setCustomAddOns(prev => prev.map((a, j) => j === i ? { ...a, price: sanitizeMoneyInput(e.target.value) } : a))}
+                      placeholder="e.g. 50"
+                      className="pl-8 h-11"
+                      inputMode="decimal"
+                      autoComplete="off"
+                    />
+                  </div>
+                </Field>
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => setCustomAddOns(prev => [...prev, { id: crypto.randomUUID(), name: "", price: "" }])}
+            className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>add_circle</span>
+            Add a custom fee
+          </button>
         </div>
       </FormCard>
 
@@ -3359,10 +3470,7 @@ export default function CreateActivityPage({
           {/* Discount type toggle */}
           <div className="flex gap-3">
             <RadioCard
-              selected={
-                siblingDiscountType === "percent" ||
-                siblingDiscountType === "none"
-              }
+              selected={siblingDiscountType === "percent"}
               onClick={() => setSiblingDiscountType("percent")}
             >
               <div className="text-sm font-medium">Percentage discount</div>
@@ -3747,6 +3855,14 @@ export default function CreateActivityPage({
         {/* Step content */}
         {stepContent[stepIndex]()}
 
+        {/* Step validation error */}
+        {stepError && (
+          <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 16 }}>error</span>
+            {stepError}
+          </div>
+        )}
+
         {/* Bottom navigation */}
         <div className="flex items-center justify-between gap-3 pt-8 pb-4">
           <div>
@@ -3764,11 +3880,11 @@ export default function CreateActivityPage({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={handleSaveForLater}
-              disabled={submitting}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => void handleSaveForLater()}
+              disabled={submitting || savingDraft}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
-              Save for later
+              {savingDraft ? "Saving…" : "Save for later"}
             </button>
 
             <Button
@@ -3779,18 +3895,22 @@ export default function CreateActivityPage({
               disabled={submitting}
             >
               {submitting
-                ? isEditMode
-                  ? "Saving..."
-                  : "Creating..."
+                ? "Publishing..."
                 : isLastStep
-                  ? isEditMode
-                    ? "Save changes"
-                    : "Create event"
+                  ? "Publish"
                   : "Continue →"}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Save for later toast */}
+      {savedToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background shadow-lg">
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>check</span>
+          Draft saved
+        </div>
+      )}
     </main>
   );
 }

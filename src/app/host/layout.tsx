@@ -128,17 +128,9 @@ export default function HostLayout({
     );
   }
 
-  // Approved: activity routes get no dashboard chrome
+  // Approved: activity routes get no dashboard chrome — page controls its own grid
   if (isHostActivitiesRoute) {
-    return (
-      <main className="flex-1">
-        <div className="page-container py-8">
-          <div className="page-grid">
-            <div className="span-8-center">{children}</div>
-          </div>
-        </div>
-      </main>
-    );
+    return <main className="flex-1">{children}</main>;
   }
 
   // Approved: dashboard with nav tabs

@@ -903,6 +903,26 @@ export default function CampDetailPage() {
                     ) : (
                       /* Standard camp: date + guests dropdowns */
                       <div className="space-y-2">
+                        {/* Single-session schedule summary */}
+                        {campSessions && campSessions.length === 1 && (() => {
+                          const s = campSessions[0];
+                          const dayLabels = s.days && s.days.length > 0
+                            ? s.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1)).join(", ")
+                            : null;
+                          const timeStr = `${formatTimeLocal(s.startTime)} – ${formatTimeLocal(s.endTime)}`;
+                          const dateRange = formatDateRange(s.startDate, s.endDate);
+                          return (
+                            <div className="rounded-xl bg-muted/50 px-4 py-3 space-y-0.5">
+                              <p className="text-sm font-semibold text-foreground">
+                                {dayLabels ? `Every ${dayLabels}` : dateRange} · {timeStr}
+                              </p>
+                              {dayLabels && (
+                                <p className="text-xs text-muted-foreground">{dateRange}</p>
+                              )}
+                            </div>
+                          );
+                        })()}
+
                         {/* Date — only show when there are multiple sessions to pick from */}
                         {campSessions && campSessions.length > 1 && (
                           <div>

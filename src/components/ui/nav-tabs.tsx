@@ -7,6 +7,7 @@ export type NavTabItem<T extends string = string> = {
   id: T;
   label: string;
   href?: string; // if provided, renders a <Link> instead of <button>
+  badge?: number;
 };
 
 type NavTabsProps<T extends string = string> = {
@@ -37,8 +38,13 @@ export function NavTabs<T extends string = string>({
         ].join(" ");
 
         const inner = (
-          <span className="relative">
+          <span className="relative inline-flex items-center gap-1.5">
             {tab.label}
+            {tab.badge != null && tab.badge > 0 && (
+              <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                {tab.badge}
+              </span>
+            )}
             {isActive && (
               <span className="absolute bottom-[-9px] left-0 right-0 h-0.5 rounded-full bg-foreground" />
             )}
