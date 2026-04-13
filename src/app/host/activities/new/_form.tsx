@@ -1934,7 +1934,7 @@ export default function CreateActivityPage({
     const step = STEPS[stepIndex]?.key;
     if (step === "basics") {
       if (!title.trim()) return "Please add a title for your activity.";
-      if (!activityCategory) return "Please select a category.";
+      if (!category) return "Please select a category.";
       if (ageBuckets.length === 0) return "Please select at least one age group.";
     }
     if (step === "description") {
