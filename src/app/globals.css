@@ -35,6 +35,8 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-input-background-hover: var(--input-background-hover);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
@@ -64,6 +66,9 @@
   --radius: 0.625rem;
   --brand: #7B5CBF;
   --gold: #F5C840;
+  --input-radius: 4px;
+  --input-background: #EAEEF6;
+  --input-background-hover: #DEE3EF;
   --background: #F1F4F9;
   --foreground: oklch(0.13 0 0);
   --card: oklch(1 0 0);

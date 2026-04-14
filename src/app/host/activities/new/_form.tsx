@@ -13,6 +13,7 @@ import { DateInput } from "@/components/ui/DateInput";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { AddressInput } from "@/components/ui/AddressInput";
 import { FormCard } from "@/components/ui/form-card";
+import { Alert } from "@/components/ui/Alert";
 
 import {
   Select,
@@ -26,7 +27,7 @@ import {
   PhotoUploader,
   type PhotoItem,
 } from "@/components/host/PhotoUploader";
-import { Tent, BookOpen, Lightbulb, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -638,82 +639,27 @@ type StepKey = (typeof STEPS)[number]["key"];
 
 function Stepper({
   currentIndex,
-  onNavigate,
 }: {
   currentIndex: number;
   onNavigate: (index: number) => void;
 }) {
+  const pct = Math.round(((currentIndex + 1) / STEPS.length) * 100);
+  const label = STEPS[currentIndex]?.label ?? "";
+
   return (
-    <nav className="w-full" aria-label="Progress">
-      {/* Line + dots row */}
-      <div className="relative flex items-center justify-between">
-        {/* Background track */}
-        <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-border" />
-        {/* Filled track */}
-        {currentIndex > 0 && (
-          <div
-            className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 bg-foreground transition-all"
-            style={{ width: `${(currentIndex / (STEPS.length - 1)) * 100}%` }}
-          />
-        )}
-
-        {STEPS.map((step, i) => {
-          const isActive = i === currentIndex;
-          const isDone = i < currentIndex;
-          const isClickable = isDone; // can jump back to any completed step
-          return (
-            <div key={step.key} className="relative z-10 flex flex-col items-center">
-              <button
-                type="button"
-                onClick={() => isClickable && onNavigate(i)}
-                disabled={!isClickable}
-                aria-current={isActive ? "step" : undefined}
-                className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
-                  isDone
-                    ? "bg-foreground text-background cursor-pointer hover:opacity-80"
-                    : isActive
-                      ? "bg-foreground text-background cursor-default"
-                      : "border-2 border-border bg-background text-muted-foreground cursor-default"
-                }`}
-              >
-                {isDone ? (
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <span className="text-[11px] font-semibold">{i + 1}</span>
-                )}
-              </button>
-            </div>
-          );
-        })}
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Step {currentIndex + 1} of {STEPS.length}
+        <span className="mx-1.5 text-muted-foreground/40">·</span>
+        <span className="font-medium text-foreground">{label}</span>
+      </p>
+      <div className="h-1 w-full rounded-full bg-border overflow-hidden">
+        <div
+          className="h-full rounded-full bg-foreground transition-all duration-300"
+          style={{ width: `${pct}%` }}
+        />
       </div>
-
-      {/* Labels row */}
-      <div className="mt-2 flex justify-between">
-        {STEPS.map((step, i) => {
-          const isActive = i === currentIndex;
-          const isDone = i < currentIndex;
-          return (
-            <button
-              key={step.key}
-              type="button"
-              onClick={() => isDone && onNavigate(i)}
-              disabled={!isDone}
-              className={`text-[11px] font-medium transition-colors ${
-                isActive
-                  ? "text-foreground cursor-default"
-                  : isDone
-                    ? "text-foreground hover:text-primary cursor-pointer"
-                    : "text-muted-foreground cursor-default"
-              }`}
-            >
-              {step.label}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+    </div>
   );
 }
 
@@ -857,8 +803,8 @@ function ExpandableCheckboxCard({
 /** Small tip / example banner */
 function Tip({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2.5 rounded-lg bg-blue-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-blue-800">
-      <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5 text-blue-600" />
+    <div className="flex gap-2 rounded-lg bg-blue-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-blue-800">
+      <span className="material-symbols-rounded select-none shrink-0 mt-px text-blue-500" style={{ fontSize: 14 }} aria-hidden="true">lightbulb</span>
       <p>{children}</p>
     </div>
   );
@@ -871,6 +817,8 @@ function Tip({ children }: { children: React.ReactNode }) {
 export type CreateActivityPageProps = {
   activityId?: string | null;
   initialStep?: number;
+  /** When true, skips the page-container/grid wrapper (used inside the activity layout) */
+  embedded?: boolean;
 };
 
 /* ------------------------------------------------------------------ */
@@ -880,6 +828,7 @@ export type CreateActivityPageProps = {
 export default function CreateActivityPage({
   activityId: propActivityId,
   initialStep,
+  embedded = false,
 }: CreateActivityPageProps = {}) {
   const router = useRouter();
 
@@ -902,6 +851,8 @@ export default function CreateActivityPage({
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
   const [locationType, setLocationType] = useState<LocationType>("in_person");
   const [isVirtual, setIsVirtual] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState("");
@@ -1250,7 +1201,7 @@ export default function CreateActivityPage({
       const { data, error } = await supabase
         .from("camps")
         .select(
-          "id, slug, name, description, location, price_cents, is_published, hero_image_url, image_urls, meta, start_local, end_local, schedule_tz, start_time, end_time",
+          "id, slug, name, description, location, lat, lng, price_cents, is_published, hero_image_url, image_urls, meta, start_local, end_local, schedule_tz, start_time, end_time",
         )
         .eq("id", activityId)
         .single();
@@ -1270,6 +1221,8 @@ export default function CreateActivityPage({
       setTitle(data.name ?? "");
       setDescription(data.description ?? "");
       setLocation(data.location ?? "");
+      if ((data as any).lat) setLocationLat((data as any).lat);
+      if ((data as any).lng) setLocationLng((data as any).lng);
 
       /* Top-level price only applies to non-camp kinds (camps use per-session prices) */
       if (meta.activityKind !== "camp") {
@@ -1303,7 +1256,8 @@ export default function CreateActivityPage({
       }
       if ((meta as any).dateEntryMode) setDateEntryMode((meta as any).dateEntryMode as DateEntryMode);
       if ((meta as any).enrollmentMode) setEnrollmentMode((meta as any).enrollmentMode as EnrollmentMode);
-      if ((meta as any).bookingModel) setBookingModel((meta as any).bookingModel as "per_session" | "per_class");
+      // bookingModel derived from schedule type: ongoing → per_class, fixed → per_session
+      setBookingModel(meta.activityKind === "class" ? "per_class" : "per_session");
       if (meta.experienceLevel) setExperienceLevels(meta.experienceLevel);
       if (meta.category) setCategory(meta.category);
 
@@ -1655,11 +1609,34 @@ export default function CreateActivityPage({
         ? combineLocalDateAndTimeToISO(endTimeDate, fixedEndTime)
         : null;
 
+    // Compute session date range from campSessions (for search date filtering)
+    const sessionDates = campSessions
+      .map((s) => ({ start: s.startDate, end: s.endDate }))
+      .filter((s) => s.start && s.end);
+    const session_start =
+      sessionDates.length > 0
+        ? sessionDates.reduce(
+            (min, s) => (s.start! < min ? s.start! : min),
+            sessionDates[0].start!,
+          )
+        : null;
+    const session_end =
+      sessionDates.length > 0
+        ? sessionDates.reduce(
+            (max, s) => (s.end! > max ? s.end! : max),
+            sessionDates[0].end!,
+          )
+        : null;
+
     const payload = {
       name: title.trim(),
       slug,
       description: description || null,
       location: locationType === "virtual" ? "Virtual" : location || null,
+      lat: locationType === "virtual" ? null : (locationLat ?? null),
+      lng: locationType === "virtual" ? null : (locationLng ?? null),
+      session_start: session_start ?? null,
+      session_end: session_end ?? null,
       price_cents: effectivePriceCents,
       host_id: hostId,
       is_published: visibility === "public",
@@ -1913,6 +1890,18 @@ export default function CreateActivityPage({
     }
   };
 
+  /** Edit mode: save current step and return to the activity page */
+  const handleSaveChanges = async () => {
+    setSavingDraft(true);
+    try {
+      await saveDraft();
+      if (activityId) router.push(`/host/activities/${activityId}`);
+      else router.push("/host/listings");
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
   const handleSaveForLater = async () => {
     setSavingDraft(true);
     try {
@@ -1987,19 +1976,26 @@ export default function CreateActivityPage({
   /* ---------------------------------------------------------------- */
 
   if (initialLoading) {
-    return (
+    return embedded ? (
+      <div className="text-xs text-muted-foreground py-10">Loading activity...</div>
+    ) : (
       <main className="flex-1 min-h-screen">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 lg:py-12 text-xs text-muted-foreground">
+        <div className="page-container py-10"><div className="page-grid"><div className="span-8-center text-xs text-muted-foreground">
           Loading activity...
-        </div>
+        </div></div></div>
       </main>
     );
   }
 
   if (initialError) {
-    return (
+    return embedded ? (
+      <div className="py-10">
+        <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-3 text-xs text-destructive">{initialError}</div>
+        <Button type="button" variant="outline" className="text-sm" onClick={() => router.push("/host/listings")}>Back to listings</Button>
+      </div>
+    ) : (
       <main className="flex-1 min-h-screen">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 lg:py-12">
+        <div className="page-container py-10"><div className="page-grid"><div className="span-8-center">
           <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-3 text-xs text-destructive">
             {initialError}
           </div>
@@ -2011,10 +2007,11 @@ export default function CreateActivityPage({
           >
             Back to listings
           </Button>
-        </div>
+        </div></div></div>
       </main>
     );
   }
+
 
   /* ---------------------------------------------------------------- */
   /* Step content                                                     */
@@ -2023,7 +2020,7 @@ export default function CreateActivityPage({
   const renderBasics = () => (
     <div className="space-y-6">
       {/* Basics card */}
-      <FormCard title="Let's fill in the basics" subtitle="This information helps families find and understand your activity.">
+      <FormCard title="Let's fill in the basics">
         <div className="space-y-4">
           {/* Title */}
           <Field label="Title" required>
@@ -2031,7 +2028,6 @@ export default function CreateActivityPage({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Give your activity a clear name"
-              className="h-11"
             />
           </Field>
 
@@ -2072,6 +2068,10 @@ export default function CreateActivityPage({
                         .replace(/, USA$/, "")
                         .replace(/, United States$/, ""),
                     );
+                    if (sel.location) {
+                      setLocationLat(sel.location.lat);
+                      setLocationLng(sel.location.lng);
+                    }
                   }}
                   placeholder="Start typing an address"
                 />
@@ -2083,7 +2083,6 @@ export default function CreateActivityPage({
                   value={meetingUrl}
                   onChange={(e) => setMeetingUrl(e.target.value)}
                   placeholder="Paste your Zoom, Google Meet, or other meeting link"
-                  className="h-11"
                   type="url"
                   autoComplete="off"
                 />
@@ -2097,7 +2096,7 @@ export default function CreateActivityPage({
           {/* Category */}
           <Field label="Category">
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="h-11 w-full text-sm">
+              <SelectTrigger className="w-full text-sm">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
@@ -2163,7 +2162,7 @@ export default function CreateActivityPage({
           {/* Cancellation */}
           <Field label="Cancellation policy" hint={selectedCancellationHelper}>
             <Select value={cancellationPolicy} onValueChange={setCancellationPolicy}>
-              <SelectTrigger className="h-11 w-full text-sm">
+              <SelectTrigger className="w-full text-sm">
                 <SelectValue placeholder="Select a policy" />
               </SelectTrigger>
               <SelectContent>
@@ -2172,6 +2171,19 @@ export default function CreateActivityPage({
                     {opt.label}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          {/* Visibility */}
+          <Field label="Listing type" hint="Private is unlisted. Only people with the link can register.">
+            <Select value={visibility} onValueChange={(v) => setVisibility(v as Visibility)}>
+              <SelectTrigger className="w-full text-sm">
+                <SelectValue placeholder="Select visibility" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="public">Public</SelectItem>
+                <SelectItem value="private">Private</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -2195,7 +2207,6 @@ export default function CreateActivityPage({
             value={session.label}
             onChange={(e) => updateCampSession(session.id, { label: e.target.value })}
             placeholder='e.g. "Week 1", "Beginner Track", "Morning Group"'
-            className="h-11"
           />
         </Field>
       )}
@@ -2325,7 +2336,6 @@ export default function CreateActivityPage({
               updateCampSession(session.id, { capacity: e.target.value })
             }
             placeholder="e.g. 20"
-            className="h-11"
           />
         </Field>
         <Field label=" ">
@@ -2386,27 +2396,6 @@ export default function CreateActivityPage({
 
     return (
       <div className="space-y-4">
-        {/* Booking model */}
-        <div className="rounded-card bg-card px-5 py-4 sm:px-6">
-          <p className="text-sm font-semibold text-foreground mb-3">How do families book?</p>
-          <div className="grid grid-cols-2 gap-2">
-            {([
-              { value: "per_session", label: "Per session", desc: "One enrollment covers the whole program" },
-              { value: "per_class", label: "Per class", desc: "Pay each time — drop-in or flexible" },
-            ] as const).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setBookingModel(opt.value)}
-                className={`rounded-xl border px-4 py-3 text-left transition-colors ${bookingModel === opt.value ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/30"}`}
-              >
-                <p className="text-sm font-semibold">{opt.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="rounded-card bg-card overflow-hidden">
           {/* Card title */}
           <div className="px-5 pt-5 pb-1 sm:px-6">
@@ -2501,14 +2490,10 @@ export default function CreateActivityPage({
   const renderClassSchedule = () => (
     <div className="space-y-6">
       {/* Tip banner */}
-      <div className="flex gap-3 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-900">
-        <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
-        <p>
-          <span className="font-medium">New to scheduling?</span>{" "}
-          Start with 2–3 availability blocks. You can always add more later
-          as demand grows.
-        </p>
-      </div>
+      <Alert tone="warning" icon="lightbulb">
+        <span className="font-medium">New to scheduling?</span>{" "}
+        Start with 2–3 availability blocks. You can always add more later as demand grows.
+      </Alert>
 
       {/* Scheduling mode */}
       <FormCard title="Scheduling details" subtitle="Choose how students will book your classes.">
@@ -2738,7 +2723,7 @@ export default function CreateActivityPage({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="How long is each class?">
                   <Select value={classDuration} onValueChange={setClassDuration}>
-                    <SelectTrigger className="h-11 w-full text-sm">
+                    <SelectTrigger className="w-full text-sm">
                       <SelectValue placeholder="Select duration" />
                     </SelectTrigger>
                     <SelectContent>
@@ -2758,7 +2743,6 @@ export default function CreateActivityPage({
                     value={classStudentsPerClass}
                     onChange={(e) => setClassStudentsPerClass(e.target.value)}
                     placeholder="e.g. 8"
-                    className="h-11"
                   />
                 </Field>
               </div>
@@ -2775,7 +2759,7 @@ export default function CreateActivityPage({
                         setClassPricePerClass(sanitizeMoneyInput(e.target.value))
                       }
                       placeholder="e.g. 35"
-                      className="pl-8 h-11"
+                      className="pl-8"
                       inputMode="decimal"
                       autoComplete="off"
                     />
@@ -2872,7 +2856,6 @@ export default function CreateActivityPage({
                     updateActivity(activity.id, { title: e.target.value })
                   }
                   placeholder="e.g. Pottery, Swimming, Archery"
-                  className="h-11"
                 />
               </Field>
 
@@ -2960,41 +2943,33 @@ export default function CreateActivityPage({
   /** Ongoing mode: weekly availability grid + class details (no inner toggle) */
   const renderOngoingContent = () => (
     <>
-      {/* Booking model */}
-      <div className="rounded-card bg-card px-5 py-4 sm:px-6">
-        <p className="text-sm font-semibold text-foreground mb-3">How do families book?</p>
-        <div className="grid grid-cols-2 gap-2">
-          {([
-            { value: "per_session", label: "Per session", desc: "One enrollment covers the whole program" },
-            { value: "per_class", label: "Per class", desc: "Pay each time — drop-in or flexible" },
-          ] as const).map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setBookingModel(opt.value)}
-              className={`rounded-xl border px-4 py-3 text-left transition-colors ${bookingModel === opt.value ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/30"}`}
-            >
-              <p className="text-sm font-semibold">{opt.label}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Tip banner */}
-      <div className="flex gap-3 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-900">
-        <Lightbulb className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
-        <p>
-          <span className="font-medium">New to scheduling?</span>{" "}
-          Start with 2–3 availability blocks. You can always add more later
-          as demand grows.
-        </p>
-      </div>
+      <Alert tone="warning" icon="lightbulb">
+        <span className="font-medium">New to scheduling?</span>{" "}
+        Start with 2–3 availability blocks. You can always add more later as demand grows.
+      </Alert>
 
       <FormCard
         title="Weekly availability"
         subtitle="Set when you're available each week."
       >
+        <div className="mb-5">
+          <Field label="How long is each class?">
+            <Select value={classDuration} onValueChange={setClassDuration}>
+              <SelectTrigger className="w-full text-sm">
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                {CLASS_DURATION_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+
         {/* Purple tip banner */}
         <div className="mb-4 flex gap-2.5 rounded-lg bg-violet-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-violet-800">
           <CalendarDays className="h-3.5 w-3.5 shrink-0 mt-0.5 text-violet-600" />
@@ -3113,21 +3088,6 @@ export default function CreateActivityPage({
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="How long is each class?">
-              <Select value={classDuration} onValueChange={setClassDuration}>
-                <SelectTrigger className="h-11 w-full text-sm">
-                  <SelectValue placeholder="Select duration" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLASS_DURATION_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
             <Field label="How many students per class?">
               <Input
                 type="number"
@@ -3135,7 +3095,6 @@ export default function CreateActivityPage({
                 value={classStudentsPerClass}
                 onChange={(e) => setClassStudentsPerClass(e.target.value)}
                 placeholder="e.g. 8"
-                className="h-11"
               />
             </Field>
           </div>
@@ -3152,7 +3111,7 @@ export default function CreateActivityPage({
                     setClassPricePerClass(sanitizeMoneyInput(e.target.value))
                   }
                   placeholder="e.g. 35"
-                  className="pl-8 h-11"
+                  className="pl-8"
                   inputMode="decimal"
                   autoComplete="off"
                 />
@@ -3191,7 +3150,7 @@ export default function CreateActivityPage({
             <div className="relative flex flex-col">
               <RadioCard
                 selected={!isOngoing}
-                onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); }}
+                onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); }}
               >
                 <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-sm">Fixed</span>
@@ -3219,7 +3178,7 @@ export default function CreateActivityPage({
             <div className="relative flex flex-col">
               <RadioCard
                 selected={isOngoing}
-                onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); }}
+                onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); }}
               >
                 <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-sm">Ongoing</span>
@@ -3258,7 +3217,7 @@ export default function CreateActivityPage({
   const renderDetails = () => (
     <div className="space-y-8">
       {/* Pricing & visibility */}
-      <FormCard title="Pricing &amp; visibility">
+      <FormCard title="Pricing">
         <div className="space-y-4">
           {isLegacyClassListing && (
             <Field label="Price per child">
@@ -3291,23 +3250,6 @@ export default function CreateActivityPage({
             </Field>
           )}
 
-          <Field
-            label="Visibility"
-            hint="Private is unlisted. Only people with the link can register."
-          >
-            <Select
-              value={visibility}
-              onValueChange={(v) => setVisibility(v as Visibility)}
-            >
-              <SelectTrigger className="h-11 w-full text-sm">
-                <SelectValue placeholder="Select visibility" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="private">Private</SelectItem>
-                <SelectItem value="public">Public</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
         </div>
       </FormCard>
 
@@ -3336,7 +3278,7 @@ export default function CreateActivityPage({
                       setEarlyDropoffPrice(sanitizeMoneyInput(e.target.value))
                     }
                     placeholder="e.g. 10"
-                    className="pl-8 h-11"
+                    className="pl-8"
                     inputMode="decimal"
                     autoComplete="off"
                   />
@@ -3376,7 +3318,7 @@ export default function CreateActivityPage({
                       setExtendedDayPrice(sanitizeMoneyInput(e.target.value))
                     }
                     placeholder="e.g. 15"
-                    className="pl-8 h-11"
+                    className="pl-8"
                     inputMode="decimal"
                     autoComplete="off"
                   />
@@ -3416,7 +3358,6 @@ export default function CreateActivityPage({
                     value={addon.name}
                     onChange={e => setCustomAddOns(prev => prev.map((a, j) => j === i ? { ...a, name: e.target.value } : a))}
                     placeholder="e.g. Costume fee, Materials kit"
-                    className="h-11"
                   />
                 </Field>
                 <Field label="Price per student">
@@ -3426,7 +3367,7 @@ export default function CreateActivityPage({
                       value={addon.price}
                       onChange={e => setCustomAddOns(prev => prev.map((a, j) => j === i ? { ...a, price: sanitizeMoneyInput(e.target.value) } : a))}
                       placeholder="e.g. 50"
-                      className="pl-8 h-11"
+                      className="pl-8"
                       inputMode="decimal"
                       autoComplete="off"
                     />
@@ -3549,7 +3490,7 @@ export default function CreateActivityPage({
                   value={multiSessionDiscountPercent}
                   onChange={(e) => setMultiSessionDiscountPercent(e.target.value)}
                   placeholder="e.g. 10"
-                  className="h-11 pr-8"
+                  className="pr-8"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                   %
@@ -3804,47 +3745,13 @@ export default function CreateActivityPage({
   const stepContent = [renderBasics, renderDescription, renderSchedule, renderPhotos, renderDetails, renderReview];
   const isLastStep = stepIndex === STEPS.length - 1;
 
-  return (
-    <main className="flex-1 min-h-screen">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 lg:py-10">
+  const formContent = (
+    <>
         {/* Stepper */}
         <div className="mb-8">
           <Stepper currentIndex={stepIndex} onNavigate={setStepIndex} />
         </div>
 
-        {/* Step header */}
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {isEditMode
-              ? "Edit your activity"
-              : stepIndex === 0
-                ? "Let's set up your activity"
-                : stepIndex === 1
-                  ? "Describe your activity"
-                  : stepIndex === 2
-                    ? "Set your schedule"
-                    : stepIndex === 3
-                      ? "Add photos"
-                      : stepIndex === 4
-                        ? "Add the details"
-                        : "Almost done!"}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground max-w-xl">
-            {isEditMode
-              ? "Update the details so families always have the most accurate information."
-              : stepIndex === 0
-                ? "Fill out the basics so families know what you offer."
-                : stepIndex === 1
-                  ? "Share what makes your activity special and what kids will do."
-                  : stepIndex === 2
-                    ? "Add your dates, times, capacity, and enrollment style."
-                    : stepIndex === 3
-                      ? "Great photos help families get excited about your activity."
-                      : stepIndex === 4
-                        ? "Add pricing, visibility, and any extra add-ons."
-                        : "Review everything and publish when you're ready."}
-          </p>
-        </header>
 
         {submitError && stepIndex !== STEPS.length - 1 && (
           <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-3 text-xs text-destructive">
@@ -3870,39 +3777,52 @@ export default function CreateActivityPage({
               type="button"
               variant="outline"
               size="lg"
-              onClick={stepIndex === 0 ? () => router.push("/host/listings") : goBack}
-              disabled={submitting}
+              onClick={stepIndex === 0 ? () => router.push(embedded ? `/host/activities/${activityId}` : "/host/listings") : goBack}
+              disabled={submitting || savingDraft}
             >
               ← Back
             </Button>
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => void handleSaveForLater()}
-              disabled={submitting || savingDraft}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-            >
-              {savingDraft ? "Saving…" : "Save for later"}
-            </button>
+            {embedded ? (
+              <Button
+                type="button"
+                variant="default"
+                size="lg"
+                onClick={() => void handleSaveChanges()}
+                disabled={submitting || savingDraft}
+              >
+                {savingDraft ? "Saving…" : "Save changes"}
+              </Button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleSaveForLater()}
+                  disabled={submitting || savingDraft}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                >
+                  {savingDraft ? "Saving…" : "Save for later"}
+                </button>
 
-            <Button
-              type="button"
-              variant="default"
-              size="lg"
-              onClick={goNext}
-              disabled={submitting}
-            >
-              {submitting
-                ? "Publishing..."
-                : isLastStep
-                  ? "Publish"
-                  : "Continue →"}
-            </Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  size="lg"
+                  onClick={goNext}
+                  disabled={submitting}
+                >
+                  {submitting
+                    ? "Publishing..."
+                    : isLastStep
+                      ? "Publish"
+                      : "Continue"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
-      </div>
 
       {/* Save for later toast */}
       {savedToast && (
@@ -3911,6 +3831,16 @@ export default function CreateActivityPage({
           Draft saved
         </div>
       )}
+    </>
+  );
+
+  if (embedded) return formContent;
+
+  return (
+    <main className="flex-1 min-h-screen">
+      <div className="page-container py-8 lg:py-10"><div className="page-grid"><div className="span-8-center">
+        {formContent}
+      </div></div></div>
     </main>
   );
 }

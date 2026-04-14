@@ -31,7 +31,7 @@ function ActionsMenu({ items }: { items: ActionItem[] }) {
   return (
     <div ref={ref} className="relative inline-flex">
       <button type="button" onClick={() => setOpen(p => !p)} aria-haspopup="menu" aria-expanded={open} aria-label="More actions"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-card text-muted-foreground hover:bg-accent">
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-foreground/8 text-foreground/70 hover:bg-foreground/12 hover:text-foreground transition-colors">
         <MoreHorizontal className="h-4 w-4" />
       </button>
       {open && (
@@ -155,7 +155,7 @@ function ActivityShell({ children }: { children: React.ReactNode }) {
             mediaUrl={heroUrl}
             actions={
               <>
-                <Button size="sm" onClick={handleEdit}>Edit Listing</Button>
+                <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90" onClick={handleEdit}>Edit Listing</Button>
                 <ActionsMenu items={[
                   { label: "View event page", onSelect: () => { if (activity.slug) router.push(`/camp/${activity.slug}`); }, disabled: !activity.slug },
                   { label: busyAction === "duplicate" ? "Duplicating…" : "Duplicate listing", onSelect: handleDuplicate },

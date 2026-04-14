@@ -334,7 +334,7 @@ export const AddressInput: React.FC<AddressInputProps> = ({
 
       {open && !disabled && suggestions.length > 0 && (
         <div
-          className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg"
+          className="absolute z-[200] mt-2 w-full overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg"
           role="listbox"
         >
           <ul className="max-h-72 overflow-auto py-1">

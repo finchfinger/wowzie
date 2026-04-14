@@ -50,7 +50,7 @@ export function PageHeader({
         <div className="mb-4">
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 rounded-full bg-foreground/8 px-3 py-1.5 text-xs font-medium text-foreground/70 hover:bg-foreground/12 hover:text-foreground transition-colors"
           >
             <ChevronLeft className="h-3 w-3" />
             {backLabel ?? "Back"}

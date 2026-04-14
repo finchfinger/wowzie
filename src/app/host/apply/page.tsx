@@ -10,6 +10,9 @@ import { AddressInput } from "@/components/ui/AddressInput";
 import type { AddressSelection } from "@/components/ui/AddressInput";
 import { RadioCard } from "@/components/ui/RadioCard";
 import { CheckboxCard } from "@/components/ui/CheckboxCard";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 /* ── Static data ── */
 
@@ -79,17 +82,13 @@ function TextInput({ value, onChange, disabled, placeholder, type = "text", erro
   value: string; onChange: (v: string) => void; disabled?: boolean; placeholder?: string; type?: string; error?: boolean;
 }) {
   return (
-    <input
+    <Input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder={placeholder}
-      className={[
-        "block w-full rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none hover:bg-gray-50 focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-colors",
-        error && "border-destructive/50 focus:border-destructive/50 focus:ring-destructive/20",
-        disabled && "opacity-60 cursor-not-allowed",
-      ].filter(Boolean).join(" ")}
+      aria-invalid={error || undefined}
     />
   );
 }
@@ -98,17 +97,14 @@ function TextareaInput({ value, onChange, disabled, placeholder, rows = 5, error
   value: string; onChange: (v: string) => void; disabled?: boolean; placeholder?: string; rows?: number; error?: boolean;
 }) {
   return (
-    <textarea
+    <Textarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder={placeholder}
       rows={rows}
-      className={[
-        "block w-full rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none hover:bg-gray-50 focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 resize-none transition-colors",
-        error && "border-destructive/50 focus:border-destructive/50 focus:ring-destructive/20",
-        disabled && "opacity-60 cursor-not-allowed",
-      ].filter(Boolean).join(" ")}
+      className="resize-none"
+      aria-invalid={error || undefined}
     />
   );
 }
@@ -117,22 +113,16 @@ function SelectInput({ value, onChange, disabled, options, placeholder, error }:
   value: string; onChange: (v: string) => void; disabled?: boolean; options: { value: string; label: string }[]; placeholder?: string; error?: boolean;
 }) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled}
-      className={[
-        "block w-full rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm text-foreground outline-none hover:bg-gray-50 focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 appearance-none transition-colors",
-        !value && "text-muted-foreground",
-        error && "border-destructive/50 focus:border-destructive/50 focus:ring-destructive/20",
-        disabled && "opacity-60 cursor-not-allowed",
-      ].filter(Boolean).join(" ")}
-    >
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger className="w-full" aria-invalid={error || undefined}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

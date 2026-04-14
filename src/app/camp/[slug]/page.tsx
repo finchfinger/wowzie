@@ -35,6 +35,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AuthModal } from "@/components/auth/AuthModal";
 
 /* ── Types ── */
@@ -197,6 +201,11 @@ export default function CampDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareRecipient, setShareRecipient] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
+  const [shareSending, setShareSending] = useState(false);
+  const [shareSent, setShareSent] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [alreadyReviewed, setAlreadyReviewed] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -537,25 +546,15 @@ export default function CampDetailPage() {
 
   // Share
   function handleShare() {
+    setShareOpen(true);
+  }
+
+  function handleCopyLink() {
     const url = typeof window !== "undefined" ? window.location.href : "";
-    if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share({ title: name, url }).catch(() => {});
-    } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(() => {
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      }).catch(() => {
-        // fallback: select a temp input
-        const el = document.createElement("input");
-        el.value = url;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand("copy");
-        document.body.removeChild(el);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      });
-    } else {
+    navigator.clipboard?.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }).catch(() => {
       const el = document.createElement("input");
       el.value = url;
       document.body.appendChild(el);
@@ -564,7 +563,7 @@ export default function CampDetailPage() {
       document.body.removeChild(el);
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
-    }
+    });
   }
 
   // Send a message → use edge function to find-or-create conversation (bypasses RLS)
@@ -945,15 +944,19 @@ export default function CampDetailPage() {
                         {/* Guests */}
                         <div>
                           <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-1">Guests</label>
-                          <select
-                            className="w-full rounded-xl bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
-                            value={reservationGuests}
-                            onChange={(e) => setReservationGuests(Number(e.target.value))}
+                          <Select
+                            value={String(reservationGuests)}
+                            onValueChange={(v) => setReservationGuests(Number(v))}
                           >
-                            {Array.from({ length: Math.max(1, Math.min(spotsLeft ?? 10, 10)) }, (_, i) => i + 1).map((n) => (
-                              <option key={n} value={n}>{n} guest{n !== 1 ? "s" : ""}</option>
-                            ))}
-                          </select>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: Math.max(1, Math.min(spotsLeft ?? 10, 10)) }, (_, i) => i + 1).map((n) => (
+                                <SelectItem key={n} value={String(n)}>{n} guest{n !== 1 ? "s" : ""}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     )}
@@ -1641,6 +1644,72 @@ export default function CampDetailPage() {
         onClose={() => { setAuthOpen(false); setPendingMessage(false); }}
         onSignedIn={() => setAuthOpen(false)}
       />
+
+      {/* Share modal */}
+      <Dialog open={shareOpen} onOpenChange={(o) => { setShareOpen(o); if (!o) { setShareRecipient(""); setShareMessage(""); setShareSent(false); setShareCopied(false); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Share listing</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-1">
+            <Input
+              type="text"
+              value={shareRecipient}
+              onChange={e => setShareRecipient(e.target.value)}
+              placeholder="Enter email addresses or phone numbers"
+            />
+            <Textarea
+              value={shareMessage}
+              onChange={e => setShareMessage(e.target.value)}
+              placeholder="Add your custom message here"
+              rows={5}
+              className="resize-none"
+            />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="flex-1"
+              onClick={handleCopyLink}
+            >
+              {shareCopied ? "Copied!" : "Copy link"}
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              className="flex-1"
+              disabled={!shareRecipient.trim() || shareSending}
+              onClick={async () => {
+                const url = typeof window !== "undefined" ? window.location.href : "";
+                const recipients = shareRecipient.split(/[,;\s]+/).map(r => r.trim()).filter(Boolean);
+                setShareSending(true);
+                try {
+                  await Promise.all(recipients.map(email =>
+                    fetch("/api/send-invite", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        email,
+                        shareUrl: url,
+                        senderName: user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? undefined,
+                        message: shareMessage.trim() || undefined,
+                      }),
+                    })
+                  ));
+                  setShareSent(true);
+                  setTimeout(() => setShareOpen(false), 1200);
+                } finally {
+                  setShareSending(false);
+                }
+              }}
+            >
+              {shareSent ? "Sent!" : shareSending ? "Sending…" : "Share"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

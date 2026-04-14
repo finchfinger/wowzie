@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { HostListItem, type HostListItemData } from "@/components/host/HostListItem";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ListingSkeletons } from "@/components/ui/skeleton";
 
@@ -230,12 +231,12 @@ export default function HostListingsPage() {
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search"
-                className="h-9 w-full rounded-full bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-9 rounded-full pl-8"
               />
             </div>
             <SortDropdown options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />

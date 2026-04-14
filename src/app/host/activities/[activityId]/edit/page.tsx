@@ -18,5 +18,5 @@ export default function EditActivityPage() {
   const stepParam = searchParams.get("step");
   const initialStep = stepParam !== null ? Math.max(0, parseInt(stepParam, 10) || 0) : undefined;
 
-  return <CreateActivityPage activityId={activityId} initialStep={initialStep} />;
+  return <CreateActivityPage activityId={activityId} initialStep={initialStep} embedded />;
 }

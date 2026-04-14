@@ -288,6 +288,7 @@ export default function HomePage() {
   // Hero search controls
   const [q, setQ] = useState("");
   const [locationText, setLocationText] = useState("");
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [datesOpen, setDatesOpen] = useState(false);
@@ -480,6 +481,10 @@ export default function HomePage() {
     const params = new URLSearchParams();
     if (term.trim()) params.set("q", term.trim());
     if (locationText.trim()) params.set("location", locationText.trim());
+    if (locationCoords) {
+      params.set("loc_lat", String(locationCoords.lat));
+      params.set("loc_lng", String(locationCoords.lng));
+    }
     if (startDate) params.set("start", startDate);
     if (endDate) params.set("end", endDate);
     if (ageSelect) params.set("age", ageSelect);
@@ -492,6 +497,10 @@ export default function HomePage() {
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
     if (locationText.trim()) params.set("location", locationText.trim());
+    if (locationCoords) {
+      params.set("loc_lat", String(locationCoords.lat));
+      params.set("loc_lng", String(locationCoords.lng));
+    }
     if (startDate) params.set("start", startDate);
     if (endDate) params.set("end", endDate);
     if (ageSelect) params.set("age", ageSelect);
@@ -675,9 +684,10 @@ export default function HomePage() {
                 className="h-12 rounded-full border-0 outline-none"
                 style={{ background: "#fff", color: "#1C1B1F" }}
                 onSelect={(selection) => {
-                  const formatted =
-                    selection?.formattedAddress?.trim();
+                  const formatted = selection?.formattedAddress?.trim();
                   if (formatted) setLocationText(formatted);
+                  if (selection?.location) setLocationCoords(selection.location);
+                  else setLocationCoords(null);
                 }}
               />
 

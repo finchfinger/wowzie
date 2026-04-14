@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { NavTabs } from "@/components/ui/nav-tabs";
@@ -143,22 +144,20 @@ function NameRow({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1">First name</p>
-                <input
+                <Input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="block w-full rounded-lg border border-input bg-white px-3 py-2 text-sm outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 hover:bg-gray-50"
                   disabled={saving}
                   autoFocus
                 />
               </div>
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1">Last name</p>
-                <input
+                <Input
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="block w-full rounded-lg border border-input bg-white px-3 py-2 text-sm outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 hover:bg-gray-50"
                   disabled={saving}
                 />
               </div>
@@ -248,19 +247,18 @@ function EditableRow({ label, value, helper, multiline, onSave }: EditableRowPro
         {editing ? (
           <div className="space-y-2 mt-1">
             {multiline ? (
-              <textarea
+              <Textarea
                 rows={3}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                className="block w-full rounded-lg border border-input bg-white px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 resize-none hover:bg-gray-50"
+                className="resize-none"
                 disabled={saving}
               />
             ) : (
-              <input
+              <Input
                 type="text"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                className="block w-full rounded-lg border border-input bg-white px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 hover:bg-gray-50"
                 disabled={saving}
                 autoFocus
               />
@@ -581,13 +579,12 @@ function SettingsPageInner({
                   <h2 className="text-base font-semibold text-foreground">Sign in to manage your settings</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Your account, children, and preferences are waiting.</p>
                 </div>
-                <button
+                <Button
                   type="button"
                   onClick={() => document.querySelector<HTMLButtonElement>("button[data-signin]")?.click()}
-                  className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   Sign in
-                </button>
+                </Button>
               </div>
             </div>
           </div>

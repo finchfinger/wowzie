@@ -17,6 +17,8 @@ import {
   FileText,
 } from "lucide-react";
 import { format, isToday, isYesterday, isSameDay, parseISO } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function MessagesPageWrapper() {
   return (
@@ -779,10 +781,10 @@ function MessagesPageInner() {
           <svg className="h-3.5 w-3.5 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <circle cx="11" cy="11" r="8" /><path strokeLinecap="round" d="M21 21l-4.35-4.35" />
           </svg>
-          <input
+          <Input
             type="text"
             placeholder="Search"
-            className="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground text-foreground"
+            className="flex-1 h-auto bg-transparent! hover:bg-transparent! focus-visible:bg-transparent! focus-visible:ring-0 px-0 py-0 text-xs"
           />
         </div>
         {!loading && authedUserId && (
@@ -1125,7 +1127,7 @@ function MessagesPageInner() {
 
             {/* Text input */}
             <div className="flex-1">
-              <textarea
+              <Textarea
                 ref={textareaRef}
                 value={draftText}
                 onChange={(e) => {
@@ -1136,7 +1138,7 @@ function MessagesPageInner() {
                 placeholder={activeConv ? "Write a message…" : "Select a conversation"}
                 rows={1}
                 disabled={!activeConvId}
-                className="w-full resize-none rounded-card bg-muted/40 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow disabled:opacity-50 overflow-hidden"
+                className="resize-none overflow-hidden px-4 py-2.5"
                 style={{ minHeight: 42, maxHeight: 120 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
