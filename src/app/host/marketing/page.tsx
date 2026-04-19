@@ -17,8 +17,6 @@ type Listing = {
   is_published: boolean | null;
 };
 
-const STANDARD_FEE = 10;
-const PROMOTED_FEE = 15;
 
 export default function HostMarketingPage() {
   const { user } = useAuth();
@@ -156,18 +154,9 @@ export default function HostMarketingPage() {
                       )}
                     </div>
 
-                    {/* Name + fee info */}
+                    {/* Name */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{listing.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {listing.is_promoted
-                          ? <span className="text-primary font-medium">{PROMOTED_FEE}% fee when booked</span>
-                          : <span>{STANDARD_FEE}% fee when booked</span>
-                        }
-                      </p>
-                      {listing.is_published === false && (
-                        <p className="text-[11px] text-muted-foreground/60 mt-0.5">Draft — publish to boost</p>
-                      )}
                     </div>
 
                     {/* Toggle */}
@@ -189,11 +178,6 @@ export default function HostMarketingPage() {
             </div>
           )}
 
-          {listings.length > 0 && (
-            <p className="mt-6 text-[11px] text-muted-foreground leading-relaxed border-t border-border/50 pt-4">
-              Boosted listings are charged a {PROMOTED_FEE}% platform fee on each booking, compared to the standard {STANDARD_FEE}%. The additional fee is deducted from your payout — no upfront charges.
-            </p>
-          )}
         </CardContent>
       </Card>
     </div>
