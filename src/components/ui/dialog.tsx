@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { XIcon } from "lucide-react"
+
 import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -72,7 +72,7 @@ function DialogContent({
             data-slot="dialog-close"
             className="data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-1 focus:ring-foreground/10 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
-            <XIcon />
+            <span className="material-symbols-rounded select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>close</span>
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}

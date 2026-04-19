@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+
 import { Select as SelectPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -51,7 +51,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="size-4 opacity-40" />
+        <span className="material-symbols-rounded select-none opacity-40" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -140,7 +140,7 @@ function SelectItem({
         className="absolute right-2.5 flex size-4 items-center justify-center"
       >
         <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>check</span>
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -174,7 +174,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon className="size-4" />
+      <span className="material-symbols-rounded select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_less</span>
     </SelectPrimitive.ScrollUpButton>
   )
 }
@@ -192,7 +192,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <ChevronDownIcon className="size-4" />
+      <span className="material-symbols-rounded select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
     </SelectPrimitive.ScrollDownButton>
   )
 }

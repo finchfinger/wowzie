@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import {
@@ -146,7 +145,7 @@ export const MultiSelect: React.FC<Props> = ({
                   className="rounded-md p-0.5 text-muted-foreground hover:text-foreground"
                   aria-label={`Remove ${opt.label}`}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <span className="material-symbols-rounded select-none" style={{ fontSize: 14, lineHeight: 1 }} aria-hidden>close</span>
                 </button>
               </span>
             ))}
@@ -156,7 +155,7 @@ export const MultiSelect: React.FC<Props> = ({
             )}
           </div>
 
-          <ChevronDown className="h-4 w-4 opacity-70 shrink-0" />
+          <span className="material-symbols-rounded select-none opacity-70 shrink-0" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
         </div>
       </PopoverTrigger>
 
@@ -210,7 +209,7 @@ export const MultiSelect: React.FC<Props> = ({
                       )}
                       aria-hidden="true"
                     >
-                      <Check className="h-3 w-3" />
+                      <span className="material-symbols-rounded select-none" style={{ fontSize: 12, lineHeight: 1 }} aria-hidden>check</span>
                     </span>
                     {opt.label}
                   </span>
