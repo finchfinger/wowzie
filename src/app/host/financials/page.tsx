@@ -7,13 +7,12 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-const FEE_RATE = 0.10;
-
 type BookingRow = {
   id: string;
   created_at: string;
   total_cents: number | null;
   guests_count: number | null;
+  platform_fee_percent: number | null;
   camps: { name: string; host_id: string } | null;
 };
 
@@ -46,7 +45,7 @@ export default function HostFinancialsPage() {
       setLoading(true);
       const { data } = await supabase
         .from("bookings")
-        .select("id, created_at, total_cents, guests_count, camps:camp_id(name, host_id)")
+        .select("id, created_at, total_cents, guests_count, platform_fee_percent, camps:camp_id(name, host_id)")
         .eq("status", "confirmed")
         .order("created_at", { ascending: false })
         .limit(100);
@@ -118,7 +117,10 @@ export default function HostFinancialsPage() {
   };
 
   const totalGross = bookings.reduce((sum, b) => sum + (b.total_cents || 0), 0);
-  const totalFee = Math.round(totalGross * FEE_RATE);
+  const totalFee = bookings.reduce((sum, b) => {
+    const rate = (b.platform_fee_percent ?? 10) / 100;
+    return sum + Math.round((b.total_cents || 0) * rate);
+  }, 0);
   const totalNet = totalGross - totalFee;
 
   /* ── Not connected — show setup prompt ── */
@@ -144,9 +146,9 @@ export default function HostFinancialsPage() {
           </p>
           {[
             { label: "Family pays", value: "$400", bold: false },
-            { label: `Platform fee (${Math.round(FEE_RATE * 100)}%)`, value: `−$${400 * FEE_RATE}`, muted: true },
+            { label: "Platform fee (10%)", value: "−$40", muted: true },
             { label: "Payment processing (3%)", value: "−$12", muted: true },
-            { label: "You receive", value: `$${400 - 400 * FEE_RATE - 12}`, bold: true },
+            { label: "You receive", value: "$348", bold: true },
           ].map(({ label, value, muted, bold }, i, arr) => (
             <div
               key={label}
@@ -167,7 +169,7 @@ export default function HostFinancialsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: "Gross earned", value: loading ? "—" : fmt(totalGross) },
-          { label: "Wowzi fee (10%)", value: loading ? "—" : fmt(totalFee), muted: true },
+          { label: "Wowzi fee", value: loading ? "—" : fmt(totalFee), muted: true },
           { label: "Net payout", value: loading ? "—" : fmt(totalNet), highlight: true },
         ].map(({ label, value, muted, highlight }) => (
           <div key={label} className="rounded-card bg-card px-5 py-4 space-y-1">
@@ -217,7 +219,8 @@ export default function HostFinancialsPage() {
               <tbody className="divide-y divide-border">
                 {bookings.map((b) => {
                   const gross = b.total_cents || 0;
-                  const fee = Math.round(gross * FEE_RATE);
+                  const feeRate = (b.platform_fee_percent ?? 10) / 100;
+                  const fee = Math.round(gross * feeRate);
                   const net = gross - fee;
                   return (
                     <tr key={b.id} className="hover:bg-muted/20 transition-colors">
@@ -261,7 +264,7 @@ export default function HostFinancialsPage() {
       <div>
         <h2 className="text-sm font-semibold text-foreground mb-2">Payments</h2>
         <p className="text-xs text-muted-foreground max-w-xl mb-3">
-          Wowzi charges a 10% host fee on each booking, automatically deducted from your payout.
+          Wowzi charges a 10% host fee on each booking (15% for boosted listings), automatically deducted from your payout.
           This covers payment processing, customer support, and platform maintenance.
         </p>
 
