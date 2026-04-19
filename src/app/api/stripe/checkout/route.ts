@@ -47,8 +47,49 @@ export async function POST(req: NextRequest) {
     const sessions = Math.max(sessionCount ?? 1, 1);
     const totalCents = priceCents * sessions * guests;
 
-    // Pre-create booking with payment_status = 'pending'
     const supabase = getSupabase();
+
+    /* ── Capacity check ─────────────────────────────────────────────────────
+       Fetch camp capacity + count existing non-cancelled bookings (sum of
+       guests_count). Reject before touching Stripe if the camp is full.
+    ──────────────────────────────────────────────────────────────────────── */
+    const { data: campData } = await supabase
+      .from("camps")
+      .select("capacity, name")
+      .eq("id", campId)
+      .single();
+
+    const campCapacity = typeof campData?.capacity === "number" && campData.capacity > 0
+      ? campData.capacity
+      : null;
+
+    if (campCapacity !== null) {
+      const { data: existingBookings } = await supabase
+        .from("bookings")
+        .select("guests_count")
+        .eq("camp_id", campId)
+        .not("status", "in", '("cancelled","refunded")');
+
+      const spotsTaken = (existingBookings ?? []).reduce(
+        (sum, b) => sum + (b.guests_count ?? 1),
+        0
+      );
+
+      if (spotsTaken + guests > campCapacity) {
+        const spotsLeft = Math.max(0, campCapacity - spotsTaken);
+        return NextResponse.json(
+          {
+            error: spotsLeft === 0
+              ? "This camp is fully booked."
+              : `Only ${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} remaining.`,
+            spotsLeft,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Pre-create booking with payment_status = 'pending'
     const { data: booking, error: bookingErr } = await supabase
       .from("bookings")
       .insert({
