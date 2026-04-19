@@ -11,6 +11,32 @@ function getSupabase() {
   );
 }
 
+/* ── Rate limiting (in-memory, per-IP) ─────────────────── */
+// 20 requests per hour per IP. Resets on cold start — good enough for
+// basic abuse prevention without requiring Redis.
+
+const RATE_LIMIT = 20;
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+const ipHits = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = ipHits.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    ipHits.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.count >= RATE_LIMIT) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+
+  entry.count++;
+  return { allowed: true };
+}
+
 /* ── Intent detection ──────────────────────────────────── */
 
 const PLANNING_RE = /plan|schedul|weeks?|full summer|whole summer|entire summer|summer plan|camp plan|line.?up|line up|months?|calendar|\d+\s*weeks/i;
@@ -18,7 +44,6 @@ const PLANNING_RE = /plan|schedul|weeks?|full summer|whole summer|entire summer|
 type ApiMessage = { role: "user" | "assistant"; content: string };
 
 function isPlanningQuery(messages: ApiMessage[]): boolean {
-  // Check the last 3 user messages for planning intent
   const recent = messages
     .filter((m) => m.role === "user")
     .slice(-3)
@@ -89,7 +114,6 @@ async function fetchAllCampsContext(): Promise<string> {
       camp.meta?.location_city ||
       null;
 
-    // Extract dates from meta
     const sessions: any[] = camp.meta?.campSessions ?? [];
     let dates = "";
     if (sessions.length > 0) {
@@ -107,7 +131,6 @@ async function fetchAllCampsContext(): Promise<string> {
       dates = camp.start_time.slice(0, 10);
     }
 
-    // Extract age range from meta
     const minAge = camp.meta?.ageMin ?? camp.meta?.minAge ?? camp.meta?.age_min ?? null;
     const maxAge = camp.meta?.ageMax ?? camp.meta?.maxAge ?? camp.meta?.age_max ?? null;
     const ages = minAge || maxAge
@@ -201,14 +224,57 @@ async function executeSearch(input: SearchInput): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
+    /* ── 1. Rate limit by IP ───────────────────────────── */
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
+    const rate = checkRateLimit(ip);
+    if (!rate.allowed) {
+      return new Response("Too many requests. Please try again later.", {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfter ?? 3600) },
+      });
+    }
+
+    /* ── 2. Parse & validate body ──────────────────────── */
     const { messages } = (await req.json()) as { messages: ApiMessage[] };
 
     if (!messages?.length) {
       return new Response("Missing messages", { status: 400 });
     }
 
+    // Cap message length — prevents token stuffing
+    const MAX_MSG_LENGTH = 2000;
+    if (messages.some((m) => m.content.length > MAX_MSG_LENGTH)) {
+      return new Response("Message too long", { status: 400 });
+    }
+
+    // Trim history to last 10 messages — keeps costs predictable
+    const trimmedMessages = messages.slice(-10);
+
+    const planning = isPlanningQuery(trimmedMessages);
+
+    /* ── 3. Auth gate for planning mode ────────────────── */
+    if (planning) {
+      const authHeader = req.headers.get("authorization");
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+      if (!token) {
+        return new Response("Sign in to use planning mode", { status: 401 });
+      }
+
+      const supabase = getSupabase();
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+
+      if (error || !user) {
+        return new Response("Invalid session — please sign in again", { status: 401 });
+      }
+    }
+
+    /* ── 4. Stream response ────────────────────────────── */
     const encoder = new TextEncoder();
-    const planning = isPlanningQuery(messages);
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -224,20 +290,18 @@ export async function POST(req: NextRequest) {
               model: "claude-sonnet-4-5",
               max_tokens: 2048,
               system: [
-                // System prompt — cached
                 {
                   type: "text",
                   text: PLANNING_SYSTEM,
                   cache_control: { type: "ephemeral" },
                 },
-                // Camp list — cached separately (busts when camps change)
                 {
                   type: "text",
                   text: `AVAILABLE CAMPS AND CLASSES:\n\n${campsContext}`,
                   cache_control: { type: "ephemeral" },
                 },
               ],
-              messages,
+              messages: trimmedMessages,
             });
 
             for await (const event of planningStream) {
@@ -264,7 +328,7 @@ export async function POST(req: NextRequest) {
               max_tokens: 1024,
               system: [searchSystemBlock],
               tools: [SEARCH_TOOL],
-              messages,
+              messages: trimmedMessages,
             });
 
             if (firstResponse.stop_reason === "tool_use") {
@@ -282,7 +346,7 @@ export async function POST(req: NextRequest) {
               }
 
               const finalMessages: Anthropic.MessageParam[] = [
-                ...messages,
+                ...trimmedMessages,
                 { role: "assistant", content: firstResponse.content },
                 { role: "user",      content: toolResults },
               ];

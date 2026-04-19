@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 
 /* ── Scout blob avatar ──────────────────────────────────── */
 // SVG path morphing between 4 organic "puffy" shapes — same point count = smooth morph
@@ -101,13 +102,21 @@ async function streamReply(
   onChunk: (text: string) => void,
   signal?: AbortSignal,
 ): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
   const res = await fetch("/api/ai/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify({ messages }),
     signal,
   });
 
+  if (res.status === 401) throw new Error("sign-in-required");
+  if (res.status === 429) throw new Error("rate-limited");
   if (!res.ok) throw new Error(`API error ${res.status}`);
   if (!res.body) throw new Error("No response body");
 
@@ -212,12 +221,17 @@ export default function AIChatPage() {
         abortRef.current.signal,
       );
     } catch (err: unknown) {
-      if ((err as Error)?.name !== "AbortError") {
+      const errMsg = (err as Error)?.message;
+      if (errMsg !== "AbortError" && (err as Error)?.name !== "AbortError") {
+        const friendlyText =
+          errMsg === "sign-in-required"
+            ? "You need to be signed in to use planning mode. Please [sign in](/login) and try again."
+            : errMsg === "rate-limited"
+            ? "You've sent a lot of messages — please wait a few minutes and try again."
+            : "Sorry, something went wrong. Please try again.";
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === replyId
-              ? { ...m, text: "Sorry, something went wrong. Please try again." }
-              : m
+            m.id === replyId ? { ...m, text: friendlyText } : m
           )
         );
       }

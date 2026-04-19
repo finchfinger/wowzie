@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 
 /* ── Suggestion chips ───────────────────────────────────── */
 const CHIPS: Array<{ icon: string; label: string }> = [
@@ -25,12 +26,20 @@ async function streamReply(
   onChunk: (text: string) => void,
   signal?: AbortSignal,
 ) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
   const res = await fetch("/api/ai/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify({ messages }),
     signal,
   });
+  if (res.status === 401) throw new Error("sign-in-required");
+  if (res.status === 429) throw new Error("rate-limited");
   if (!res.ok || !res.body) throw new Error(`API error ${res.status}`);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -152,9 +161,16 @@ export function ScoutOverlay({
       );
     } catch (err: unknown) {
       if (!controller.signal.aborted) {
+        const msg = (err as Error)?.message;
+        const friendlyText =
+          msg === "sign-in-required"
+            ? "You need to be signed in to use planning mode. [Sign in](/login) and try again."
+            : msg === "rate-limited"
+            ? "You've sent a lot of messages — please wait a few minutes and try again."
+            : "Sorry, something went wrong.";
         setMessages((p) =>
           p.map((m) =>
-            m.id === replyId ? { ...m, text: "Sorry, something went wrong." } : m
+            m.id === replyId ? { ...m, text: friendlyText } : m
           )
         );
       }
