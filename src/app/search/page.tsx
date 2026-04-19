@@ -81,9 +81,10 @@ const SELECT_COLUMNS = `
 `;
 
 /** Floats up to 3 promoted listings to the top, preserving organic order otherwise */
-function boostPromoted<T extends { is_promoted?: boolean }>(rows: T[]): T[] {
-  const promoted = rows.filter((r) => r.is_promoted).slice(0, 3);
-  const organic  = rows.filter((r) => !r.is_promoted || !promoted.includes(r));
+function boostPromoted<T extends { is_promoted?: boolean | null }>(rows: T[]): T[] {
+  const promoted = rows.filter((r) => r.is_promoted === true).slice(0, 3);
+  const promotedSet = new Set(promoted);
+  const organic = rows.filter((r) => !promotedSet.has(r));
   return [...promoted, ...organic];
 }
 
@@ -144,6 +145,7 @@ type CampRow = Camp & {
   session_end?: string | null;
   schedule_days?: string[] | null;
   time_of_day?: string | null;
+  is_promoted?: boolean | null;
 };
 
 /* ── Helpers ── */
@@ -684,7 +686,7 @@ function SearchContent() {
                   {(localLocation || usingBrowserGeo) && (
                     <button type="button" onClick={clearLocation}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10">
-                      <X className="h-3 w-3" />
+                      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }}>close</span>
                     </button>
                   )}
                 </div>

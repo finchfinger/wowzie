@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
 /* ── Scout blob avatar ──────────────────────────────────── */
@@ -48,6 +49,36 @@ function ScoutBlob({ thinking = false, size = 28 }: { thinking?: boolean; size?:
         )}
       </path>
     </svg>
+  );
+}
+
+/* ── Link-aware message renderer ───────────────────────── */
+function MessageText({ text, onNavigate }: { text: string; onNavigate: (href: string) => void }) {
+  const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) => {
+        const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (match) {
+          const [, label, href] = match;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onNavigate(href)}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium transition-colors"
+              style={{ background: "#ede9fe", color: "#4f46e5", margin: "1px 2px" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#ddd6fe")}
+              onMouseLeave={e => (e.currentTarget.style.background = "#ede9fe")}
+            >
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 11 }}>open_in_new</span>
+              {label}
+            </button>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
   );
 }
 
@@ -125,6 +156,7 @@ function MI({ name, size = 16 }: { name: string; size?: number }) {
 
 export default function AIChatPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const firstName =
     (user?.user_metadata?.first_name as string | undefined)?.trim() ||
     user?.email?.split("@")[0] ||
@@ -296,13 +328,13 @@ export default function AIChatPage() {
                       </div>
                     )}
                     <div
-                      className={`max-w-[72%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                      className={`max-w-[72%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                         msg.role === "user"
                           ? "bg-violet-100 text-foreground rounded-br-sm"
                           : "bg-muted/60 text-foreground rounded-bl-sm"
                       }`}
                     >
-                      {msg.text}
+                      <MessageText text={msg.text} onNavigate={(href) => router.push(href)} />
                     </div>
                   </div>
                 ))}

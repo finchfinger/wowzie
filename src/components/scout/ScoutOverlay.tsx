@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
 /* ── Suggestion chips ───────────────────────────────────── */
@@ -45,6 +46,38 @@ async function streamReply(
   }
 }
 
+/* ── Markdown link renderer ─────────────────────────────── */
+// Splits text on [label](url) patterns and renders links as tappable chips
+
+function MessageText({ text, onNavigate }: { text: string; onNavigate: (href: string) => void }) {
+  const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) => {
+        const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (match) {
+          const [, label, href] = match;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onNavigate(href)}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium transition-colors"
+              style={{ background: "#D9D3EE", color: "#3730a3", margin: "1px 2px" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#C4BCDF")}
+              onMouseLeave={e => (e.currentTarget.style.background = "#D9D3EE")}
+            >
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 11 }}>open_in_new</span>
+              {label}
+            </button>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+}
+
 /* ── ScoutOverlay ───────────────────────────────────────── */
 export function ScoutOverlay({
   open,
@@ -54,6 +87,7 @@ export function ScoutOverlay({
   onClose: () => void;
 }) {
   const { user } = useAuth();
+  const router = useRouter();
   const firstName =
     (user?.user_metadata?.first_name as string | undefined)?.trim() ||
     null;
@@ -265,7 +299,7 @@ export function ScoutOverlay({
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className="max-w-[82%] text-sm leading-relaxed whitespace-pre-wrap"
+                  className="max-w-[82%] text-sm leading-relaxed"
                   style={{
                     borderRadius: msg.role === "user" ? "20px 20px 4px 20px" : "20px 20px 20px 4px",
                     padding: "10px 14px",
@@ -273,7 +307,12 @@ export function ScoutOverlay({
                     color: "#1C1B1F",
                   }}
                 >
-                  {msg.text || (thinking && msg.role === "assistant" ? (
+                  {msg.text ? (
+                    <MessageText
+                      text={msg.text}
+                      onNavigate={(href) => { onClose(); router.push(href); }}
+                    />
+                  ) : (thinking && msg.role === "assistant" ? (
                     <span className="flex gap-1 items-center py-0.5">
                       <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:0ms]" style={{ background: "#6750A4", opacity: 0.5 }} />
                       <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:150ms]" style={{ background: "#6750A4", opacity: 0.5 }} />
