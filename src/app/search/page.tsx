@@ -6,7 +6,6 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { getPriceUnit } from "@/lib/pricing";
-import { Heart, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import type { Camp } from "@/components/CampCard";
 import { AddressInput } from "@/components/ui/AddressInput";
@@ -77,8 +76,16 @@ const SELECT_COLUMNS = `
   schedule_days,
   start_time,
   end_time,
-  created_at
+  created_at,
+  is_promoted
 `;
+
+/** Floats up to 3 promoted listings to the top, preserving organic order otherwise */
+function boostPromoted<T extends { is_promoted?: boolean }>(rows: T[]): T[] {
+  const promoted = rows.filter((r) => r.is_promoted).slice(0, 3);
+  const organic  = rows.filter((r) => !r.is_promoted || !promoted.includes(r));
+  return [...promoted, ...organic];
+}
 
 const CATEGORIES = [
   { value: "art",      label: "Art" },
@@ -261,7 +268,7 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
             className="shrink-0 transition-transform hover:scale-110"
             aria-label={isFav ? "Remove from favorites" : "Save"}
           >
-            <Heart className={`h-4 w-4 ${isFav ? "fill-red-500 text-red-500" : "text-muted-foreground/40"}`} />
+            <span className={`material-symbols-rounded select-none ${isFav ? "text-red-500" : "text-muted-foreground/40"}`} style={{ fontSize: 16, fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
           </button>
         </div>
         {dateStr && <p className="text-sm text-muted-foreground truncate">{dateStr}</p>}
@@ -542,7 +549,8 @@ function SearchContent() {
       if (dbError) { setError("Sorry, we couldn't load results."); setResults([]); }
       else {
         const rows = (data || []) as CampRow[];
-        setResults(groupMode === "program" ? dedupeByProgram(rows) : rows);
+        const sorted = boostPromoted(groupMode === "program" ? dedupeByProgram(rows) : rows);
+        setResults(sorted);
       }
       setLoading(false);
     };
@@ -653,7 +661,7 @@ function SearchContent() {
                   <button type="button"
                     onClick={() => { setLocalQ(""); pushParams({ q: "" }); }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    <X className="h-4 w-4" />
+                    <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>close</span>
                   </button>
                 )}
               </div>
@@ -756,7 +764,7 @@ function SearchContent() {
                   active={advancedFilterCount > 0}
                   onClick={() => setFiltersOpen(true)}
                 >
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  <span className="material-symbols-rounded select-none" style={{ fontSize: 15 }} aria-hidden>tune</span>
                   Filters
                   <FilterBadge count={advancedFilterCount} />
                 </FilterPill>
@@ -972,7 +980,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
     <button type="button" onClick={onRemove}
       className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-foreground hover:bg-muted/70 transition-colors">
       {label}
-      <X className="h-3 w-3 text-muted-foreground" />
+      <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 12 }} aria-hidden>close</span>
     </button>
   );
 }

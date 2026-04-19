@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRef } from "react";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActivity, type Activity } from "@/lib/activity-context";
 import { Input } from "@/components/ui/input";
@@ -127,11 +126,11 @@ function MiniCalendar({ campDays, datesWithData, selectedDate, onSelect, todaySt
     <div className="select-none">
       <div className="flex items-center justify-between mb-2">
         <button type="button" onClick={prevMonth} className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors">
-          <ChevronLeft className="h-4 w-4" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>chevron_left</span>
         </button>
         <span className="text-sm font-medium text-foreground">{monthLabel}</span>
         <button type="button" onClick={nextMonth} className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors">
-          <ChevronRight className="h-4 w-4" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>chevron_right</span>
         </button>
       </div>
       <div className="grid grid-cols-7 mb-1">
@@ -380,7 +379,7 @@ function AttendanceTab({ activity }: { activity: Activity }) {
         )}
         <MiniCalendar campDays={campDays} datesWithData={datesWithData} selectedDate={selectedDate} onSelect={setSelectedDate} todayStr={todayStr} />
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <span className="material-symbols-rounded select-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" style={{ fontSize: 16 }} aria-hidden>search</span>
           <Input className="pl-9" placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>

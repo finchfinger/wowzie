@@ -2,14 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ChevronDown,
-  Check,
-  Pause,
-  CircleDollarSign,
-  Timer,
-  UsersRound,
-} from "lucide-react";
 import { ActionsMenu, type ActionItem } from "@/components/ui/ActionsMenu";
 
 /* ── types ────────────────────────────────────────────── */
@@ -194,7 +186,7 @@ function StatusBadge({
           }`}
         />
         {isLive ? "Live" : "Paused"}
-        <ChevronDown className="h-3 w-3 opacity-60" />
+        <span className="material-symbols-rounded select-none opacity-60" style={{ fontSize: 12 }} aria-hidden>expand_more</span>
       </button>
 
       {open && (
@@ -208,11 +200,7 @@ function StatusBadge({
             }}
             className="flex w-full items-start gap-3 px-3 py-2.5 hover:bg-accent transition-colors text-left"
           >
-            <Check
-              className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
-                isLive ? "text-emerald-600" : "text-transparent"
-              }`}
-            />
+            <span className={`material-symbols-rounded select-none mt-0.5 shrink-0 ${isLive ? "text-emerald-600" : "text-transparent"}`} style={{ fontSize: 14 }} aria-hidden>check</span>
             <div>
               <p className="text-xs font-medium text-foreground">Live</p>
               <p className="text-[11px] text-muted-foreground">Accept bookings</p>
@@ -228,11 +216,7 @@ function StatusBadge({
             }}
             className="flex w-full items-start gap-3 px-3 py-2.5 hover:bg-accent transition-colors text-left border-t border-border/50"
           >
-            <Pause
-              className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
-                !isLive ? "text-amber-600" : "text-transparent"
-              }`}
-            />
+            <span className={`material-symbols-rounded select-none mt-0.5 shrink-0 ${!isLive ? "text-amber-600" : "text-transparent"}`} style={{ fontSize: 14 }} aria-hidden>pause</span>
             <div>
               <p className="text-xs font-medium text-foreground">Paused</p>
               <p className="text-[11px] text-muted-foreground">Hidden from customers</p>
@@ -325,19 +309,19 @@ export function HostListItem({
         <div className="mt-1.5 space-y-0.5">
           {priceLabel && (
             <div className="flex items-center gap-1.5">
-              <CircleDollarSign className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+              <span className="material-symbols-rounded select-none shrink-0 text-muted-foreground/70" style={{ fontSize: 14 }} aria-hidden>payments</span>
               <p className="text-xs text-muted-foreground">{priceLabel}</p>
             </div>
           )}
           {scheduleLabel && (
             <div className="flex items-center gap-1.5">
-              <Timer className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+              <span className="material-symbols-rounded select-none shrink-0 text-muted-foreground/70" style={{ fontSize: 14 }} aria-hidden>timer</span>
               <p className="text-xs text-muted-foreground">{scheduleLabel}</p>
             </div>
           )}
           {totalCapacity != null && (
             <div className="flex items-center gap-1.5">
-              <UsersRound className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+              <span className="material-symbols-rounded select-none shrink-0 text-muted-foreground/70" style={{ fontSize: 14 }} aria-hidden>group</span>
               <p
                 className={`text-xs font-medium ${
                   isFull ? "text-destructive" : "text-muted-foreground"

@@ -19,7 +19,6 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, ImagePlus, Star, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type PhotoItem = {
@@ -86,7 +85,7 @@ function SortableTile({
       {isPrimary ? (
         <div className="absolute left-2 top-2">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/90 border px-2 py-1 text-[11px] text-foreground">
-            <Star className="h-3 w-3" />
+            <span className="material-symbols-rounded select-none" style={{ fontSize: 12, fontVariationSettings: "'FILL' 1" }} aria-hidden>star</span>
             Primary
           </span>
         </div>
@@ -103,7 +102,7 @@ function SortableTile({
           className="rounded-lg bg-white/90 border p-2 text-foreground hover:bg-white"
           aria-label="Remove photo"
         >
-          <Trash2 className="h-4 w-4" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>delete</span>
         </button>
 
         <button
@@ -115,7 +114,7 @@ function SortableTile({
           {...attributes}
           {...listeners}
         >
-          <GripVertical className="h-4 w-4" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>drag_indicator</span>
         </button>
       </div>
     </div>
@@ -146,7 +145,7 @@ function EmptyTile({
       )}
       aria-label={`Add photo in slot ${index + 1}`}
     >
-      <ImagePlus className="h-5 w-5" />
+      <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>add_photo_alternate</span>
       <span className="text-[11px] font-medium">Add photo</span>
     </button>
   );
@@ -162,7 +161,7 @@ function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center py-10 text-center">
       <div className="h-10 w-10 rounded-card bg-card border flex items-center justify-center">
-        <ImagePlus className="h-5 w-5 text-muted-foreground" />
+        <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 20 }} aria-hidden>add_photo_alternate</span>
       </div>
 
       <p className="mt-4 text-base font-semibold text-foreground">

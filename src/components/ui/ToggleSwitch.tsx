@@ -43,27 +43,23 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
       disabled={disabled}
       onClick={handleClick}
       className={cn(
-        "relative inline-flex items-center rounded-full focus:outline-none focus:ring-1 focus:ring-foreground/10",
-        disabled ? "cursor-not-allowed" : "cursor-pointer",
+        // Track — M3 spec: 52×32dp, fully rounded
+        "relative inline-flex h-8 w-[52px] shrink-0 cursor-pointer items-center rounded-full border-2 outline-none transition-all duration-200",
+        "focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        checked
+          ? "border-transparent bg-primary"
+          : "border-input bg-muted",
       )}
     >
       <span className="sr-only">{a11yLabel}</span>
+      {/* Thumb — 16×16 OFF → 24×24 ON, slides left→right */}
       <span
         className={cn(
-          "inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 ease-in-out",
-          checked
-            ? "bg-primary border-primary"
-            : "bg-muted border-border",
-          disabled && "opacity-60",
+          "pointer-events-none block rounded-full bg-white shadow-sm transition-all duration-200",
+          checked ? "h-6 w-6 translate-x-[22px]" : "h-4 w-4 translate-x-[2px]",
         )}
-      >
-        <span
-          className={cn(
-            "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ease-in-out",
-            checked ? "translate-x-5" : "translate-x-1",
-          )}
-        />
-      </span>
+      />
     </button>
   );
 
@@ -76,13 +72,9 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
       <div className="flex-1">
         {showLabelBlock && (
           <>
-            {label && (
-              <p className="text-sm text-foreground">{label}</p>
-            )}
+            {label && <p className="text-sm text-foreground">{label}</p>}
             {helperText && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {helperText}
-              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{helperText}</p>
             )}
           </>
         )}

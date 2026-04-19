@@ -5,7 +5,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import type { Camp } from "@/components/CampCard";
-import { Lock } from "lucide-react";
 
 type CampSession = {
   id: string;
@@ -305,7 +304,7 @@ function CheckoutContent() {
                   </div>
                 ) : (
                   <div className="rounded-xl bg-muted/30 px-4 py-4 flex items-center gap-3 text-sm text-muted-foreground">
-                    <Lock className="h-4 w-4 shrink-0 text-emerald-600" />
+                    <span className="material-symbols-rounded select-none shrink-0 text-emerald-600" style={{ fontSize: 16 }} aria-hidden>lock</span>
                     <span>
                       Secure payment powered by{" "}
                       <span className="font-semibold text-foreground">Stripe</span>
@@ -346,7 +345,7 @@ function CheckoutContent() {
                   "Processing\u2026"
                 ) : (
                   <>
-                    {!isMockMode && <Lock className="h-3.5 w-3.5" />}
+                    {!isMockMode && <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>lock</span>}
                     {`Reserve \u2014 ${formatMoney(totalCents)}`}
                   </>
                 )}
@@ -437,7 +436,7 @@ function CheckoutContent() {
           {/* Stripe badge */}
           {!isMockMode && (
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-              <Lock className="h-3 w-3" />
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 12 }} aria-hidden>lock</span>
               Secured by Stripe
             </div>
           )}

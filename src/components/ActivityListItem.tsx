@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { MoreVertical } from "lucide-react";
 
 export type ActivityListItemProps = {
   title: string;
@@ -57,7 +56,7 @@ export function ActivityListItem({
           className="shrink-0 h-8 w-8 flex items-center justify-center rounded-full hover:bg-accent text-muted-foreground transition-colors"
           aria-label="More options"
         >
-          <MoreVertical className="h-4 w-4" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
         </button>
       )}
     </div>

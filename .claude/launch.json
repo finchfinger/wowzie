@@ -6,7 +6,7 @@
       "runtimeExecutable": "/usr/local/bin/node",
       "runtimeArgs": ["/Users/johnpaul/Desktop/camp-app/node_modules/.bin/next", "dev"],
       "port": 3000,
-      "autoPort": false
+      "autoPort": true
     }
   ]
 }

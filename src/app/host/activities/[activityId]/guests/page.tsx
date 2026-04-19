@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { MoreHorizontal, Search, ChevronDown, UserPlus, Send } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useActivity, type CampBookingRow, type ChildInfo, type BookingStatus } from "@/lib/activity-context";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -143,10 +142,10 @@ export default function GuestsPage() {
           <CardTitle>Guests</CardTitle>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-1.5">
-              <UserPlus className="h-3.5 w-3.5" />Add guest
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>person_add</span>Add guest
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5">
-              <Send className="h-3.5 w-3.5" />Send update
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>send</span>Send update
             </Button>
           </div>
         </div>
@@ -155,12 +154,12 @@ export default function GuestsPage() {
         {/* Search */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <span className="material-symbols-rounded select-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" style={{ fontSize: 14 }} aria-hidden>search</span>
             <Input type="text" placeholder="Search" value={guestSearch} onChange={e => setGuestSearch(e.target.value)} className="pl-8" />
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
             <span>Alphabetical</span>
-            <ChevronDown className="h-3.5 w-3.5" />
+            <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>expand_more</span>
           </div>
         </div>
 
@@ -222,7 +221,7 @@ export default function GuestsPage() {
                       {ri === 0 && (
                         <button type="button" onClick={() => router.push(`/host/activities/${activityId}/guests/${g.id}`)}
                           className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground">
-                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>more_horiz</span>
                         </button>
                       )}
                     </div>

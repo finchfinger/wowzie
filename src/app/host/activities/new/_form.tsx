@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { uploadActivityImages } from "@/lib/images";
 
@@ -12,8 +13,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DateInput } from "@/components/ui/DateInput";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { AddressInput } from "@/components/ui/AddressInput";
+import { LocationPicker } from "@/components/ui/LocationPicker";
 import { FormCard } from "@/components/ui/form-card";
-import { Alert } from "@/components/ui/Alert";
+import { Snackbar } from "@/components/ui/Snackbar";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 
 import {
   Select,
@@ -27,15 +30,15 @@ import {
   PhotoUploader,
   type PhotoItem,
 } from "@/components/host/PhotoUploader";
-import { CalendarDays } from "lucide-react";
-
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
 
 type Visibility = "private" | "public";
+type ListingStatus = "active" | "draft" | "unlisted";
 type ActivityType = "fixed" | "ongoing";
 type ActivityKind = "camp" | "class";
+type ActivityDisplayKind = "camp" | "class" | "club" | "drop_in";
 type LocationType = "in_person" | "virtual";
 type DayKey = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
 type DaySchedule = { start: string; end: string };
@@ -93,14 +96,20 @@ type ActivityItem = {
 
 type CampMeta = {
   visibility?: Visibility;
+  displayKind?: ActivityDisplayKind;
   isVirtual?: boolean;
   meetingUrl?: string;
   activityType?: ActivityType;
   activityKind?: ActivityKind;
   experienceLevel?: ExperienceLevel[];
   category?: string;
+  categories?: string[];
   cancellation_policy?: string | null;
   additionalDetails?: string;
+  whatToBring?: string;
+  whatsIncluded?: string;
+  clubEnrollmentType?: "open" | "tryout";
+  websiteUrl?: string;
   age_buckets?: AgeBucket[];
   age_bucket?: AgeBucket;
   min_age?: number | null;
@@ -298,19 +307,19 @@ function TimeSelect({
           if (e.key === "Escape") { setOpen(false); setInputText(""); }
           if (e.key === "Enter" && filtered.length > 0) { e.preventDefault(); select(filtered[0]!.value); }
         }}
-        className="h-11 w-full rounded bg-[#f1f3f4] border-0 px-3 text-sm outline-none transition-colors hover:bg-[#e8eaed] focus:ring-2 focus:ring-foreground/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm transition-colors outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
       />
       {open && (
         <ul
           ref={listRef}
-          className="absolute z-50 mt-1 max-h-52 w-40 overflow-y-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 text-sm"
+          className="absolute z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-xl bg-popover p-1.5 shadow-lg border border-border/60 text-sm"
           onMouseDown={(e) => e.preventDefault()} // keep input focused
         >
           {filtered.map((opt) => (
             <li
               key={opt.value}
               onClick={() => select(opt.value)}
-              className={`cursor-pointer px-4 py-1.5 ${opt.value === value ? "bg-[#e8eaed] font-medium" : "hover:bg-[#f1f3f4]"}`}
+              className={`cursor-pointer rounded-lg px-3 py-2.5 transition-colors ${opt.value === value ? "bg-accent font-medium text-accent-foreground" : "hover:bg-accent"}`}
             >
               {opt.label}
             </li>
@@ -550,8 +559,8 @@ const makeDefaultCampSession = (): CampSession => ({
   startDate: "",
   endDate: "",
   days: ["mon", "tue", "wed", "thu", "fri"],
-  startTime: "09:00",
-  endTime: "10:00",
+  startTime: "",
+  endTime: "",
   capacity: "",
   enableWaitlist: false,
   price_cents: null,
@@ -627,38 +636,55 @@ const combineLocalDateAndTimeToISO = (
 /* ------------------------------------------------------------------ */
 
 const STEPS = [
-  { key: "basics", label: "Basics" },
-  { key: "description", label: "Description" },
-  { key: "schedule", label: "Schedule" },
-  { key: "photos", label: "Photos" },
-  { key: "details", label: "Details" },
-  { key: "review", label: "Review" },
+  { key: "basics",   label: "Basics",   icon: "counter_1", heading: null },
+  { key: "schedule", label: "Schedule", icon: "counter_2", heading: "Now let's set the schedule" },
+  { key: "details",  label: "Details",  icon: "counter_3", heading: "Fill in the details" },
+  { key: "images",   label: "Images",   icon: "counter_4", heading: "Let's add some images" },
+  { key: "review",   label: "Review",   icon: "counter_5", heading: "Ready to publish?" },
 ] as const;
 
 type StepKey = (typeof STEPS)[number]["key"];
 
+const FORM_CONFIG = {
+  pageHeading: "Let's set up your activity",
+  titleLabel: "Activity name",
+  titlePlaceholder: "Summer Art Camp, Saturday Piano, Fall Soccer Club",
+};
+
 function Stepper({
   currentIndex,
+  onNavigate,
 }: {
   currentIndex: number;
   onNavigate: (index: number) => void;
 }) {
-  const pct = Math.round(((currentIndex + 1) / STEPS.length) * 100);
-  const label = STEPS[currentIndex]?.label ?? "";
-
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-muted-foreground">
-        Step {currentIndex + 1} of {STEPS.length}
-        <span className="mx-1.5 text-muted-foreground/40">·</span>
-        <span className="font-medium text-foreground">{label}</span>
-      </p>
-      <div className="h-1 w-full rounded-full bg-border overflow-hidden">
-        <div
-          className="h-full rounded-full bg-foreground transition-all duration-300"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+    <div className="flex gap-2">
+      {STEPS.map((step, i) => {
+        const active = i === currentIndex;
+        return (
+          <button
+            key={step.key}
+            type="button"
+            onClick={() => onNavigate(i)}
+            className={`flex flex-1 items-center gap-2 rounded-xl px-3 py-3 transition-colors ${
+              active
+                ? "bg-foreground text-background"
+                : "bg-white text-foreground hover:bg-gray-50"
+            }`}
+          >
+            <span
+              className="material-symbols-rounded shrink-0 select-none"
+              style={{ fontSize: 20 }}
+            >
+              {step.icon}
+            </span>
+            <span className="text-sm font-semibold truncate">
+              {step.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -666,6 +692,223 @@ function Stepper({
 /* ------------------------------------------------------------------ */
 /* Reusable sub-components                                            */
 /* ------------------------------------------------------------------ */
+
+/**
+ * SettingsList — bordered list container for SettingsRow items.
+ * Replaces hand-rolled `rounded-xl border divide-y overflow-hidden` blocks.
+ */
+function SettingsList({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-border divide-y divide-border overflow-hidden">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * SettingsRow — a single labeled row with a trailing control.
+ * h-12 touch target. Use inside SettingsList.
+ */
+function SettingsRow({
+  label,
+  description,
+  children,
+  asLabel = false,
+}: {
+  label: string;
+  description?: string;
+  children: React.ReactNode;
+  /** Wrap the whole row in a <label> for checkbox/toggle targets */
+  asLabel?: boolean;
+}) {
+  const inner = (
+    <div className="flex min-h-12 w-full items-center justify-between gap-4 px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-sm text-foreground">{label}</p>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        )}
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
+  );
+  return asLabel ? (
+    <label className="block cursor-pointer">{inner}</label>
+  ) : inner;
+}
+
+/**
+ * MoneyInput — Field label above + $ prefix + optional suffix.
+ */
+function MoneyInput({
+  label,
+  value,
+  onChange,
+  onBlur,
+  suffix,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onBlur?: () => void;
+  suffix?: string;
+}) {
+  return (
+    <Field label={label}>
+      <div className="relative">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-4 inset-y-0 flex items-center z-10 text-sm text-muted-foreground"
+        >
+          $
+        </span>
+        <Input
+          value={value}
+          onChange={(e) => onChange(sanitizeMoneyInput(e.target.value))}
+          onBlur={onBlur}
+          className="pl-8"
+          inputMode="decimal"
+          autoComplete="off"
+        />
+        {suffix && (
+          <span className="pointer-events-none absolute right-4 inset-y-0 flex items-center z-10 text-xs text-muted-foreground">
+            {suffix}
+          </span>
+        )}
+      </div>
+    </Field>
+  );
+}
+
+/**
+ * ReviewRow — one labeled data row for the review/summary screen.
+ * Replaces raw <span> pairs in grid-cols-[100px,1fr].
+ */
+function ReviewRow({ label, value }: { label: string; value?: React.ReactNode }) {
+  if (!value) return null;
+  return (
+    <>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm">{value}</span>
+    </>
+  );
+}
+
+/**
+ * ChoiceChip — single-select option (replaces RadioCard).
+ * Outlined pill → filled primary when selected. No checkbox.
+ */
+function ChoiceChip({
+  selected,
+  onClick,
+  children,
+  disabled,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all",
+        selected
+          ? "bg-primary text-primary-foreground"
+          : "border border-border bg-transparent text-foreground hover:bg-muted",
+        disabled && "pointer-events-none opacity-50",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * ChoiceCheck — multi-select option (replaces CheckboxCard).
+ * Has a visible checkbox indicator to signal multi-select semantics.
+ */
+function ChoiceCheck({
+  checked,
+  onClick,
+  children,
+  disabled,
+}: {
+  checked: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all",
+        checked
+          ? "bg-primary/10 text-primary ring-1 ring-primary"
+          : "border border-border bg-transparent text-foreground hover:bg-muted",
+        disabled && "pointer-events-none opacity-50",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+          checked ? "bg-primary border-primary text-primary-foreground" : "border-input bg-background",
+        )}
+        aria-hidden="true"
+      >
+        {checked && (
+          <svg className="h-2.5 w-2.5" viewBox="0 0 10 10" fill="none">
+            <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
+      {children}
+    </button>
+  );
+}
+
+/**
+ * AddOnRow — a flat, borderless row for custom fee line items.
+ * Replaces the card-in-card `rounded-xl border bg-card p-4` pattern.
+ */
+function AddOnRow({
+  name,
+  price,
+  onNameChange,
+  onPriceChange,
+  onRemove,
+}: {
+  name: string;
+  price: string;
+  onNameChange: (v: string) => void;
+  onPriceChange: (v: string) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-[1fr_auto_auto] items-end gap-2">
+      <Field label="Fee name">
+        <Input value={name} onChange={(e) => onNameChange(e.target.value)} />
+      </Field>
+      <MoneyInput label="Price" value={price} onChange={onPriceChange} />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-destructive transition-colors"
+        aria-label="Remove fee"
+      >
+        <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>delete</span>
+      </button>
+    </div>
+  );
+}
 
 function RadioCard({
   selected,
@@ -683,10 +926,10 @@ function RadioCard({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex-1 rounded-xl px-5 py-4 text-left text-sm font-medium transition-colors ${
+      className={`flex-1 rounded-xl px-5 py-3 text-left text-sm font-medium transition-all ${
         selected
-          ? "border-2 border-foreground bg-foreground/5"
-          : "border border-input bg-transparent hover:bg-gray-50"
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "border border-input bg-white text-foreground hover:bg-muted"
       } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
     >
       {children}
@@ -710,10 +953,10 @@ function CheckboxCard({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl px-4 py-3 text-left text-sm transition-colors ${
+      className={`rounded-xl px-4 py-3 text-left text-sm transition-all ${
         checked
-          ? "border-2 border-foreground bg-foreground/5 font-medium"
-          : "border border-input bg-transparent hover:bg-gray-50"
+          ? "bg-primary text-primary-foreground font-medium shadow-sm"
+          : "border border-input bg-white text-foreground hover:bg-muted"
       } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
     >
       {children}
@@ -723,24 +966,23 @@ function CheckboxCard({
 
 function Field({
   label,
-  required,
   children,
   hint,
+  error,
 }: {
   label: string;
   required?: boolean;
   children: React.ReactNode;
   hint?: string;
+  error?: string;
 }) {
   return (
-    <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-foreground">
-        {label}
-        {required && <span className="text-destructive ml-0.5">*</span>}
-      </label>
+    <div className="space-y-1">
+      <label className="block text-sm font-medium text-foreground">{label}</label>
       {children}
-      {hint && (
-        <p className="text-[11px] text-muted-foreground">{hint}</p>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      {!error && hint && (
+        <p className="text-xs text-muted-foreground leading-relaxed">{hint}</p>
       )}
     </div>
   );
@@ -762,31 +1004,26 @@ function ExpandableCheckboxCard({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={`rounded-xl transition-colors ${
-        checked
-          ? "border-2 border-foreground bg-foreground/[0.02]"
-          : "border border-input bg-transparent"
-      }`}
-    >
+    <div className="rounded-xl bg-muted/40 border border-border">
       {/* Header — always visible */}
       <div
         role="button"
         tabIndex={0}
         onClick={() => onCheckedChange(!checked)}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCheckedChange(!checked); } }}
-        className="flex w-full items-start gap-3 px-4 py-4 text-left cursor-pointer"
+        className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left cursor-pointer"
       >
-        <Checkbox
-          checked={checked}
-          onCheckedChange={(v) => onCheckedChange(v === true)}
-          className="mt-0.5 shrink-0 pointer-events-none"
-        />
         <div className="min-w-0">
           <div className="text-sm font-medium text-foreground">{title}</div>
-          <div className="mt-0.5 text-xs text-muted-foreground">
-            {description}
-          </div>
+          <div className="mt-0.5 text-xs text-muted-foreground">{description}</div>
+        </div>
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <ToggleSwitch
+            checked={checked}
+            onChange={onCheckedChange}
+            variant="switch-only"
+            srLabel={title}
+          />
         </div>
       </div>
 
@@ -800,15 +1037,6 @@ function ExpandableCheckboxCard({
   );
 }
 
-/** Small tip / example banner */
-function Tip({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex gap-2 rounded-lg bg-blue-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-blue-800">
-      <span className="material-symbols-rounded select-none shrink-0 mt-px text-blue-500" style={{ fontSize: 14 }} aria-hidden="true">lightbulb</span>
-      <p>{children}</p>
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Props for edit mode                                                */
@@ -838,6 +1066,8 @@ export default function CreateActivityPage({
   // Tracks the Supabase ID for the current draft (set on first auto-save if new listing)
   const [draftId, setDraftId] = useState<string | null>(activityId ?? null);
 
+  const [activityDisplayKind, setActivityDisplayKind] = useState<ActivityDisplayKind>("camp");
+
   /* Step state */
   const [stepIndex, setStepIndex] = useState(initialStep ?? 0);
 
@@ -848,7 +1078,7 @@ export default function CreateActivityPage({
   const [bookingModel, setBookingModel] = useState<"per_session" | "per_class">("per_session");
   // True only for existing "class" listings created with the old scheduler
   const [isLegacyClassListing, setIsLegacyClassListing] = useState(false);
-  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [listingStatus, setListingStatus] = useState<ListingStatus>("draft");
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [locationLat, setLocationLat] = useState<number | null>(null);
@@ -856,10 +1086,12 @@ export default function CreateActivityPage({
   const [locationType, setLocationType] = useState<LocationType>("in_person");
   const [isVirtual, setIsVirtual] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState("");
-  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [additionalDetails, setAdditionalDetails] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
   const [experienceLevels, setExperienceLevels] = useState<ExperienceLevel[]>([]);
+  const [showPhotoTips, setShowPhotoTips] = useState(false);
 
   /* Money */
   const [priceText, setPriceText] = useState("");
@@ -867,6 +1099,11 @@ export default function CreateActivityPage({
 
   /* Age buckets + cancellation */
   const [ageBuckets, setAgeBuckets] = useState<AgeBucket[]>([]);
+  const [minAgeText, setMinAgeText] = useState("");
+  const [maxAgeText, setMaxAgeText] = useState("");
+  const [whatToBring, setWhatToBring] = useState("");
+  const [whatsIncluded, setWhatsIncluded] = useState("");
+  const [clubEnrollmentType, setClubEnrollmentType] = useState<"open" | "tryout">("open");
   const [cancellationPolicy, setCancellationPolicy] = useState<string>(
     CANCELLATION_OPTIONS[0]?.value ?? "",
   );
@@ -877,14 +1114,8 @@ export default function CreateActivityPage({
     [],
   );
 
-  /* Activities (description step) — start with 3 open (mandatory minimum).
-     Use lazy initializer so makeId() runs once on the client, not on every
-     server render, avoiding hydration-ID mismatches. */
-  const [activities, setActivities] = useState<ActivityItem[]>(() => [
-    { id: makeId(), title: "", description: "" },
-    { id: makeId(), title: "", description: "" },
-    { id: makeId(), title: "", description: "" },
-  ]);
+  /* Activities (description step) — optional, no mandatory minimum */
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
 
   /* Scheduling type */
   const [activityType, setActivityType] = useState<ActivityType>("fixed");
@@ -925,6 +1156,10 @@ export default function CreateActivityPage({
       [day]: { ...prev[day], [field]: value },
     }));
   };
+
+  /* Class ongoing capacity */
+  const [limitClassCapacity, setLimitClassCapacity] = useState(false);
+  const [classCapacityWaitlist, setClassCapacityWaitlist] = useState(false);
 
   /* Camp sessions */
   const [campSessions, setCampSessions] = useState<CampSession[]>(() => [
@@ -1148,14 +1383,13 @@ export default function CreateActivityPage({
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [savingDraft, setSavingDraft] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
+  const [publishSnackbar, setPublishSnackbar] = useState<{ open: boolean; activityId: string | null }>({ open: false, activityId: null });
   const [stepError, setStepError] = useState<string | null>(null);
   const [initialError, setInitialError] = useState<string | null>(null);
   const [existingSlug, setExistingSlug] = useState<string | null>(null);
 
   /* Popover tooltips — must live here (before any early returns) so hook
      count stays constant between the initialLoading pass and later renders. */
-  const [showOngoingTip, setShowOngoingTip] = useState(false);
-  const [showSessionsTip, setShowSessionsTip] = useState(false);
 
   const selectedCancellationHelper = useMemo(() => {
     const found = CANCELLATION_OPTIONS.find(
@@ -1164,15 +1398,20 @@ export default function CreateActivityPage({
     return found?.helper ?? "";
   }, [cancellationPolicy]);
 
-  /* Sync stepIndex with browser back/forward */
+  /* Derive activityDisplayKind from the Fixed/Ongoing toggle in create mode */
   useEffect(() => {
-    const handlePop = () => {
-      const match = window.location.pathname.match(/\/host\/activities\/new\/[^/]+\/(\d+)$/);
-      setStepIndex(match ? Number(match[1]) : 0);
-    };
-    window.addEventListener("popstate", handlePop);
-    return () => window.removeEventListener("popstate", handlePop);
-  }, []);
+    if (isEditMode) return;
+    setActivityDisplayKind(classScheduleMode === "ongoing" ? "class" : "camp");
+  }, [classScheduleMode, isEditMode]);
+
+  /* Set a sensible cancellation default when the schedule mode changes (new listings only) */
+  useEffect(() => {
+    if (isEditMode) return;
+    const defaultLabel = classScheduleMode === "ongoing" ? "24 hours" : "14 days";
+    const found = CANCELLATION_OPTIONS.find((o) => o.label === defaultLabel);
+    if (found) setCancellationPolicy(found.value);
+  }, [classScheduleMode, isEditMode]);
+
 
   /* Cleanup object URLs */
   useEffect(() => {
@@ -1235,13 +1474,20 @@ export default function CreateActivityPage({
         }
       }
 
-      setVisibility(
-        meta.visibility ?? (data.is_published ? "public" : "private"),
-      );
+      {
+        const wasPublished = Boolean(data.is_published);
+        const metaVis = meta.visibility ?? (wasPublished ? "public" : "private");
+        if (!wasPublished) setListingStatus("draft");
+        else if (metaVis === "private") setListingStatus("unlisted");
+        else setListingStatus("active");
+      }
       setIsVirtual(Boolean(meta.isVirtual));
       if (meta.isVirtual) setLocationType("virtual");
       if (meta.meetingUrl) setMeetingUrl(meta.meetingUrl);
       setActivityType(meta.activityType ?? "fixed");
+      if (meta.displayKind) {
+        setActivityDisplayKind(meta.displayKind);
+      }
       if (meta.activityKind) {
         setActivityKind(meta.activityKind);
         setEnrollmentMode(meta.activityKind === "class" ? "choose_sessions" : "full_program");
@@ -1259,7 +1505,8 @@ export default function CreateActivityPage({
       // bookingModel derived from schedule type: ongoing → per_class, fixed → per_session
       setBookingModel(meta.activityKind === "class" ? "per_class" : "per_session");
       if (meta.experienceLevel) setExperienceLevels(meta.experienceLevel);
-      if (meta.category) setCategory(meta.category);
+      if (meta.categories?.length) setCategories(meta.categories);
+      else if (meta.category) setCategories([meta.category]);
 
       /* Age buckets */
       if (Array.isArray(meta.age_buckets) && meta.age_buckets.length) {
@@ -1285,6 +1532,12 @@ export default function CreateActivityPage({
       );
 
       if (meta.additionalDetails) setAdditionalDetails(meta.additionalDetails);
+      if (meta.whatToBring) setWhatToBring(meta.whatToBring);
+      if (meta.whatsIncluded) setWhatsIncluded(meta.whatsIncluded);
+      if (meta.clubEnrollmentType) setClubEnrollmentType(meta.clubEnrollmentType);
+      if (meta.websiteUrl) setWebsiteUrl(meta.websiteUrl);
+      if (meta.min_age != null) setMinAgeText(String(meta.min_age));
+      if (meta.max_age != null) setMaxAgeText(String(meta.max_age));
 
       /* Schedules */
       const fixed = meta.fixedSchedule || {};
@@ -1420,7 +1673,10 @@ export default function CreateActivityPage({
   };
 
   const buildPayloadAndSave = async (hostId: string) => {
-    const { min, max } = deriveMinMaxFromBuckets(ageBuckets);
+    const isPublished = listingStatus === "active" || listingStatus === "unlisted";
+    const derivedVisibility: Visibility = listingStatus === "unlisted" ? "private" : "public";
+    const min = minAgeText ? (parseInt(minAgeText, 10) || null) : null;
+    const max = maxAgeText ? (parseInt(maxAgeText, 10) || null) : null;
 
     /* Derive effective price: per-session min for all unified listings, top-level for legacy class */
     const sessionPrices = !isLegacyClassListing
@@ -1441,16 +1697,21 @@ export default function CreateActivityPage({
         : "none";
 
     const meta: CampMeta = {
-      visibility,
+      visibility: derivedVisibility,
+      displayKind: activityDisplayKind,
       isVirtual: locationType === "virtual",
       meetingUrl: locationType === "virtual" ? meetingUrl || undefined : undefined,
       activityType,
       activityKind,
       ...(!isLegacyClassListing ? { enrollmentMode, dateEntryMode, bookingModel } as any : {}),
       experienceLevel: experienceLevels.length ? experienceLevels : undefined,
-      category: category || undefined,
+      categories: categories.length ? categories : undefined,
+      category: categories[0] || undefined,
       cancellation_policy: cancellationPolicy || null,
       additionalDetails: additionalDetails || undefined,
+      whatToBring: whatToBring || undefined,
+      whatsIncluded: whatsIncluded || undefined,
+      websiteUrl: websiteUrl || undefined,
       age_buckets: ageBuckets,
       age_bucket: legacyAgeBucket,
       min_age: min,
@@ -1639,9 +1900,9 @@ export default function CreateActivityPage({
       session_end: session_end ?? null,
       price_cents: effectivePriceCents,
       host_id: hostId,
-      is_published: visibility === "public",
-      is_active: true,
-      status: "active",
+      is_published: isPublished,
+      is_active: isPublished,
+      status: isPublished ? "active" : "inactive",
       hero_image_url: heroUrl,
       image_urls: galleryUrls.length ? galleryUrls : null,
       image_url: primaryCardUrl,
@@ -1678,8 +1939,11 @@ export default function CreateActivityPage({
       savedId = data.id;
     }
 
-    if (savedId) router.push(`/host/activities/${savedId}`);
-    else router.push("/host/listings");
+    if (savedId) {
+      setPublishSnackbar({ open: true, activityId: savedId });
+    } else {
+      router.push("/host/listings");
+    }
   };
 
   const handleSubmit = async () => {
@@ -1752,7 +2016,8 @@ export default function CreateActivityPage({
 
   /** Build the full meta + payload without validation — used by both draft and publish */
   const buildPayload = (publish: boolean, hostId: string) => {
-    const { min, max } = deriveMinMaxFromBuckets(ageBuckets);
+    const min = minAgeText ? (parseInt(minAgeText, 10) || null) : null;
+    const max = maxAgeText ? (parseInt(maxAgeText, 10) || null) : null;
 
     const sessionPrices = !isLegacyClassListing
       ? campSessions.map((s) => s.price_cents).filter((p): p is number => p != null)
@@ -1767,17 +2032,23 @@ export default function CreateActivityPage({
         ? siblingDiscountType === "none" ? "percent" : siblingDiscountType
         : "none";
 
+    const bpVisibility: Visibility = listingStatus === "unlisted" ? "private" : "public";
     const meta: CampMeta = {
-      visibility,
+      visibility: bpVisibility,
+      displayKind: activityDisplayKind,
       isVirtual: locationType === "virtual",
       meetingUrl: locationType === "virtual" ? meetingUrl || undefined : undefined,
       activityType,
       activityKind,
       ...(!isLegacyClassListing ? { enrollmentMode, dateEntryMode, bookingModel } as any : {}),
       experienceLevel: experienceLevels.length ? experienceLevels : undefined,
-      category: category || undefined,
+      categories: categories.length ? categories : undefined,
+      category: categories[0] || undefined,
       cancellation_policy: cancellationPolicy || null,
       additionalDetails: additionalDetails || undefined,
+      whatToBring: whatToBring || undefined,
+      whatsIncluded: whatsIncluded || undefined,
+      websiteUrl: websiteUrl || undefined,
       age_buckets: ageBuckets,
       age_bucket: legacyAgeBucket,
       min_age: min,
@@ -1920,27 +2191,7 @@ export default function CreateActivityPage({
   /* ---------------------------------------------------------------- */
 
   const validateStep = (): string | null => {
-    const step = STEPS[stepIndex]?.key;
-    if (step === "basics") {
-      if (!title.trim()) return "Please add a title for your activity.";
-      if (!category) return "Please select a category.";
-      if (ageBuckets.length === 0) return "Please select at least one age group.";
-    }
-    if (step === "description") {
-      if (!description.trim()) return "Please add a description.";
-    }
-    if (step === "schedule") {
-      if (activityKind === "camp") {
-        for (const s of campSessions) {
-          if (!s.startDate) return "Please set a start date for all sessions.";
-          if (!s.endDate) return "Please set an end date for all sessions.";
-          if (s.endDate < s.startDate) return "End date must be after start date.";
-        }
-      }
-    }
-    if (step === "details") {
-      if (!priceText.trim()) return "Please set a price for your activity.";
-    }
+    // Validation temporarily disabled
     return null;
   };
 
@@ -1980,7 +2231,7 @@ export default function CreateActivityPage({
       <div className="text-xs text-muted-foreground py-10">Loading activity...</div>
     ) : (
       <main className="flex-1 min-h-screen">
-        <div className="page-container py-10"><div className="page-grid"><div className="span-8-center text-xs text-muted-foreground">
+        <div className="page-container py-10"><div className="page-grid"><div className="span-7-center text-xs text-muted-foreground">
           Loading activity...
         </div></div></div>
       </main>
@@ -1995,7 +2246,7 @@ export default function CreateActivityPage({
       </div>
     ) : (
       <main className="flex-1 min-h-screen">
-        <div className="page-container py-10"><div className="page-grid"><div className="span-8-center">
+        <div className="page-container py-10"><div className="page-grid"><div className="span-7-center">
           <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-3 text-xs text-destructive">
             {initialError}
           </div>
@@ -2014,152 +2265,92 @@ export default function CreateActivityPage({
 
 
   /* ---------------------------------------------------------------- */
-  /* Step content                                                     */
+  /* ---------------------------------------------------------------- */
+  /* Form sections                                                    */
   /* ---------------------------------------------------------------- */
 
   const renderBasics = () => (
     <div className="space-y-6">
-      {/* Basics card */}
-      <FormCard title="Let's fill in the basics">
+      <FormCard title="Basics" icon="article">
         <div className="space-y-4">
+
           {/* Title */}
-          <Field label="Title" required>
+          <Field label="Activity name" required>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Give your activity a clear name"
+              placeholder={FORM_CONFIG.titlePlaceholder}
             />
           </Field>
 
-          {/* Location type */}
-          <Field label="Location">
-            <div className="flex gap-3">
-              <RadioCard
-                selected={locationType === "in_person"}
-                onClick={() => {
-                  setLocationType("in_person");
-                  setIsVirtual(false);
-                  if (location.trim().toLowerCase() === "virtual") setLocation("");
-                }}
-              >
-                <div className="font-medium text-sm">In person</div>
-              </RadioCard>
-              <RadioCard
-                selected={locationType === "virtual"}
-                onClick={() => {
-                  setLocationType("virtual");
-                  setIsVirtual(true);
-                  setLocation("Virtual");
-                }}
-              >
-                <div className="font-medium text-sm">Virtual</div>
-              </RadioCard>
-            </div>
-            {locationType === "in_person" && (
-              <div className="mt-3">
-                <AddressInput
-                  value={location}
-                  onChange={setLocation}
-                  onSelect={(sel) => {
-                    /* Store full formatted address, stripping trailing country */
-                    const addr = sel.formattedAddress || sel.line1 || location;
-                    setLocation(
-                      addr
-                        .replace(/, USA$/, "")
-                        .replace(/, United States$/, ""),
-                    );
-                    if (sel.location) {
-                      setLocationLat(sel.location.lat);
-                      setLocationLng(sel.location.lng);
-                    }
-                  }}
-                  placeholder="Start typing an address"
-                />
-              </div>
-            )}
-            {locationType === "virtual" && (
-              <div className="mt-3">
-                <Input
-                  value={meetingUrl}
-                  onChange={(e) => setMeetingUrl(e.target.value)}
-                  placeholder="Paste your Zoom, Google Meet, or other meeting link"
-                  type="url"
-                  autoComplete="off"
-                />
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  You can also add or update this later.
-                </p>
-              </div>
-            )}
+          {/* Status */}
+          <Field label="Status">
+            <Select value={listingStatus} onValueChange={(v) => setListingStatus(v as ListingStatus)}>
+              <SelectTrigger className="w-full text-sm">
+                <SelectValue>
+                  {{ active: "Active", draft: "Draft", unlisted: "Unlisted" }[listingStatus]}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active" textValue="Active">
+                  <div><div className="font-medium">Active</div><div className="text-xs text-muted-foreground">Visible and open for bookings</div></div>
+                </SelectItem>
+                <SelectItem value="draft" textValue="Draft">
+                  <div><div className="font-medium">Draft</div><div className="text-xs text-muted-foreground">Not visible to families yet</div></div>
+                </SelectItem>
+                <SelectItem value="unlisted" textValue="Unlisted">
+                  <div><div className="font-medium">Unlisted</div><div className="text-xs text-muted-foreground">Accessible only by direct link</div></div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </Field>
 
           {/* Category */}
           <Field label="Category">
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={categories[0] ?? ""} onValueChange={(v) => setCategories(v ? [v] : [])}>
               <SelectTrigger className="w-full text-sm">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </Field>
 
-          {/* Age groups */}
-          <Field label="Age groups">
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-              {AGE_BUCKETS.map((bucket) => (
-                <CheckboxCard
-                  key={bucket.value}
-                  checked={ageBuckets.includes(bucket.value)}
-                  onClick={() => {
-                    if (bucket.value === "all") {
-                      setAgeBuckets(ageBuckets.includes("all") ? [] : ["all"]);
-                    } else {
-                      const without = ageBuckets.filter((v) => v !== bucket.value && v !== "all");
-                      const next = ageBuckets.includes(bucket.value)
-                        ? without
-                        : [...without, bucket.value];
-                      setAgeBuckets(normalizeAgeBuckets(next.filter(isAgeBucket)));
-                    }
-                  }}
-                >
-                  {bucket.label}
-                </CheckboxCard>
-              ))}
-            </div>
+          {/* Age range — paired compact inputs */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Min age">
+              <Input value={minAgeText} onChange={(e) => setMinAgeText(e.target.value.replace(/\D/g, ""))} inputMode="numeric" />
+            </Field>
+            <Field label="Max age">
+              <Input value={maxAgeText} onChange={(e) => setMaxAgeText(e.target.value.replace(/\D/g, ""))} inputMode="numeric" />
+            </Field>
+          </div>
+
+          {/* Location — virtual open to all */}
+          <Field label="Location">
+            <LocationPicker
+              showVirtual={true}
+              locationType={locationType}
+              setLocationType={setLocationType}
+              setIsVirtual={setIsVirtual}
+              location={location}
+              setLocation={setLocation}
+              setLocationLat={setLocationLat}
+              setLocationLng={setLocationLng}
+              meetingUrl={meetingUrl}
+              setMeetingUrl={setMeetingUrl}
+            />
           </Field>
 
-          {/* Experience level */}
-          <Field label="Experience level">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {EXPERIENCE_LEVELS.map((lvl) => (
-                <CheckboxCard
-                  key={lvl.value}
-                  checked={experienceLevels.includes(lvl.value)}
-                  onClick={() => {
-                    if (lvl.value === "all_levels") {
-                      setExperienceLevels(experienceLevels.includes("all_levels") ? [] : ["all_levels"]);
-                    } else {
-                      const without = experienceLevels.filter((v) => v !== lvl.value && v !== "all_levels");
-                      const next = experienceLevels.includes(lvl.value)
-                        ? without
-                        : [...without, lvl.value];
-                      setExperienceLevels(next);
-                    }
-                  }}
-                >
-                  {lvl.label}
-                </CheckboxCard>
-              ))}
-            </div>
+          {/* Description */}
+          <Field label="Description" hint="Tell families what makes this special.">
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="" className="resize-none min-h-48" />
           </Field>
 
-          {/* Cancellation */}
+          {/* Cancellation policy — always shown */}
           <Field label="Cancellation policy" hint={selectedCancellationHelper}>
             <Select value={cancellationPolicy} onValueChange={setCancellationPolicy}>
               <SelectTrigger className="w-full text-sm">
@@ -2167,29 +2358,14 @@ export default function CreateActivityPage({
               </SelectTrigger>
               <SelectContent>
                 {CANCELLATION_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.label} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
+                  <SelectItem key={opt.label} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </Field>
 
-          {/* Visibility */}
-          <Field label="Listing type" hint="Private is unlisted. Only people with the link can register.">
-            <Select value={visibility} onValueChange={(v) => setVisibility(v as Visibility)}>
-              <SelectTrigger className="w-full text-sm">
-                <SelectValue placeholder="Select visibility" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="public">Public</SelectItem>
-                <SelectItem value="private">Private</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
         </div>
       </FormCard>
-
     </div>
   );
 
@@ -2206,38 +2382,11 @@ export default function CreateActivityPage({
           <Input
             value={session.label}
             onChange={(e) => updateCampSession(session.id, { label: e.target.value })}
-            placeholder='e.g. "Week 1", "Beginner Track", "Morning Group"'
+            placeholder=""
           />
         </Field>
       )}
 
-      {/* Experience level — per-session when multiple, hidden when single (uses global) */}
-      {hasMultiple && (
-        <Field label="Experience level" hint="Override the level for this session. If left blank, the level set in Basics applies to all sessions.">
-          <div className="flex flex-wrap gap-2">
-            {EXPERIENCE_LEVELS.map((lvl) => {
-              const active = session.experienceLevel.includes(lvl.value);
-              return (
-                <button
-                  key={lvl.value}
-                  type="button"
-                  onClick={() => {
-                    const next = lvl.value === "all_levels"
-                      ? (active ? [] : ["all_levels" as ExperienceLevel])
-                      : (active
-                          ? session.experienceLevel.filter((v) => v !== lvl.value)
-                          : [...session.experienceLevel.filter((v) => v !== "all_levels"), lvl.value as ExperienceLevel]);
-                    updateCampSession(session.id, { experienceLevel: next });
-                  }}
-                  className={`h-8 rounded-lg px-3 text-xs font-semibold transition-colors ${active ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}
-                >
-                  {lvl.label}
-                </button>
-              );
-            })}
-          </div>
-        </Field>
-      )}
 
       {/* Date field(s) — adapts to dateEntryMode */}
       {dateEntryMode === "range" ? (
@@ -2325,69 +2474,62 @@ export default function CreateActivityPage({
         </Field>
       </div>
 
-      {/* Capacity + waitlist */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Capacity">
-          <Input
-            type="number"
-            min={1}
-            value={session.capacity}
-            onChange={(e) =>
-              updateCampSession(session.id, { capacity: e.target.value })
+      {/* Capacity */}
+      <SettingsList>
+        <SettingsRow label="Limit capacity" asLabel>
+          <Checkbox
+            checked={session.capacity !== ""}
+            onCheckedChange={(checked) =>
+              updateCampSession(session.id, {
+                capacity: checked ? "10" : "",
+                enableWaitlist: checked ? session.enableWaitlist : false,
+              })
             }
-            placeholder="e.g. 20"
           />
-        </Field>
-        <Field label=" ">
-          <label className="flex h-11 items-center gap-2 text-sm font-medium cursor-pointer">
-            <Checkbox
-              checked={session.enableWaitlist}
-              onCheckedChange={(checked) =>
-                updateCampSession(session.id, { enableWaitlist: checked === true })
-              }
-            />
-            Enable waitlist
-          </label>
-        </Field>
-      </div>
+        </SettingsRow>
+        {session.capacity !== "" && (
+          <>
+            <SettingsRow label="Max capacity">
+              <Input
+                type="number"
+                min={1}
+                value={session.capacity}
+                onChange={(e) => updateCampSession(session.id, { capacity: e.target.value })}
+                className="w-20 text-right h-9"
+              />
+            </SettingsRow>
+            <SettingsRow label="Enable waitlist" asLabel>
+              <Checkbox
+                checked={session.enableWaitlist}
+                onCheckedChange={(checked) =>
+                  updateCampSession(session.id, { enableWaitlist: checked === true })
+                }
+              />
+            </SettingsRow>
+          </>
+        )}
+      </SettingsList>
 
       {/* Price per child */}
-      <Field label="Price per child">
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-            $
-          </span>
-          <Input
-            value={session.priceText}
-            onChange={(e) => {
-              const next = sanitizeMoneyInput(e.target.value);
-              updateCampSession(session.id, {
-                priceText: next,
-                price_cents: parseMoneyToCents(next),
-              });
-            }}
-            onBlur={() => {
-              if (!session.priceText.trim()) return;
-              if (session.price_cents == null) {
-                updateCampSession(session.id, { priceText: "" });
-                return;
-              }
-              updateCampSession(session.id, {
-                priceText: formatCentsToMoneyText(session.price_cents),
-              });
-            }}
-            placeholder="e.g. 450"
-            className="pl-8 text-left h-11"
-            inputMode="decimal"
-            autoComplete="off"
-            aria-label="Price per child"
-          />
-        </div>
-      </Field>
+      <MoneyInput
+        label="Price per child"
+        value={session.priceText}
+        onChange={(next) =>
+          updateCampSession(session.id, {
+            priceText: next,
+            price_cents: parseMoneyToCents(next),
+          })
+        }
+        onBlur={() => {
+          if (!session.priceText.trim()) return;
+          if (session.price_cents == null) { updateCampSession(session.id, { priceText: "" }); return; }
+          updateCampSession(session.id, { priceText: formatCentsToMoneyText(session.price_cents) });
+        }}
+      />
     </div>
   );
 
-  /** Unified sessions list used by the new schedule renderer */
+  /** Session list — renders flat content, no card wrapper (card lives in formContent) */
   const renderUnifiedSessions = () => {
     const hasMultiple = campSessions.length > 1;
     const addLabel = dateEntryMode === "individual" ? "Add another date" : "Add another session";
@@ -2395,71 +2537,41 @@ export default function CreateActivityPage({
       dateEntryMode === "individual" ? `Date ${idx + 1}` : `Session ${idx + 1}`;
 
     return (
-      <div className="space-y-4">
-        <div className="rounded-card bg-card overflow-hidden">
-          {/* Card title */}
-          <div className="px-5 pt-5 pb-1 sm:px-6">
-            <p className="text-sm font-semibold text-foreground">When does this activity run?</p>
-          </div>
-
+      <div className="space-y-0">
         {campSessions.map((session, idx) => (
           <div key={session.id}>
-            {idx > 0 && <div className="border-t border-border" />}
+            {idx > 0 && <div className="border-t border-border my-4" />}
 
-            <div className="px-5 py-5 sm:px-6 space-y-4">
-              {/* Session header — only when multiple sessions exist */}
+            <div className="space-y-4">
               {hasMultiple && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">
-                    {sessionLabel(idx)}
-                  </span>
+                  <span className="text-sm font-semibold text-foreground">{sessionLabel(idx)}</span>
                   <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => copyCampSession(session.id)}
-                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
-                      </svg>
-                      Copy
+                    <button type="button" onClick={() => copyCampSession(session.id)}
+                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                      <IconCopy />Copy
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm("Remove this session? This cannot be undone.")) {
-                          removeCampSession(session.id);
-                        }
-                      }}
-                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/5 transition-colors"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                      Remove
-                    </button>
+                    {campSessions.length > 1 && (
+                      <button type="button"
+                        onClick={() => { if (window.confirm("Remove this session? This cannot be undone.")) removeCampSession(session.id); }}
+                        className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/5 transition-colors">
+                        <IconTrash />Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
-
               {renderCampSessionFields(session, hasMultiple)}
             </div>
           </div>
         ))}
 
-        {/* Add session button — inside card, separated by border */}
-        <div className="px-5 py-4 sm:px-6">
-          <button
-            type="button"
-            onClick={addCampSession}
-            className="inline-flex items-center gap-1.5 rounded-full bg-foreground/8 hover:bg-foreground/12 px-4 py-2 text-sm font-medium text-foreground transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
+        <div className="pt-4">
+          <button type="button" onClick={addCampSession}
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground/8 hover:bg-foreground/12 px-4 py-2 text-sm font-medium text-foreground transition-colors">
+            <IconPlus className="h-4 w-4" />
             {addLabel}
           </button>
-        </div>
         </div>
       </div>
     );
@@ -2489,101 +2601,38 @@ export default function CreateActivityPage({
   /** Class schedule — ongoing or session-based with weekly availability */
   const renderClassSchedule = () => (
     <div className="space-y-6">
-      {/* Tip banner */}
-      <Alert tone="warning" icon="lightbulb">
-        <span className="font-medium">New to scheduling?</span>{" "}
-        Start with 2–3 availability blocks. You can always add more later as demand grows.
-      </Alert>
-
       {/* Scheduling mode */}
-      <FormCard title="Scheduling details" subtitle="Choose how students will book your classes.">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="relative flex flex-col">
-            <RadioCard
-              selected={classScheduleMode === "ongoing"}
-              onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); }}
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-sm">Ongoing</span>
+      <FormCard title="Scheduling details" icon="schedule">
+        {/* Segmented control */}
+        <div className="space-y-3">
+          <div className="inline-flex rounded-md border border-input bg-muted/30 p-0.5">
+            {(["ongoing", "sessions"] as const).map((mode) => {
+              const isSelected = classScheduleMode === mode;
+              return (
                 <button
+                  key={mode}
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowOngoingTip((p) => !p);
+                  onClick={() => {
+                    setClassScheduleMode(mode);
+                    setActivityKind(mode === "ongoing" ? "class" : "camp");
                   }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className={cn(
+                    "rounded-sm px-4 py-1.5 text-sm font-medium transition-all",
+                    isSelected
+                      ? "bg-white text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                  </svg>
+                  {mode === "ongoing" ? "Ongoing" : "Fixed"}
                 </button>
-              </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                Private lessons, tutoring, and drop-in classes with flexible booking
-              </div>
-            </RadioCard>
-            {/* Tooltip popover + backdrop */}
-            {showOngoingTip && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowOngoingTip(false)}
-                />
-                <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
-                  <p className="font-medium mb-1">Ongoing</p>
-                  <p className="leading-relaxed opacity-80">
-                    Best for guitar lessons, math tutoring, or any recurring activity where students book individual time slots from your weekly availability.
-                  </p>
-                  <div
-                    className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground"
-                  />
-                </div>
-              </>
-            )}
+              );
+            })}
           </div>
-          <div className="relative flex flex-col">
-            <RadioCard
-              selected={classScheduleMode === "sessions"}
-              onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); }}
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-sm">Fixed</span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSessionsTip((p) => !p);
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                  </svg>
-                </button>
-              </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                Week-long programs, class series, or workshops with set dates
-              </div>
-            </RadioCard>
-            {/* Sessions tooltip popover + backdrop */}
-            {showSessionsTip && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowSessionsTip(false)}
-                />
-                <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
-                  <p className="font-medium mb-1">Fixed</p>
-                  <p className="leading-relaxed opacity-80">
-                    Best for summer camps, coding bootcamps, art classes, or any activity where students enroll in a specific cohort with a set start and end date.
-                  </p>
-                  <div
-                    className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground"
-                  />
-                </div>
-              </>
-            )}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            {classScheduleMode === "ongoing"
+              ? "Students book individual time slots from your weekly availability. Best for lessons, tutoring, and drop-in classes."
+              : "Students enroll in a program with set start and end dates. Best for camps, courses, and workshops."}
+          </p>
         </div>
       </FormCard>
 
@@ -2594,16 +2643,6 @@ export default function CreateActivityPage({
             title="Weekly availability"
             subtitle="Set when you're available each week."
           >
-            {/* Purple tip banner */}
-            <div className="mb-4 flex gap-2.5 rounded-lg bg-violet-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-violet-800">
-              <CalendarDays className="h-3.5 w-3.5 shrink-0 mt-0.5 text-violet-600" />
-              <p>
-                You can add multiple time blocks within a day to accommodate
-                different schedules. Use the{" "}
-                <span className="font-semibold">+</span> icon to add another
-                time slot.
-              </p>
-            </div>
             <div className="space-y-0">
               {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
                 const day = classWeekly[dayKey];
@@ -2742,7 +2781,7 @@ export default function CreateActivityPage({
                     min={1}
                     value={classStudentsPerClass}
                     onChange={(e) => setClassStudentsPerClass(e.target.value)}
-                    placeholder="e.g. 8"
+                    placeholder=""
                   />
                 </Field>
               </div>
@@ -2758,7 +2797,7 @@ export default function CreateActivityPage({
                       onChange={(e) =>
                         setClassPricePerClass(sanitizeMoneyInput(e.target.value))
                       }
-                      placeholder="e.g. 35"
+                      placeholder=""
                       className="pl-8"
                       inputMode="decimal"
                       autoComplete="off"
@@ -2834,9 +2873,7 @@ export default function CreateActivityPage({
                   >
                     <IconCopy className="h-4 w-4" />
                   </button>
-                  {/* Only show delete when there are more than 3 — the first
-                      three slots are the mandatory minimum */}
-                  {activities.length > 3 && (
+                  {activities.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeActivity(activity.id)}
@@ -2855,7 +2892,7 @@ export default function CreateActivityPage({
                   onChange={(e) =>
                     updateActivity(activity.id, { title: e.target.value })
                   }
-                  placeholder="e.g. Pottery, Swimming, Archery"
+                  placeholder=""
                 />
               </Field>
 
@@ -2868,7 +2905,7 @@ export default function CreateActivityPage({
                       description: e.target.value,
                     })
                   }
-                  placeholder="What will kids do in this activity?"
+                  placeholder=""
                 />
               </Field>
             </div>
@@ -2894,7 +2931,7 @@ export default function CreateActivityPage({
           rows={3}
           value={additionalDetails}
           onChange={(e) => setAdditionalDetails(e.target.value)}
-          placeholder="e.g. Please bring a water bottle and wear comfortable shoes. Parking is available in Lot B."
+          placeholder=""
         />
       </FormCard>
     </div>
@@ -2902,8 +2939,61 @@ export default function CreateActivityPage({
 
   const renderPhotos = () => (
     <div className="space-y-6">
+      {/* Photo tips modal */}
+      {showPhotoTips && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setShowPhotoTips(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold">Photo tips</h3>
+              <button
+                type="button"
+                onClick={() => setShowPhotoTips(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>close</span>
+              </button>
+            </div>
+            <ul className="space-y-3 text-sm text-foreground">
+              <li className="flex gap-2.5">
+                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>photo_camera</span>
+                <span><span className="font-medium">Action shots convert best.</span> Kids doing the activity — not logos or flyers.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>star</span>
+                <span><span className="font-medium">First photo is your cover.</span> Make it bright, clear, and square-friendly.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>grid_view</span>
+                <span><span className="font-medium">Add 4–6 photos.</span> Listings with more images get significantly more clicks.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>face</span>
+                <span><span className="font-medium">Show the environment.</span> Parents want to see the space, not just close-ups.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
+
       <FormCard
+        icon="photo_library"
         title="Photos"
+        action={
+          <button
+            type="button"
+            onClick={() => setShowPhotoTips(true)}
+            className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+          >
+            <span className="material-symbols-rounded" style={{ fontSize: 13 }}>lightbulb</span>
+            Get tips
+          </button>
+        }
       >
         <PhotoUploader
           maxPhotos={MAX_PHOTOS}
@@ -2941,578 +3031,294 @@ export default function CreateActivityPage({
   );
 
   /** Ongoing mode: weekly availability grid + class details (no inner toggle) */
+  /** Ongoing class content — flat, no FormCard wrapper (card lives in formContent) */
   const renderOngoingContent = () => (
-    <>
-      {/* Tip banner */}
-      <Alert tone="warning" icon="lightbulb">
-        <span className="font-medium">New to scheduling?</span>{" "}
-        Start with 2–3 availability blocks. You can always add more later as demand grows.
-      </Alert>
+    <div className="space-y-4">
+      {/* Duration */}
+      <Field label="How long is each class?">
+        <Select value={classDuration} onValueChange={setClassDuration}>
+          <SelectTrigger className="w-full text-sm"><SelectValue placeholder="Select duration" /></SelectTrigger>
+          <SelectContent>
+            {CLASS_DURATION_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
 
-      <FormCard
-        title="Weekly availability"
-        subtitle="Set when you're available each week."
-      >
-        <div className="mb-5">
-          <Field label="How long is each class?">
-            <Select value={classDuration} onValueChange={setClassDuration}>
-              <SelectTrigger className="w-full text-sm">
-                <SelectValue placeholder="Select duration" />
-              </SelectTrigger>
-              <SelectContent>
-                {CLASS_DURATION_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
+      {/* Day grid */}
+      <div className="space-y-0">
+        {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
+          const day = classWeekly[dayKey];
+          return (
+            <div key={dayKey} className="flex items-start gap-3 border-b border-border/50 py-3 last:border-0 last:pb-0 first:pt-0">
+              <span className="w-20 shrink-0 pt-2 text-xs font-medium text-foreground">{dayLabelFull}</span>
 
-        {/* Purple tip banner */}
-        <div className="mb-4 flex gap-2.5 rounded-lg bg-violet-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-violet-800">
-          <CalendarDays className="h-3.5 w-3.5 shrink-0 mt-0.5 text-violet-600" />
-          <p>
-            You can add multiple time blocks within a day to accommodate
-            different schedules. Use the{" "}
-            <span className="font-semibold">+</span> icon to add another
-            time slot.
-          </p>
-        </div>
-        <div className="space-y-0">
-          {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
-            const day = classWeekly[dayKey];
-            return (
-              <div
-                key={dayKey}
-                className="flex items-start gap-3 border-b border-border/50 py-3 last:border-0 last:pb-0 first:pt-0"
-              >
-                <span className="w-20 shrink-0 pt-2 text-xs font-medium text-foreground">
-                  {dayLabelFull}
-                </span>
-
-                {day.available ? (
-                  <div className="flex-1 space-y-2">
-                    {day.blocks.map((block) => (
-                      <div key={block.id} className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <TimeSelect
-                            value={block.start}
-                            onChange={(v) =>
-                              updateClassTimeBlock(dayKey, block.id, "start", v)
-                            }
-                            placeholder="Start"
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground">–</span>
-                        <div className="flex-1">
-                          <TimeSelect
-                            value={block.end}
-                            onChange={(v) =>
-                              updateClassTimeBlock(dayKey, block.id, "end", v)
-                            }
-                            placeholder="End"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex-1">
-                    <div className="flex h-11 items-center rounded-lg bg-rose-50 px-3">
-                      <span className="text-xs font-medium text-rose-400">
-                        Unavailable
-                      </span>
+              {day.available ? (
+                <div className="flex-1 space-y-2">
+                  {day.blocks.map((block) => (
+                    <div key={block.id} className="flex items-center gap-2">
+                      <div className="flex-1"><TimeSelect value={block.start} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "start", v)} /></div>
+                      <span className="text-xs text-muted-foreground">–</span>
+                      <div className="flex-1"><TimeSelect value={block.end} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "end", v)} /></div>
                     </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-0.5 shrink-0 pt-1.5">
-                  {day.available ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => toggleClassDayAvailable(dayKey)}
-                        className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors"
-                        title="Disable day"
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addClassTimeBlock(dayKey)}
-                        className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors"
-                        title="Add time block"
-                      >
-                        <IconPlus />
-                      </button>
-                      {day.blocks.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            copyClassTimeBlock(
-                              dayKey,
-                              day.blocks[day.blocks.length - 1].id,
-                            )
-                          }
-                          className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors"
-                          title="Copy time block"
-                        >
-                          <IconCopy />
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => toggleClassDayAvailable(dayKey)}
-                      className="rounded p-1.5 text-muted-foreground/50 hover:bg-gray-50 hover:text-foreground transition-colors"
-                      title="Enable day"
-                    >
-                      <IconPlus />
-                    </button>
-                  )}
+                  ))}
                 </div>
+              ) : (
+                <div className="flex-1">
+                  <div className="flex h-11 items-center rounded-lg bg-rose-50 px-3">
+                    <span className="text-xs font-medium text-rose-400">Unavailable</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-0.5 shrink-0 pt-1.5">
+                {day.available ? (
+                  <>
+                    <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Disable day">
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                    </button>
+                    <button type="button" onClick={() => addClassTimeBlock(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Add time block"><IconPlus /></button>
+                    {day.blocks.length > 0 && (
+                      <button type="button" onClick={() => copyClassTimeBlock(dayKey, day.blocks[day.blocks.length - 1].id)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Copy time block"><IconCopy /></button>
+                    )}
+                  </>
+                ) : (
+                  <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground/50 hover:bg-gray-50 hover:text-foreground transition-colors" title="Enable day"><IconPlus /></button>
+                )}
               </div>
-            );
-          })}
-        </div>
-      </FormCard>
-
-      <FormCard
-        title="Class details"
-        subtitle="Help families understand the logistics."
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="How many students per class?">
-              <Input
-                type="number"
-                min={1}
-                value={classStudentsPerClass}
-                onChange={(e) => setClassStudentsPerClass(e.target.value)}
-                placeholder="e.g. 8"
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Price per class">
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-                  $
-                </span>
-                <Input
-                  value={classPricePerClass}
-                  onChange={(e) =>
-                    setClassPricePerClass(sanitizeMoneyInput(e.target.value))
-                  }
-                  placeholder="e.g. 35"
-                  className="pl-8"
-                  inputMode="decimal"
-                  autoComplete="off"
-                />
-              </div>
-            </Field>
-
-          </div>
-
-          <Field
-            label="Enrollment start date"
-            hint="Leave blank for rolling enrollment — students join at the next available class"
-          >
-            <DateInput
-              value={classSessionStartDate}
-              onChange={(e) => setClassSessionStartDate(e.target.value)}
-            />
-          </Field>
-        </div>
-      </FormCard>
-    </>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 
   const renderSchedule = () => {
-    // Legacy listings keep the old UI
     if (isLegacyClassListing) return renderClassSchedule();
 
     const isOngoing = classScheduleMode === "ongoing";
 
     return (
-      <div className="space-y-6">
-        {/* ── Single top-level toggle ───────────────────────────── */}
-        <FormCard title="Scheduling details" subtitle="Choose how students will book your activity.">
-          <div className="grid grid-cols-2 gap-3">
-
-            {/* Camps & Classes */}
-            <div className="relative flex flex-col">
-              <RadioCard
-                selected={!isOngoing}
-                onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); }}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-sm">Fixed</span>
-                  <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setShowSessionsTip((p) => !p); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setShowSessionsTip((p) => !p); }}} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  Week-long programs, class series, or workshops with set dates
-                </div>
-              </RadioCard>
-              {showSessionsTip && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowSessionsTip(false)} />
-                  <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
-                    <p className="font-medium mb-1">Fixed</p>
-                    <p className="leading-relaxed opacity-80">Best for summer camps, coding bootcamps, art classes, or any activity where students enroll in a specific cohort with a set start and end date.</p>
-                    <div className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground" />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Lessons & Tutoring */}
-            <div className="relative flex flex-col">
-              <RadioCard
-                selected={isOngoing}
-                onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); }}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-sm">Ongoing</span>
-                  <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setShowOngoingTip((p) => !p); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setShowOngoingTip((p) => !p); }}} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  Private lessons, tutoring, and drop-in classes with flexible booking
-                </div>
-              </RadioCard>
-              {showOngoingTip && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowOngoingTip(false)} />
-                  <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl bg-foreground px-4 py-3 text-xs text-background shadow-lg">
-                    <p className="font-medium mb-1">Ongoing</p>
-                    <p className="leading-relaxed opacity-80">Best for guitar lessons, math tutoring, or any recurring activity where students book individual time slots from your weekly availability.</p>
-                    <div className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 bg-foreground" />
-                  </div>
-                </>
-              )}
-            </div>
-
+      <>
+      <FormCard title="Schedule & pricing" icon="calendar_month">
+        <div className="space-y-5">
+          {/* Fixed / Ongoing segmented control */}
+          <div className="flex rounded-xl overflow-hidden border border-border">
+            <button
+              type="button"
+              onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); }}
+              className={[
+                "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all",
+                !isOngoing
+                  ? "bg-foreground text-background"
+                  : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50",
+              ].join(" ")}
+            >
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>event</span>
+              Fixed
+            </button>
+            <div className="w-px bg-border" />
+            <button
+              type="button"
+              onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); }}
+              className={[
+                "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all",
+                isOngoing
+                  ? "bg-foreground text-background"
+                  : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50",
+              ].join(" ")}
+            >
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>repeat</span>
+              Ongoing
+            </button>
           </div>
-        </FormCard>
 
-        {/* ── Content based on mode ─────────────────────────────── */}
-        {!isOngoing
-          ? renderUnifiedSessions()
-          : renderOngoingContent()
-        }
-      </div>
-    );
-  };
+          {/* Schedule content */}
+          {!isOngoing ? renderUnifiedSessions() : renderOngoingContent()}
 
-  const renderDetails = () => (
-    <div className="space-y-8">
-      {/* Pricing & visibility */}
-      <FormCard title="Pricing">
-        <div className="space-y-4">
-          {isLegacyClassListing && (
-            <Field label="Price per child">
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-                  $
-                </span>
-                <Input
-                  value={priceText}
-                  onChange={(e) => {
-                    const nextText = sanitizeMoneyInput(e.target.value);
-                    setPriceText(nextText);
-                    setPriceCents(parseMoneyToCents(nextText));
-                  }}
-                  onBlur={() => {
-                    if (!priceText.trim()) return;
-                    if (priceCents == null) {
-                      setPriceText("");
-                      return;
-                    }
-                    setPriceText(formatCentsToMoneyText(priceCents));
-                  }}
-                  placeholder="e.g. 450"
-                  className="pl-8 text-left h-11"
-                  inputMode="decimal"
-                  autoComplete="off"
-                  aria-label="Price per child"
-                />
+          {/* ── Ongoing pricing fields ────────────────────────────── */}
+          {isOngoing && (
+            <>
+              <div className="border-t border-border" />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <MoneyInput
+                    label="Price per class"
+                    value={classPricePerClass}
+                    onChange={setClassPricePerClass}
+                  />
+                  <SettingsList>
+                    <SettingsRow label="Limit capacity" asLabel>
+                      <Checkbox
+                        checked={limitClassCapacity}
+                        onCheckedChange={(checked) => {
+                          setLimitClassCapacity(checked === true);
+                          if (!checked) { setClassStudentsPerClass(""); setClassCapacityWaitlist(false); }
+                          else if (!classStudentsPerClass) setClassStudentsPerClass("10");
+                        }}
+                      />
+                    </SettingsRow>
+                    {limitClassCapacity && (
+                      <>
+                        <SettingsRow label="Max students">
+                          <Input type="number" min={1} value={classStudentsPerClass} onChange={(e) => setClassStudentsPerClass(e.target.value)} className="w-20 text-right h-9" />
+                        </SettingsRow>
+                        <SettingsRow label="Enable waitlist" asLabel>
+                          <Checkbox checked={classCapacityWaitlist} onCheckedChange={(checked) => setClassCapacityWaitlist(checked === true)} />
+                        </SettingsRow>
+                      </>
+                    )}
+                  </SettingsList>
+                </div>
+                <Field label="Enrollment start date" hint="Leave blank for rolling enrollment — students can join any available slot immediately.">
+                  <DateInput value={classSessionStartDate} onChange={(e) => setClassSessionStartDate(e.target.value)} />
+                </Field>
               </div>
-            </Field>
+            </>
           )}
 
         </div>
       </FormCard>
 
-      {/* Add-on Services */}
-      <FormCard
-        title="Add-on Services (Optional)"
-        subtitle="Offer extra convenience for families."
-      >
-        <div className="space-y-3">
-          {/* Early drop-off */}
-          <ExpandableCheckboxCard
-            checked={offerEarlyDropoff}
-            onCheckedChange={setOfferEarlyDropoff}
-            title="Early drop-off"
-            description="Allow families to drop off their child before the activity starts."
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Price per student per day">
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-                    $
-                  </span>
-                  <Input
-                    value={earlyDropoffPrice}
-                    onChange={(e) =>
-                      setEarlyDropoffPrice(sanitizeMoneyInput(e.target.value))
-                    }
-                    placeholder="e.g. 10"
-                    className="pl-8"
-                    inputMode="decimal"
-                    autoComplete="off"
-                  />
-                </div>
-              </Field>
-              <Field label="Early drop-off starts at">
-                <TimeSelect
-                  value={earlyDropoffStart}
-                  onChange={setEarlyDropoffStart}
-                  placeholder="Select time"
-                />
-              </Field>
-            </div>
-            <Tip>
-              If your activity starts at 9:00 AM and you set early drop-off
-              from 7:30 AM, families can drop off between 7:30–9:00 AM for an
-              additional fee.
-            </Tip>
-          </ExpandableCheckboxCard>
+      <FormCard title="Additional details" icon="tune">
+        <div className="space-y-6">
 
-          {/* Extended day */}
-          <ExpandableCheckboxCard
-            checked={offerExtendedDay}
-            onCheckedChange={setOfferExtendedDay}
-            title="Extended day"
-            description="Let families pick up their child after the activity ends."
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Price per student per day">
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-                    $
-                  </span>
-                  <Input
-                    value={extendedDayPrice}
-                    onChange={(e) =>
-                      setExtendedDayPrice(sanitizeMoneyInput(e.target.value))
-                    }
-                    placeholder="e.g. 15"
-                    className="pl-8"
-                    inputMode="decimal"
-                    autoComplete="off"
-                  />
-                </div>
-              </Field>
-              <Field label="Extended day ends at">
-                <TimeSelect
-                  value={extendedDayEnd}
-                  onChange={setExtendedDayEnd}
-                  placeholder="Select time"
-                />
-              </Field>
-            </div>
-            <Tip>
-              If your activity ends at 3:00 PM and you set extended day until
-              5:30 PM, families can pick up between 3:00–5:30 PM for an
-              additional fee.
-            </Tip>
-          </ExpandableCheckboxCard>
+          {/* ── Add-ons ──────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-foreground">Add-ons</p>
 
-          {/* Custom add-ons */}
-          {customAddOns.map((addon, i) => (
-            <div key={addon.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">Custom fee</p>
-                <button
-                  type="button"
-                  onClick={() => setCustomAddOns(prev => prev.filter((_, j) => j !== i))}
-                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
+            <ExpandableCheckboxCard
+              checked={offerEarlyDropoff}
+              onCheckedChange={setOfferEarlyDropoff}
+              title="Early drop-off"
+              description="Allow families to drop off their child before the activity starts."
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Fee name">
-                  <Input
-                    value={addon.name}
-                    onChange={e => setCustomAddOns(prev => prev.map((a, j) => j === i ? { ...a, name: e.target.value } : a))}
-                    placeholder="e.g. Costume fee, Materials kit"
+                <MoneyInput label="Price per day" value={earlyDropoffPrice} onChange={setEarlyDropoffPrice} />
+                <Field label="End time"><TimeSelect value={earlyDropoffStart} onChange={setEarlyDropoffStart} /></Field>
+              </div>
+            </ExpandableCheckboxCard>
+
+            <ExpandableCheckboxCard
+              checked={offerExtendedDay}
+              onCheckedChange={setOfferExtendedDay}
+              title="Extended day"
+              description="Let families pick up their child after the activity ends."
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <MoneyInput label="Price per day" value={extendedDayPrice} onChange={setExtendedDayPrice} />
+                <Field label="Ends at"><TimeSelect value={extendedDayEnd} onChange={setExtendedDayEnd} /></Field>
+              </div>
+            </ExpandableCheckboxCard>
+
+            {/* Custom fees — flat AddOnRow, no card-in-card */}
+            {customAddOns.length > 0 && (
+              <div className="space-y-2">
+                {customAddOns.map((addon, i) => (
+                  <AddOnRow
+                    key={addon.id}
+                    name={addon.name}
+                    price={addon.price}
+                    onNameChange={(v) => setCustomAddOns((prev) => prev.map((a, j) => j === i ? { ...a, name: v } : a))}
+                    onPriceChange={(v) => setCustomAddOns((prev) => prev.map((a, j) => j === i ? { ...a, price: v } : a))}
+                    onRemove={() => setCustomAddOns((prev) => prev.filter((_, j) => j !== i))}
                   />
-                </Field>
-                <Field label="Price per student">
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setCustomAddOns((prev) => [...prev, { id: crypto.randomUUID(), name: "", price: "" }])}
+              className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>add_circle</span>
+              Add a custom fee
+            </button>
+          </div>
+
+          {/* ── Discounts ────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-foreground">Discounts</p>
+
+            <ExpandableCheckboxCard
+              checked={offerSiblingDiscount}
+              onCheckedChange={(checked) => {
+                setOfferSiblingDiscount(checked);
+                if (!checked) { setSiblingDiscountType("none"); setSiblingDiscountValue(""); return; }
+                if (siblingDiscountType === "none") setSiblingDiscountType("percent");
+              }}
+              title="Sibling discount"
+              description="Offer a discount when families register more than one child."
+            >
+              {/* ChoiceChip = single-select, clearly signaled by pill shape */}
+              <div className="flex gap-2">
+                <ChoiceChip selected={siblingDiscountType === "percent"} onClick={() => setSiblingDiscountType("percent")}>Percentage</ChoiceChip>
+                <ChoiceChip selected={siblingDiscountType === "amount"} onClick={() => setSiblingDiscountType("amount")}>Fixed amount</ChoiceChip>
+              </div>
+              {siblingDiscountType === "amount" ? (
+                <MoneyInput
+                  label="Discount per additional child"
+                  value={siblingDiscountValue}
+                  onChange={setSiblingDiscountValue}
+                />
+              ) : (
+                <Field label="Discount percentage">
                   <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">$</span>
-                    <Input
-                      value={addon.price}
-                      onChange={e => setCustomAddOns(prev => prev.map((a, j) => j === i ? { ...a, price: sanitizeMoneyInput(e.target.value) } : a))}
-                      placeholder="e.g. 50"
-                      className="pl-8"
-                      inputMode="decimal"
-                      autoComplete="off"
-                    />
+                    <Input type="number" min={0} max={100} value={siblingDiscountValue} onChange={(e) => setSiblingDiscountValue(e.target.value)} className="pr-8" />
+                    <span className="pointer-events-none absolute right-4 bottom-[9px] text-sm text-muted-foreground">%</span>
                   </div>
                 </Field>
-              </div>
-            </div>
-          ))}
+              )}
+            </ExpandableCheckboxCard>
 
-          <button
-            type="button"
-            onClick={() => setCustomAddOns(prev => [...prev, { id: crypto.randomUUID(), name: "", price: "" }])}
-            className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-          >
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>add_circle</span>
-            Add a custom fee
-          </button>
+            {!isOngoing && campSessions.length >= 2 && (
+              <ExpandableCheckboxCard
+                checked={offerMultiSessionDiscount}
+                onCheckedChange={(checked) => { setOfferMultiSessionDiscount(checked); if (!checked) setMultiSessionDiscountPercent(""); }}
+                title="Multi-session discount"
+                description="Offer a discount when a family books 2 or more sessions."
+              >
+                <Field label="Discount percentage">
+                  <div className="relative">
+                    <Input type="number" min={1} max={100} value={multiSessionDiscountPercent} onChange={(e) => setMultiSessionDiscountPercent(e.target.value)} className="pr-8" />
+                    <span className="pointer-events-none absolute right-4 bottom-[9px] text-sm text-muted-foreground">%</span>
+                  </div>
+                </Field>
+              </ExpandableCheckboxCard>
+            )}
+          </div>
+
         </div>
       </FormCard>
-
-      {/* Discounts */}
-      <FormCard
-        title="Discounts (Optional)"
-        subtitle="Make your activity accessible to more families."
-      >
-        <ExpandableCheckboxCard
-          checked={offerSiblingDiscount}
-          onCheckedChange={(checked) => {
-            setOfferSiblingDiscount(checked);
-            if (!checked) {
-              setSiblingDiscountType("none");
-              setSiblingDiscountValue("");
-              return;
-            }
-            if (siblingDiscountType === "none")
-              setSiblingDiscountType("percent");
-          }}
-          title="Sibling discount"
-          description="Offer a discount when families register more than one child."
-        >
-          {/* Discount type toggle */}
-          <div className="flex gap-3">
-            <RadioCard
-              selected={siblingDiscountType === "percent"}
-              onClick={() => setSiblingDiscountType("percent")}
-            >
-              <div className="text-sm font-medium">Percentage discount</div>
-            </RadioCard>
-            <RadioCard
-              selected={siblingDiscountType === "amount"}
-              onClick={() => setSiblingDiscountType("amount")}
-            >
-              <div className="text-sm font-medium">Fixed amount discount</div>
-            </RadioCard>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field
-              label={
-                siblingDiscountType === "amount"
-                  ? "Discount per additional child"
-                  : "Discount percentage"
-              }
-            >
-              <div className="relative">
-                {siblingDiscountType === "amount" && (
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-                    $
-                  </span>
-                )}
-                <Input
-                  type="number"
-                  min={0}
-                  max={
-                    siblingDiscountType === "percent" ? 100 : undefined
-                  }
-                  value={siblingDiscountValue}
-                  onChange={(e) => setSiblingDiscountValue(e.target.value)}
-                  placeholder={
-                    siblingDiscountType === "percent"
-                      ? "e.g. 10"
-                      : "e.g. 25"
-                  }
-                  className={`h-11 ${
-                    siblingDiscountType === "amount" ? "pl-8" : ""
-                  }`}
-                />
-                {siblingDiscountType === "percent" && (
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    %
-                  </span>
-                )}
-              </div>
-            </Field>
-          </div>
-
-          <Tip>
-            {siblingDiscountType === "amount"
-              ? `Each additional sibling will receive $${siblingDiscountValue || "X"} off the registration fee.`
-              : `Each additional sibling will receive ${siblingDiscountValue || "X"}% off the registration fee.`}
-          </Tip>
-        </ExpandableCheckboxCard>
-
-        {activityKind === "camp" && campSessions.length >= 2 && (
-          <ExpandableCheckboxCard
-            checked={offerMultiSessionDiscount}
-            onCheckedChange={(checked) => {
-              setOfferMultiSessionDiscount(checked);
-              if (!checked) setMultiSessionDiscountPercent("");
-            }}
-            title="Multi-session discount"
-            description="Offer a discount when a guest books 2 or more sessions."
-          >
-            <Field label="Discount percentage">
-              <div className="relative">
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={multiSessionDiscountPercent}
-                  onChange={(e) => setMultiSessionDiscountPercent(e.target.value)}
-                  placeholder="e.g. 10"
-                  className="pr-8"
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  %
-                </span>
-              </div>
-            </Field>
-            <Tip>
-              Guests save {multiSessionDiscountPercent || "X"}% when they book 2 or more sessions.
-            </Tip>
-          </ExpandableCheckboxCard>
-        )}
-      </FormCard>
-    </div>
-  );
+      </>
+    );
+  };
 
   const renderReview = () => (
     <div className="space-y-6">
-      <FormCard title="Review your activity" subtitle="Make sure everything looks good before publishing.">
+      <FormCard title="Review your activity" subtitle="Make sure everything looks good before publishing." icon="checklist">
         <div className="space-y-5 text-sm">
+
+          {/* Hero photo thumbnail */}
+          {photoItems.length > 0 && photoItems[0]?.src && (
+            <div className="flex items-center gap-3 rounded-xl bg-muted/30 p-3">
+              <img
+                src={photoItems[0].src}
+                alt="Cover photo"
+                className="h-16 w-16 rounded-lg object-cover shrink-0"
+              />
+              <div>
+                <p className="text-xs font-medium text-foreground">Cover photo</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{photoItems.length} photo{photoItems.length !== 1 ? "s" : ""} added</p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-[100px,1fr] gap-y-3 gap-x-4">
             <span className="text-xs text-muted-foreground">Type</span>
-            <span className="capitalize">{activityKind}</span>
+            <span className="capitalize">{activityDisplayKind.replace("_", " ")}</span>
 
             <span className="text-xs text-muted-foreground">Title</span>
             <span className="font-medium">{title || "—"}</span>
@@ -3527,26 +3333,19 @@ export default function CreateActivityPage({
               </>
             )}
 
-            {category && (
+            {categories.length > 0 && (
               <>
                 <span className="text-xs text-muted-foreground">Category</span>
-                <span>{category}</span>
+                <span>{categories.join(", ")}</span>
               </>
             )}
 
             <span className="text-xs text-muted-foreground">Ages</span>
             <span>
-              {ageBuckets.length
-                ? ageBuckets.map((b) => AGE_BUCKETS.find((x) => x.value === b)?.label ?? b).join(", ")
+              {minAgeText || maxAgeText
+                ? `${minAgeText ? `${minAgeText}` : "Any"}–${maxAgeText ? `${maxAgeText}` : "Any"}`
                 : "Not specified"}
             </span>
-
-            {experienceLevels.length > 0 && (
-              <>
-                <span className="text-xs text-muted-foreground">Level</span>
-                <span className="capitalize">{experienceLevels.map((l) => l.replace("_", " ")).join(", ")}</span>
-              </>
-            )}
 
             <span className="text-xs text-muted-foreground">Price</span>
             <span>
@@ -3629,11 +3428,8 @@ export default function CreateActivityPage({
               </>
             )}
 
-            <span className="text-xs text-muted-foreground">Visibility</span>
-            <span className="capitalize">{visibility}</span>
-
-            <span className="text-xs text-muted-foreground">Photos</span>
-            <span>{photoItems.length} photo{photoItems.length !== 1 ? "s" : ""}</span>
+            <span className="text-xs text-muted-foreground">Status</span>
+            <span className="capitalize">{listingStatus}</span>
 
             <span className="text-xs text-muted-foreground">Cancellation</span>
             <span>
@@ -3742,87 +3538,92 @@ export default function CreateActivityPage({
   /* Render: main wizard                                              */
   /* ---------------------------------------------------------------- */
 
-  const stepContent = [renderBasics, renderDescription, renderSchedule, renderPhotos, renderDetails, renderReview];
-  const isLastStep = stepIndex === STEPS.length - 1;
+  /* ---------------------------------------------------------------- */
+  /* Save actions                                                     */
+  /* ---------------------------------------------------------------- */
+
+  const handleSaveActivity = () => void handleSubmit();
+
+  /* ---------------------------------------------------------------- */
+  /* Shared action bar content                                        */
+  /* ---------------------------------------------------------------- */
+
+  const actionBar = (
+    <div className="flex items-center gap-3">
+      {embedded ? (
+        <Button
+          type="button"
+          variant="default"
+          onClick={() => void handleSaveChanges()}
+          disabled={submitting || savingDraft}
+        >
+          {savingDraft ? "Saving…" : "Save changes"}
+        </Button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSaveActivity}
+          disabled={submitting || savingDraft}
+          className="rounded-full px-4 py-2 text-sm font-medium text-foreground transition-colors disabled:opacity-50"
+          style={{ background: "rgba(0,0,0,0.06)" }}
+        >
+          {submitting ? "Saving…" : "Save activity"}
+        </button>
+      )}
+    </div>
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* Single-page form content                                         */
+  /* ---------------------------------------------------------------- */
 
   const formContent = (
-    <>
-        {/* Stepper */}
-        <div className="mb-8">
-          <Stepper currentIndex={stepIndex} onNavigate={setStepIndex} />
+    <div className="flex flex-col min-h-full">
+
+      {/* ── Page content ───────────────────────────────────────────── */}
+      <div className="flex-1 px-10 py-10 space-y-6">
+
+        {/* ── Page header ────────────────────────────────────────── */}
+        <div className="space-y-3">
+          {/* Row 1: heading + save */}
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {FORM_CONFIG.pageHeading}
+            </h1>
+            {actionBar}
+          </div>
+
         </div>
 
-
-        {submitError && stepIndex !== STEPS.length - 1 && (
-          <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-3 text-xs text-destructive">
-            {submitError}
-          </div>
-        )}
-
-        {/* Step content */}
-        {stepContent[stepIndex]()}
-
-        {/* Step validation error */}
+        {/* Error banner */}
         {stepError && (
           <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 16 }}>error</span>
             {stepError}
           </div>
         )}
-
-        {/* Bottom navigation */}
-        <div className="flex items-center justify-between gap-3 pt-8 pb-4">
-          <div>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={stepIndex === 0 ? () => router.push(embedded ? `/host/activities/${activityId}` : "/host/listings") : goBack}
-              disabled={submitting || savingDraft}
-            >
-              ← Back
-            </Button>
+        {submitError && (
+          <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 16 }}>error</span>
+            {submitError}
           </div>
+        )}
 
-          <div className="flex items-center gap-3">
-            {embedded ? (
-              <Button
-                type="button"
-                variant="default"
-                size="lg"
-                onClick={() => void handleSaveChanges()}
-                disabled={submitting || savingDraft}
-              >
-                {savingDraft ? "Saving…" : "Save changes"}
-              </Button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void handleSaveForLater()}
-                  disabled={submitting || savingDraft}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                >
-                  {savingDraft ? "Saving…" : "Save for later"}
-                </button>
+        {/* ── Section 1: Basics ─────────────────────────────────── */}
+        <div id="section-basics">{renderBasics()}</div>
 
-                <Button
-                  type="button"
-                  variant="default"
-                  size="lg"
-                  onClick={goNext}
-                  disabled={submitting}
-                >
-                  {submitting
-                    ? "Publishing..."
-                    : isLastStep
-                      ? "Publish"
-                      : "Continue"}
-                </Button>
-              </>
-            )}
-          </div>
+        {/* ── Section 2: Photos ─────────────────────────────────── */}
+        <div id="section-photos">{renderPhotos()}</div>
+
+        {/* ── Section 3: Schedule ───────────────────────────────── */}
+        <div id="section-schedule" className="space-y-6">{renderSchedule()}</div>
+
+        {/* ── Bottom actions ────────────────────────────────────── */}
+        <div className="flex justify-end gap-3 pt-4 pb-8">
+          {actionBar}
         </div>
+
+      </div>
 
       {/* Save for later toast */}
       {savedToast && (
@@ -3831,16 +3632,49 @@ export default function CreateActivityPage({
           Draft saved
         </div>
       )}
-    </>
+    </div>
   );
 
-  if (embedded) return formContent;
+  if (embedded) return (
+    <div className="space-y-6 py-4">
+      {submitError && (
+        <div className="rounded-xl bg-destructive/10 px-4 py-3 text-xs text-destructive">{submitError}</div>
+      )}
+      {renderBasics()}
+      {renderPhotos()}
+      {renderSchedule()}
+      <div className="flex justify-end gap-3 pt-2">{actionBar}</div>
+    </div>
+  );
+
+  const kindLabel: Record<ActivityDisplayKind, string> = {
+    camp: "camp",
+    class: "class",
+    club: "club",
+    drop_in: "activity",
+  };
 
   return (
-    <main className="flex-1 min-h-screen">
-      <div className="page-container py-8 lg:py-10"><div className="page-grid"><div className="span-8-center">
-        {formContent}
-      </div></div></div>
-    </main>
+    <>
+      <main className="flex-1 min-h-screen">
+        <div className="max-w-[800px] mx-auto">
+          {formContent}
+        </div>
+      </main>
+
+      <Snackbar
+        open={publishSnackbar.open}
+        message={`You have successfully created a ${kindLabel[activityDisplayKind]}.`}
+        duration={5000}
+        action={publishSnackbar.activityId ? {
+          label: "View details",
+          onClick: () => router.push(`/host/activities/${publishSnackbar.activityId}`),
+        } : undefined}
+        onClose={() => {
+          setPublishSnackbar({ open: false, activityId: null });
+          router.push("/host/listings");
+        }}
+      />
+    </>
   );
 }

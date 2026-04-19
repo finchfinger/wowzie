@@ -9,27 +9,6 @@ import { useCampFavorite } from "@/hooks/useCampFavorite";
 import type { Camp } from "@/components/CampCard";
 import { HostCard } from "@/components/HostCard";
 import {
-  Calendar,
-  MapPin,
-  Users,
-  Tag,
-  Wifi,
-  Heart,
-  Baby,
-  Repeat,
-  Sunset,
-  Sunrise,
-  BadgePercent,
-  BookOpen,
-  ChevronUp,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Pencil,
-  Share2,
-  X,
-} from "lucide-react";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -570,9 +549,8 @@ export default function CampDetailPage() {
   async function handleSendMessage() {
     if (!host_id) return;
     if (!user) {
-      setPendingMessage(true);
-      setAuthReason("message");
-      setAuthOpen(true);
+      const subject = encodeURIComponent(`Question about ${name ?? "an activity"}`);
+      window.location.href = `mailto:hey@heywowzie.com?subject=${subject}`;
       return;
     }
 
@@ -651,7 +629,7 @@ export default function CampDetailPage() {
                 >
                   {shareCopied
                     ? <span className="text-[10px] font-semibold text-foreground">✓</span>
-                    : <Share2 className="h-4 w-4 text-foreground" />}
+                    : <span className="material-symbols-rounded select-none text-foreground" style={{ fontSize: 16 }} aria-hidden>share</span>}
                 </button>
                 <button
                   type="button"
@@ -663,7 +641,7 @@ export default function CampDetailPage() {
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white transition-colors disabled:opacity-60"
                   aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                 >
-                  <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : "text-foreground"}`} />
+                  <span className={`material-symbols-rounded select-none ${isFavorite ? "text-red-500" : "text-foreground"}`} style={{ fontSize: 16, fontVariationSettings: isFavorite ? "'FILL' 1" : "'FILL' 0" }} aria-hidden>favorite</span>
                 </button>
               </div>
             </div>
@@ -700,7 +678,7 @@ export default function CampDetailPage() {
                 )}
                 {category && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-foreground">
-                    <Tag className="h-3 w-3" /> {category}
+                    <span className="material-symbols-rounded select-none" style={{ fontSize: 12 }} aria-hidden>label</span> {category}
                   </span>
                 )}
                 {experienceLevels.length > 0 && !experienceLevels.includes("all_levels") && (
@@ -726,7 +704,7 @@ export default function CampDetailPage() {
               <div className="flex flex-wrap gap-x-8 gap-y-2">
                 {dateLabel && (
                   <div className="flex items-start gap-2.5">
-                    <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                    <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>calendar_month</span>
                     <div>
                       <p className="text-sm font-semibold text-foreground">{dateLabel}</p>
                       {timeLabel && <p className="text-xs text-muted-foreground mt-0.5">{timeLabel}</p>}
@@ -735,7 +713,7 @@ export default function CampDetailPage() {
                 )}
                 {(locationLine || locationVenueName) && (
                   <div className="flex items-start gap-2.5">
-                    {isVirtual ? <Wifi className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" /> : <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />}
+                    {isVirtual ? <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>wifi</span> : <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>location_on</span>}
                     <div>
                       <p className="text-sm font-semibold text-foreground">
                         {locationVenueName || (isVirtual ? "Online event" : "In person")}
@@ -750,7 +728,7 @@ export default function CampDetailPage() {
             {/* Age label */}
             {ageLabel && (
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Baby className="h-3.5 w-3.5 shrink-0" />
+                <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>child_care</span>
                 {ageLabel}
               </div>
             )}
@@ -974,8 +952,8 @@ export default function CampDetailPage() {
                             <p className="text-xs text-muted-foreground">Optional convenience for families</p>
                           </div>
                           {addonsExpanded
-                            ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
-                            : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                            ? <span className="material-symbols-rounded select-none text-muted-foreground shrink-0" style={{ fontSize: 16 }} aria-hidden>expand_less</span>
+                            : <span className="material-symbols-rounded select-none text-muted-foreground shrink-0" style={{ fontSize: 16 }} aria-hidden>expand_more</span>
                           }
                         </button>
 
@@ -1145,7 +1123,7 @@ export default function CampDetailPage() {
                             {/* Sibling discount */}
                             {advanced?.siblingDiscount?.enabled && advanced.siblingDiscount.value && (
                               <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-muted/30">
-                                <BadgePercent className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                <span className="material-symbols-rounded select-none shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>percent</span>
                                 <div>
                                   <p className="text-sm font-semibold text-foreground">Sibling discount</p>
                                   <p className="text-xs text-muted-foreground">
@@ -1204,7 +1182,7 @@ export default function CampDetailPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => router.push(host_id ? `/profile/${host_id}` : "#")}
+                        onClick={handleSendMessage}
                         className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
                       >
                         Contact host
@@ -1350,7 +1328,7 @@ export default function CampDetailPage() {
             {classSchedule?.frequency && (
               <div className="flex items-start gap-4 py-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-                  <Repeat className="h-4 w-4 text-muted-foreground" />
+                  <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>repeat</span>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{frequencyLabel(classSchedule.frequency)}</p>
@@ -1363,7 +1341,7 @@ export default function CampDetailPage() {
             {totalCapacity != null && (
               <div className="flex items-start gap-4 py-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>group</span>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">
@@ -1408,7 +1386,7 @@ export default function CampDetailPage() {
             {additionalDetails && (
               <div className="space-y-2 py-2">
                 <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" /> What to bring
+                  <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>menu_book</span> What to bring
                 </h2>
                 <p className="text-sm leading-relaxed text-muted-foreground">{additionalDetails}</p>
               </div>
@@ -1482,7 +1460,7 @@ export default function CampDetailPage() {
             <div className="divide-y divide-border py-2">
               {cancellationPolicy && (
                 <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                  <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                  <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>calendar_month</span>
                   <div>
                     <p className="text-sm font-semibold text-foreground">Cancellation policy</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{cancellationPolicy}</p>
@@ -1490,7 +1468,7 @@ export default function CampDetailPage() {
                 </div>
               )}
               <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                <Users className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>group</span>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Accessibility</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Please contact the host in advance to discuss accommodations.</p>
@@ -1499,7 +1477,15 @@ export default function CampDetailPage() {
             </div>
 
             {/* Report */}
-            <button type="button" className="rounded-xl px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                const subject = encodeURIComponent(`Report: ${name ?? "activity"}`);
+                const body = encodeURIComponent(`I'd like to report an issue with this listing:\n\n${typeof window !== "undefined" ? window.location.href : ""}`);
+                window.location.href = `mailto:hey@heywowzie.com?subject=${subject}&body=${body}`;
+              }}
+              className="rounded-xl px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
               Report this event
             </button>
           </div>
@@ -1520,7 +1506,7 @@ export default function CampDetailPage() {
             className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
             onClick={() => setLightboxOpen(false)}
           >
-            <X className="h-5 w-5" />
+            <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>close</span>
           </button>
 
           {/* Prev */}
@@ -1530,7 +1516,7 @@ export default function CampDetailPage() {
               className="absolute left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
               onClick={(e) => { e.stopPropagation(); setLightboxIdx((lightboxIdx - 1 + images.length) % images.length); }}
             >
-              <ChevronLeft className="h-5 w-5" />
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>chevron_left</span>
             </button>
           )}
 
@@ -1550,7 +1536,7 @@ export default function CampDetailPage() {
               className="absolute right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
               onClick={(e) => { e.stopPropagation(); setLightboxIdx((lightboxIdx + 1) % images.length); }}
             >
-              <ChevronRight className="h-5 w-5" />
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>chevron_right</span>
             </button>
           )}
 

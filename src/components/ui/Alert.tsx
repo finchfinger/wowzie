@@ -1,13 +1,14 @@
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
-type AlertTone = "success" | "error" | "warning" | "info";
+type AlertTone = "success" | "error" | "warning" | "info" | "violet";
 
 const TONE_STYLES: Record<AlertTone, string> = {
-  success: "bg-green-50 text-green-700 border border-green-200",
-  error:   "bg-destructive/5 text-destructive border border-destructive/20",
-  warning: "bg-amber-50 text-amber-900 border border-amber-200",
-  info:    "bg-blue-50 text-blue-700 border border-blue-200",
+  success: "bg-green-50 text-green-700",
+  error:   "bg-destructive/5 text-destructive",
+  warning: "bg-amber-50 text-amber-900",
+  info:    "bg-blue-50 text-blue-700",
+  violet:  "bg-violet-50 text-violet-800",
 };
 
 const TONE_ICON_COLOR: Record<AlertTone, string> = {
@@ -15,6 +16,7 @@ const TONE_ICON_COLOR: Record<AlertTone, string> = {
   error:   "text-destructive",
   warning: "text-amber-600",
   info:    "text-blue-500",
+  violet:  "text-violet-600",
 };
 
 type AlertProps = {
@@ -29,8 +31,9 @@ export function Alert({ tone, icon, children, className }: AlertProps) {
   return (
     <div
       role="alert"
+      style={{ borderRadius: 4 }}
       className={cn(
-        "flex gap-3 rounded-xl px-4 py-3 text-sm",
+        "flex gap-3 px-4 py-3 text-sm",
         TONE_STYLES[tone],
         className,
       )}

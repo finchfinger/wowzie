@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Layout Preview — Option B</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f0f2f5; color: #111; font-size: 14px; }
+
+  /* ── Top bar ── */
+  .topbar { height: 56px; background: white; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 100; }
+  .topbar-title { font-weight: 600; font-size: 15px; flex: 1; }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+  .btn { padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: background 0.15s; }
+  .btn-outline { background: white; border: 1px solid #d1d5db; color: #374151; }
+  .btn-outline:hover { background: #f9fafb; }
+  .btn-primary { background: #111; color: white; }
+  .btn-primary:hover { background: #333; }
+  .save-indicator { font-size: 12px; color: #6b7280; }
+
+  /* ── Layout ── */
+  .layout { display: flex; min-height: calc(100vh - 56px); max-width: 1200px; margin: 0 auto; }
+
+  /* ── Left nav ── */
+  .sidenav { width: 200px; shrink: 0; padding: 32px 0; position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; }
+  .sidenav-item { display: flex; align-items: center; gap: 8px; padding: 8px 20px; font-size: 13px; font-weight: 500; color: #6b7280; cursor: pointer; border-radius: 8px; margin: 1px 8px; transition: all 0.1s; text-decoration: none; }
+  .sidenav-item:hover { background: #e5e7eb; color: #111; }
+  .sidenav-item.active { background: #111; color: white; }
+  .sidenav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.4; flex-shrink: 0; }
+  .sidenav-item.done .dot { opacity: 1; background: #22c55e; }
+  .sidenav-item.active .dot { opacity: 1; background: white; }
+
+  /* ── Content ── */
+  .content { flex: 1; padding: 32px 24px 80px; min-width: 0; }
+
+  /* ── Section ── */
+  .section { scroll-margin-top: 80px; margin-bottom: 20px; }
+  .card { background: white; border-radius: 16px; padding: 28px; margin-bottom: 4px; }
+  .card-title { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .card-sub { font-size: 12px; color: #6b7280; margin-bottom: 20px; }
+
+  /* ── Form fields ── */
+  .field { margin-bottom: 16px; }
+  .label { display: block; font-size: 11px; font-weight: 500; color: #374151; margin-bottom: 5px; }
+  .input { width: 100%; height: 40px; border: none; border-radius: 10px; background: #eaecf0; padding: 0 12px; font-size: 13px; outline: none; }
+  .input:focus { box-shadow: 0 0 0 2px rgba(0,0,0,0.15); }
+  .textarea { width: 100%; border: none; border-radius: 10px; background: #eaecf0; padding: 10px 12px; font-size: 13px; outline: none; resize: none; }
+  .textarea:focus { box-shadow: 0 0 0 2px rgba(0,0,0,0.15); }
+  .row { display: grid; gap: 12px; }
+  .col-2 { grid-template-columns: 1fr 1fr; }
+  .col-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* ── Chips ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 5px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; border: 1px solid #d1d5db; background: white; font-weight: 500; }
+  .chip.on { background: #111; color: white; border-color: #111; }
+
+  /* ── Session block ── */
+  .session { background: #f9fafb; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+  .session-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; font-weight: 600; }
+  .session-del { font-size: 11px; color: #9ca3af; cursor: pointer; }
+
+  /* ── Add button ── */
+  .add-btn { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #6b7280; border: 1.5px dashed #d1d5db; border-radius: 10px; padding: 8px 14px; background: none; cursor: pointer; width: 100%; justify-content: center; margin-top: 8px; }
+  .add-btn:hover { background: #f9fafb; color: #111; }
+
+  /* ── Photo drop ── */
+  .photo-drop { border: 2px dashed #d1d5db; border-radius: 12px; padding: 32px; text-align: center; color: #9ca3af; font-size: 13px; }
+  .photo-drop strong { display: block; color: #374151; margin-bottom: 4px; font-size: 14px; }
+
+  /* ── Publish bar ── */
+  .publish-bar { background: white; border-radius: 16px; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; }
+  .publish-label { font-size: 15px; font-weight: 600; }
+  .publish-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .btn-publish { background: #111; color: white; padding: 10px 28px; border-radius: 999px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
+
+  /* scrollspy highlight */
+  .highlight { outline: 2px solid #818cf8; outline-offset: 4px; border-radius: 16px; }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <span class="topbar-title">Summer Art Camp 2025</span>
+  <span class="save-indicator">Draft saved</span>
+  <div class="topbar-actions">
+    <button class="btn btn-outline">Preview</button>
+    <button class="btn btn-primary">Publish</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Side nav -->
+  <nav class="sidenav" id="sidenav">
+    <a class="sidenav-item active" href="#basics" onclick="activate(this)"><span class="dot"></span> Basics</a>
+    <a class="sidenav-item done" href="#location" onclick="activate(this)"><span class="dot"></span> Location</a>
+    <a class="sidenav-item" href="#schedule" onclick="activate(this)"><span class="dot"></span> Schedule</a>
+    <a class="sidenav-item" href="#pricing" onclick="activate(this)"><span class="dot"></span> Pricing</a>
+    <a class="sidenav-item" href="#details" onclick="activate(this)"><span class="dot"></span> Details</a>
+    <a class="sidenav-item" href="#photos" onclick="activate(this)"><span class="dot"></span> Photos</a>
+    <a class="sidenav-item" href="#publish" onclick="activate(this)"><span class="dot"></span> Publish</a>
+  </nav>
+
+  <!-- Main content -->
+  <main class="content">
+
+    <!-- Basics -->
+    <div class="section" id="basics">
+      <div class="card">
+        <div class="card-title">Basics</div>
+        <div class="card-sub">The essential info families see first.</div>
+        <div class="field">
+          <label class="label">Camp name</label>
+          <input class="input" value="Summer Art Camp 2025" />
+        </div>
+        <div class="field">
+          <label class="label">Category</label>
+          <div class="chips">
+            <span class="chip on">Arts & crafts</span>
+            <span class="chip">Sports & fitness</span>
+            <span class="chip">Music & dance</span>
+            <span class="chip">STEM & technology</span>
+            <span class="chip">Nature & outdoor</span>
+            <span class="chip">Cooking & baking</span>
+          </div>
+        </div>
+        <div class="row col-2">
+          <div class="field">
+            <label class="label">Min age</label>
+            <div style="position:relative"><input class="input" value="7" style="padding-right:36px" /><span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:#9ca3af">yrs</span></div>
+          </div>
+          <div class="field">
+            <label class="label">Max age</label>
+            <div style="position:relative"><input class="input" value="14" style="padding-right:36px" /><span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:#9ca3af">yrs</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Who is this for?</label>
+          <div class="chips">
+            <span class="chip on">All levels</span>
+            <span class="chip">Beginner</span>
+            <span class="chip">Intermediate</span>
+            <span class="chip">Advanced</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Description</label>
+          <textarea class="textarea" rows="5">A week-long art camp where kids explore painting, sculpture, and mixed media in a supportive creative environment.</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="section" id="location">
+      <div class="card">
+        <div class="card-title">Location</div>
+        <div class="card-sub">Where families will drop off their kids.</div>
+        <div class="field">
+          <input class="input" value="123 Main St, Chicago, IL" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="section" id="schedule">
+      <div class="card">
+        <div class="card-title">Schedule</div>
+        <div class="card-sub">Add one or more sessions with dates, times, and capacity.</div>
+
+        <div class="session">
+          <div class="session-header">Session 1 <span class="session-del">Remove</span></div>
+          <div class="row col-2">
+            <div class="field"><label class="label">Start date</label><input class="input" value="Jun 16, 2025" /></div>
+            <div class="field"><label class="label">End date</label><input class="input" value="Jun 20, 2025" /></div>
+          </div>
+          <div class="row col-3">
+            <div class="field"><label class="label">Start time</label><input class="input" value="9:00am" /></div>
+            <div class="field"><label class="label">End time</label><input class="input" value="3:00pm" /></div>
+            <div class="field"><label class="label">Capacity</label><input class="input" value="20" /></div>
+          </div>
+        </div>
+
+        <div class="session">
+          <div class="session-header">Session 2 <span class="session-del">Remove</span></div>
+          <div class="row col-2">
+            <div class="field"><label class="label">Start date</label><input class="input" value="Jun 23, 2025" /></div>
+            <div class="field"><label class="label">End date</label><input class="input" value="Jun 27, 2025" /></div>
+          </div>
+          <div class="row col-3">
+            <div class="field"><label class="label">Start time</label><input class="input" value="9:00am" /></div>
+            <div class="field"><label class="label">End time</label><input class="input" value="3:00pm" /></div>
+            <div class="field"><label class="label">Capacity</label><input class="input" value="20" /></div>
+          </div>
+        </div>
+
+        <button class="add-btn">+ Add another session</button>
+      </div>
+    </div>
+
+    <!-- Pricing -->
+    <div class="section" id="pricing">
+      <div class="card">
+        <div class="card-title">Pricing</div>
+        <div class="card-sub">Set price per session. Add optional extras below.</div>
+        <div class="row col-2">
+          <div class="field"><label class="label">Price per child</label><div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:12px;color:#9ca3af">$</span><input class="input" value="450" style="padding-left:24px" /></div></div>
+          <div class="field"><label class="label">Cancellation policy</label><input class="input" value="14 days" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details -->
+    <div class="section" id="details">
+      <div class="card">
+        <div class="card-title">What to expect</div>
+        <div class="card-sub">Help families come prepared.</div>
+        <div class="field"><label class="label">What to bring</label><textarea class="textarea" rows="3">Sunscreen, water bottle, closed-toe shoes, lunch</textarea></div>
+        <div class="field"><label class="label">What's included</label><textarea class="textarea" rows="3">All art materials, daily snack, camp t-shirt</textarea></div>
+      </div>
+    </div>
+
+    <!-- Photos -->
+    <div class="section" id="photos">
+      <div class="card">
+        <div class="card-title">Photos</div>
+        <div class="card-sub">Action shots of kids performing convert best.</div>
+        <div class="photo-drop">
+          <strong>Drag and drop</strong>
+          Or browse for photos
+        </div>
+      </div>
+    </div>
+
+    <!-- Publish -->
+    <div class="section" id="publish">
+      <div class="publish-bar">
+        <div>
+          <div class="publish-label">Ready to go live?</div>
+          <div class="publish-sub">You can unpublish or edit at any time.</div>
+        </div>
+        <button class="btn-publish">Publish listing</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function activate(el) {
+    document.querySelectorAll('.sidenav-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Scrollspy
+  const sections = document.querySelectorAll('.section');
+  const navItems = document.querySelectorAll('.sidenav-item');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(n => n.classList.remove('active'));
+        const match = document.querySelector(`.sidenav-item[href="#${entry.target.id}"]`);
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

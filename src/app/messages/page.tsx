@@ -6,16 +6,6 @@ import { supabase } from "@/lib/supabase";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
-import {
-  MoreVertical,
-  Send,
-  Smile,
-  Paperclip,
-  ImageIcon,
-  ArrowLeft,
-  X,
-  FileText,
-} from "lucide-react";
 import { format, isToday, isYesterday, isSameDay, parseISO } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,7 +69,6 @@ type PendingMedia = {
 
 /* ── helpers ───────────────────────────────────────────── */
 
-const isMock = (id: string) => id.startsWith("mock-");
 const isUuid = (v: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
@@ -173,213 +162,6 @@ async function uploadToStorage(file: File, userId: string): Promise<string | nul
     return null;
   }
 }
-
-/* ── mock data ─────────────────────────────────────────── */
-
-const _now  = new Date().toISOString();
-const _30m  = new Date(Date.now() - 30 * 60000).toISOString();
-const _1h   = new Date(Date.now() - 3600000).toISOString();
-const _2h   = new Date(Date.now() - 2 * 3600000).toISOString();
-const _1d   = new Date(Date.now() - 86400000).toISOString();
-const _3d   = new Date(Date.now() - 3 * 86400000).toISOString();
-const _1wk  = new Date(Date.now() - 7 * 86400000).toISOString();
-
-const mockConversations: Conversation[] = [
-  {
-    id: "mock-wildwood",
-    participant_name: "Camp Wildwood",
-    avatar_emoji: null,
-    last_message_preview: "We can't wait to see you tomorrow. Please use the front entrance for check-in.",
-    last_message_at: _now,
-    unread_count: 1,
-    participant_profile_id: null,
-    camp_slug: "camp-wildwood",
-    camp_name: "Camp Wildwood",
-  },
-  {
-    id: "mock-golden-gate",
-    participant_name: "Golden Gate Arts Camp",
-    avatar_emoji: null,
-    last_message_preview: "Hi! Do you have any art camps open for 8-year-olds?",
-    last_message_at: _30m,
-    unread_count: 1,
-    participant_profile_id: null,
-    camp_slug: "golden-gate-arts",
-    camp_name: "Golden Gate Arts Camp",
-  },
-  {
-    id: "mock-riverside",
-    participant_name: "Riverside Science Camp",
-    avatar_emoji: null,
-    last_message_preview: "We have a camper with a peanut allergy…",
-    last_message_at: _1d,
-    unread_count: 0,
-    participant_profile_id: null,
-    camp_slug: "riverside-science",
-    camp_name: "Riverside Science Camp",
-  },
-  {
-    id: "mock-saddle-grove",
-    participant_name: "Saddle and Grove Summer Camp",
-    avatar_emoji: null,
-    last_message_preview: "Perfect, thanks so much!",
-    last_message_at: _1d,
-    unread_count: 0,
-    participant_profile_id: null,
-    camp_slug: "saddle-grove",
-    camp_name: "Saddle and Grove Summer Camp",
-  },
-  {
-    id: "mock-stem-robotics",
-    participant_name: "STEM Robotics Week",
-    avatar_emoji: null,
-    last_message_preview: "Thanks for confirming our registration f…",
-    last_message_at: _3d,
-    unread_count: 0,
-    participant_profile_id: null,
-    camp_slug: "stem-robotics",
-    camp_name: "STEM Robotics Week",
-  },
-  {
-    id: "mock-cooking-adventures",
-    participant_name: "Cooking Adventures Camp",
-    avatar_emoji: null,
-    last_message_preview: "Is there a way to update emergency contact info?",
-    last_message_at: _1wk,
-    unread_count: 0,
-    participant_profile_id: null,
-    camp_slug: "cooking-adventures",
-    camp_name: "Cooking Adventures Camp",
-  },
-];
-
-const mockMessagesByConv: Record<string, Message[]> = {
-  "mock-wildwood": [
-    {
-      id: "mock-ww-1",
-      conversation_id: "mock-wildwood",
-      sender: "them",
-      body: "Hey there! What's the drop-off time again for tomorrow's camp? I can't find the confirmation email.",
-      created_at: _2h,
-      image_url: null,
-    },
-    {
-      id: "mock-ww-2",
-      conversation_id: "mock-wildwood",
-      sender: "user",
-      body: "No problem! Drop-off starts at 8:30 AM, and activities begin at 9:00 AM.",
-      created_at: _2h,
-      image_url: null,
-    },
-    {
-      id: "mock-ww-3",
-      conversation_id: "mock-wildwood",
-      sender: "them",
-      body: "Would it be okay if we dropped Liam off a bit early? I have a work call at 8:15.",
-      created_at: _1h,
-      image_url: null,
-    },
-    {
-      id: "mock-ww-4",
-      conversation_id: "mock-wildwood",
-      sender: "user",
-      body: "Totally fine! Our staff will be here starting at 8:00 AM.",
-      created_at: _1h,
-      image_url: null,
-    },
-    {
-      id: "mock-ww-5",
-      conversation_id: "mock-wildwood",
-      sender: "them",
-      body: "We can't wait to see you tomorrow. Please use the front entrance for check-in. Also, it looks like it might be a hot one. Please pack sunscreen for your little one.",
-      created_at: _now,
-      image_url: null,
-    },
-  ],
-  "mock-golden-gate": [
-    {
-      id: "mock-gg-1",
-      conversation_id: "mock-golden-gate",
-      sender: "them",
-      body: "Hi! Do you have any art camps open for 8-year-olds this summer?",
-      created_at: _30m,
-      image_url: null,
-    },
-  ],
-  "mock-riverside": [
-    {
-      id: "mock-rs-1",
-      conversation_id: "mock-riverside",
-      sender: "them",
-      body: "Hi, we have a camper with a peanut allergy. Can you confirm the kitchen is nut-free?",
-      created_at: _1d,
-      image_url: null,
-    },
-    {
-      id: "mock-rs-2",
-      conversation_id: "mock-riverside",
-      sender: "user",
-      body: "Absolutely — our kitchen is completely nut-free and all staff are trained on allergy protocols.",
-      created_at: _1d,
-      image_url: null,
-    },
-  ],
-  "mock-saddle-grove": [
-    {
-      id: "mock-sg-1",
-      conversation_id: "mock-saddle-grove",
-      sender: "them",
-      body: "Quick question — can we switch my daughter's session from week 2 to week 3?",
-      created_at: _1d,
-      image_url: null,
-    },
-    {
-      id: "mock-sg-2",
-      conversation_id: "mock-saddle-grove",
-      sender: "user",
-      body: "Yes, week 3 still has spots! I'll move her over now.",
-      created_at: _1d,
-      image_url: null,
-    },
-    {
-      id: "mock-sg-3",
-      conversation_id: "mock-saddle-grove",
-      sender: "them",
-      body: "Perfect, thanks so much!",
-      created_at: _1d,
-      image_url: null,
-    },
-  ],
-  "mock-stem-robotics": [
-    {
-      id: "mock-sr-1",
-      conversation_id: "mock-stem-robotics",
-      sender: "them",
-      body: "Thanks for confirming our registration for STEM Robotics Week. Really excited!",
-      created_at: _3d,
-      image_url: null,
-    },
-  ],
-  "mock-cooking-adventures": [
-    {
-      id: "mock-ca-1",
-      conversation_id: "mock-cooking-adventures",
-      sender: "them",
-      body: "Is there a way to update our emergency contact information before camp starts?",
-      created_at: _1wk,
-      image_url: null,
-    },
-    {
-      id: "mock-ca-2",
-      conversation_id: "mock-cooking-adventures",
-      sender: "user",
-      body: "Yes! You can update it any time from your account profile page.",
-      created_at: _1wk,
-      image_url: null,
-    },
-  ],
-};
-
 /* ── page ──────────────────────────────────────────────── */
 
 function MessagesPageInner() {
@@ -521,20 +303,6 @@ function MessagesPageInner() {
           }
         }
 
-        if (convs.length === 0) {
-          // Fall back to mock data so the UI is always demonstrable
-          const sorted = sortConvs(mockConversations);
-          const target = initialCParam && isMock(initialCParam)
-            ? initialCParam
-            : sorted[0]?.id ?? null;
-          setConversations(sorted);
-          setMessagesByConv(mockMessagesByConv);
-          setActiveConvId(target);
-          setMobileView(initialCParam ? "thread" : "list");
-          setLoading(false);
-          return;
-        }
-
         setConversations(sortConvs(clearedConvs));
 
         const convIds = clearedConvs.map((c) => c.id);
@@ -664,9 +432,9 @@ function MessagesPageInner() {
     const conv = conversations.find((c) => c.id === id);
     if (conv && conv.unread_count > 0) {
       setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unread_count: 0 } : c)));
-      if (!isMock(id)) void supabase.from("conversations").update({ unread_count: 0 }).eq("id", id);
+      void supabase.from("conversations").update({ unread_count: 0 }).eq("id", id);
     }
-    if (!isMock(id)) window.history.replaceState(null, "", `/messages?c=${encodeURIComponent(id)}`);
+    window.history.replaceState(null, "", `/messages?c=${encodeURIComponent(id)}`);
   };
 
   const handleEmojiSelect = (emoji: string) => {
@@ -743,11 +511,6 @@ function MessagesPageInner() {
     // Reset textarea height
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setSending(true);
-
-    if (isMock(activeConvId)) {
-      setSending(false);
-      return;
-    }
 
     try {
       const toId = activeConv?.participant_profile_id;
@@ -877,7 +640,7 @@ function MessagesPageInner() {
           onClick={() => setMobileView("list")}
           className="lg:hidden shrink-0 p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>arrow_back</span>
         </button>
 
         {activeConv ? (
@@ -899,7 +662,7 @@ function MessagesPageInner() {
               type="button"
               className="shrink-0 p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
             >
-              <MoreVertical className="h-5 w-5" />
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>more_vert</span>
             </button>
           </>
         ) : (
@@ -1002,7 +765,7 @@ function MessagesPageInner() {
                               isUser ? "text-violet-700" : "text-primary"
                             }`}
                           >
-                            <FileText className="h-4 w-4 shrink-0" />
+                            <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 16 }} aria-hidden>description</span>
                             <span className="truncate max-w-[180px]">
                               {decodeURIComponent(
                                 m.image_url!.split("/").pop()?.split("?")[0]?.replace(/^\d+-/, "") ?? "File"
@@ -1042,7 +805,7 @@ function MessagesPageInner() {
               />
             ) : (
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                <FileText className="h-5 w-5 text-muted-foreground" />
+                <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 20 }} aria-hidden>description</span>
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -1060,7 +823,7 @@ function MessagesPageInner() {
               onClick={removePendingMedia}
               className="p-1 rounded-full hover:bg-muted transition-colors text-muted-foreground shrink-0"
             >
-              <X className="h-4 w-4" />
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>close</span>
             </button>
           </div>
         )}
@@ -1081,7 +844,7 @@ function MessagesPageInner() {
                   className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                   title="Add emoji"
                 >
-                  <Smile className="h-5 w-5" />
+                  <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>sentiment_satisfied</span>
                 </button>
 
                 {emojiPickerOpen && (
@@ -1110,7 +873,7 @@ function MessagesPageInner() {
                 className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                 title="Add image"
               >
-                <ImageIcon className="h-5 w-5" />
+                <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>image</span>
               </button>
 
               {/* File attachment */}
@@ -1121,7 +884,7 @@ function MessagesPageInner() {
                 className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                 title="Add attachment"
               >
-                <Paperclip className="h-5 w-5" />
+                <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>attach_file</span>
               </button>
             </div>
 
@@ -1154,14 +917,18 @@ function MessagesPageInner() {
               <button
                 type="submit"
                 disabled={!canSend}
-                title="Send"
+                title={sending ? "Sending…" : "Send"}
                 className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
                   canSend
                     ? "bg-gray-900 text-white hover:bg-gray-800"
                     : "bg-muted text-muted-foreground cursor-not-allowed"
                 }`}
               >
-                <Send className="h-4 w-4" />
+                {sending ? (
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>send</span>
+                )}
               </button>
             </div>
           </div>
@@ -1201,7 +968,7 @@ function MessagesPageInner() {
                   onClick={() => setError(null)}
                   className="ml-3 text-destructive/60 hover:text-destructive shrink-0"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>close</span>
                 </button>
               </div>
             )}

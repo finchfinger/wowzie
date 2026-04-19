@@ -76,9 +76,18 @@ export async function POST(req: NextRequest) {
     // Notify the host that a new booking is pending
     const { data: camp } = await supabase
       .from("camps")
-      .select("host_id")
+      .select("host_id, is_promoted")
       .eq("id", campId)
       .single();
+
+    // Store promoted status + fee rate on the booking for payout calculations
+    // Standard: 10% | Promoted: 15%
+    const isPromoted = (camp as any)?.is_promoted === true;
+    const platformFeePercent = isPromoted ? 15 : 10;
+    await supabase
+      .from("bookings")
+      .update({ platform_fee_percent: platformFeePercent, is_promoted_booking: isPromoted })
+      .eq("id", booking.id);
 
     if (camp?.host_id) {
       await supabase.from("notifications").insert({

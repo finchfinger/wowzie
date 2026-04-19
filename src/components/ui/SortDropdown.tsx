@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 
 export type SortOption<T extends string = string> = {
   value: T;
@@ -29,7 +28,7 @@ export function SortDropdown<T extends string>({ options, value, onChange }: Pro
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h18M6 12h12M10 17h4" />
         </svg>
         {label}
-        <ChevronDown className="h-3 w-3 opacity-60" />
+        <span className="material-symbols-rounded select-none opacity-60" style={{ fontSize: 12 }} aria-hidden>expand_more</span>
       </button>
 
       {open && (

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
@@ -68,7 +67,7 @@ export default function WishlistPage() {
       {!user && !loading && (
         <div className="rounded-card bg-card px-6 py-14 text-center max-w-sm mx-auto">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-            <Heart className="h-6 w-6 text-muted-foreground" />
+            <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 24 }} aria-hidden>favorite</span>
           </div>
           <p className="text-sm font-semibold text-foreground">Sign in to see your wishlist</p>
           <p className="mt-1.5 text-sm text-muted-foreground">
@@ -96,7 +95,7 @@ export default function WishlistPage() {
       {!loading && user && camps.length === 0 && (
         <div className="rounded-card bg-card px-6 py-14 text-center max-w-sm mx-auto">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-            <Heart className="h-6 w-6 text-muted-foreground" />
+            <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 24 }} aria-hidden>favorite</span>
           </div>
           <p className="text-sm font-semibold text-foreground">Nothing saved yet</p>
           <p className="mt-1.5 text-sm text-muted-foreground">

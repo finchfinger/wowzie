@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { SortDropdown } from "@/components/ui/SortDropdown";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
@@ -12,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ListingSkeletons } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 /* ── Sort options ───────────────────────────────────────── */
 
@@ -205,18 +205,14 @@ export default function HostListingsPage() {
   /* ── empty state ── */
   if (listings.length === 0) {
     return (
-      <div className="rounded-card border border-dashed border-border px-6 py-16 text-center space-y-3">
-        <div className="text-3xl">🏕️</div>
-        <p className="text-sm text-muted-foreground">
-          You haven&apos;t created any listings yet.
-        </p>
-        <Link
-          href="/host/activities/new"
-          className="inline-flex items-center rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-        >
-          Create your first listing
-        </Link>
-      </div>
+      <EmptyState
+        icon="add_home_work"
+        iconBg="bg-primary/10"
+        iconColor="text-primary"
+        title="No listings yet"
+        description="Create your first listing and start welcoming families to your activity."
+        action={{ label: "Create listing", href: "/host/activities/new" }}
+      />
     );
   }
 
@@ -230,13 +226,13 @@ export default function HostListingsPage() {
           {/* Search + sort row */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
               <Input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search"
-                className="h-9 rounded-full pl-8"
+                className="h-9 pl-8"
               />
             </div>
             <SortDropdown options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />

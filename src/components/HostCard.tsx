@@ -1,6 +1,5 @@
 "use client";
 
-import { MessageSquare, Pencil } from "lucide-react";
 
 export type HostCardProps = {
   /** The host's display name */
@@ -63,7 +62,7 @@ export function HostCard({
           onClick={onEdit}
           className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
         >
-          <Pencil className="h-3.5 w-3.5" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>edit</span>
           Edit listing
         </button>
       ) : (
@@ -72,7 +71,7 @@ export function HostCard({
           onClick={onMessage}
           className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
         >
-          <MessageSquare className="h-3.5 w-3.5" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chat</span>
           Send a message
         </button>
       )}

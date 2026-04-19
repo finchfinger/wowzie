@@ -10,23 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { NavTabs } from "@/components/ui/nav-tabs";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
-import {
-  Lock,
-  ShieldCheck,
-  Monitor,
-  CalendarSync,
-  UserCircle,
-  ShieldAlert,
-  BookOpen,
-  Gavel,
-  Bell,
-  MessageCircle,
-  Newspaper,
-  MessageSquareMore,
-  ChevronRight,
-  Plus,
-} from "lucide-react";
+function MSIcon({ name, size = 16 }: { name: string; size?: number }) {
+  return (
+    <span className="material-symbols-rounded select-none" style={{ fontSize: size }} aria-hidden>
+      {name}
+    </span>
+  );
+}
 
 // Reads searchParams — must be wrapped in Suspense
 function TabReader({ onInit }: { onInit: (t: SettingsTab) => void }) {
@@ -72,6 +64,9 @@ type Child = {
   avatar_emoji: string | null;
   created_at: string;
   interests?: string[] | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
 };
 
 const INTEREST_OPTIONS = [
@@ -314,6 +309,9 @@ function SettingsPageInner({
   const [childName, setChildName] = useState("");
   const [childBirthdate, setChildBirthdate] = useState("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [emergencyName, setEmergencyName] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [emergencyRelationship, setEmergencyRelationship] = useState("");
   const [addChildMessage, setAddChildMessage] = useState<{
     tone: "info" | "error" | "success";
     text: string;
@@ -494,6 +492,9 @@ function SettingsPageInner({
     setChildName("");
     setChildBirthdate("");
     setSelectedInterests([]);
+    setEmergencyName("");
+    setEmergencyPhone("");
+    setEmergencyRelationship("");
     setAddChildMessage({ tone: "info", text: "" });
   };
 
@@ -525,6 +526,9 @@ function SettingsPageInner({
           medications: null,
           avatar_emoji: avatar,
           interests: selectedInterests.length ? selectedInterests : null,
+          emergency_contact_name: emergencyName.trim() || null,
+          emergency_contact_phone: emergencyPhone.trim() || null,
+          emergency_contact_relationship: emergencyRelationship.trim() || null,
         },
       ]);
       if (error) {
@@ -704,7 +708,12 @@ function SettingsPageInner({
                   Permanently delete your account. This action cannot be undone.
                   If you&apos;re hosting active events, they&apos;ll be cancelled and guests will be notified.
                 </p>
-                <Button type="button" variant="destructive" size="sm">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => window.alert("To deactivate your account, please contact support@wowzi.com. We'll take care of it within 24 hours.")}
+                >
                   Deactivate account
                 </Button>
               </CardContent>
@@ -727,14 +736,24 @@ function SettingsPageInner({
                 onClick={() => { resetModal(); setModalOpen(true); }}
                 size="sm"
               >
-                <Plus className="h-3.5 w-3.5" />
+                <MSIcon name="add" />
                 Add child
               </Button>
             </div>
 
             <Card className="overflow-hidden py-0 gap-0">
               {loadingChildren && (
-                <div className="px-5 py-4 text-xs text-muted-foreground">Loading children…</div>
+                <div className="divide-y divide-black/5">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-3 px-5 py-3.5">
+                      <div className="h-9 w-9 rounded-full bg-muted animate-pulse shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-28 rounded bg-muted animate-pulse" />
+                        <div className="h-2.5 w-20 rounded bg-muted animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
               {!loadingChildren && childrenError && (
                 <div className="px-5 py-4 text-xs text-destructive">{childrenError}</div>
@@ -767,7 +786,7 @@ function SettingsPageInner({
                             </p>
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <MSIcon name="chevron_right" />
                       </button>
                     );
                   })}
@@ -775,23 +794,17 @@ function SettingsPageInner({
               )}
 
               {!loadingChildren && !childrenError && children.length === 0 && (
-                <div className="px-5 py-10 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-2xl">
-                    🧒
-                  </div>
-                  <p className="text-sm font-medium text-foreground mb-1">No children yet</p>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Add your kids to get age-appropriate recommendations.
-                  </p>
-                  <Button
-                    type="button"
-                    onClick={() => { resetModal(); setModalOpen(true); }}
-                    size="sm"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add your first child
-                  </Button>
-                </div>
+                <EmptyState
+                  icon="child_hat"
+                  iconBg="bg-primary/10"
+                  iconColor="text-primary"
+                  title="No children added yet"
+                  description="Add your children to quickly book camps, save preferences, and manage schedules."
+                  action={{
+                    label: "Add child",
+                    onClick: () => { resetModal(); setModalOpen(true); },
+                  }}
+                />
               )}
             </Card>
           </section>
@@ -927,6 +940,42 @@ function SettingsPageInner({
                     {addChildMessage.text}
                   </p>
                 )}
+              </div>
+
+              {/* Emergency contact */}
+              <div className="space-y-3 pt-1">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Emergency contact <span className="font-normal">(optional)</span></p>
+                  <p className="text-[11px] text-muted-foreground mb-3">Shared with the activity host in case of emergency.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Full name</label>
+                  <Input
+                    value={emergencyName}
+                    onChange={(e) => setEmergencyName(e.target.value)}
+                    placeholder="e.g. Jane Smith"
+                    disabled={addingChild}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Phone number</label>
+                  <Input
+                    type="tel"
+                    value={emergencyPhone}
+                    onChange={(e) => setEmergencyPhone(e.target.value)}
+                    placeholder="e.g. (555) 000-1234"
+                    disabled={addingChild}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Relationship</label>
+                  <Input
+                    value={emergencyRelationship}
+                    onChange={(e) => setEmergencyRelationship(e.target.value)}
+                    placeholder="e.g. Grandparent, Aunt, Neighbour"
+                    disabled={addingChild}
+                  />
+                </div>
               </div>
 
               <div className="flex gap-2 pt-1">
@@ -1088,7 +1137,7 @@ function LoginSecurityTab({ user }: { user: User | null }) {
         <CardContent className="p-0 divide-y divide-black/5">
           {/* Password row */}
           <SettingsRow
-            icon={<Lock className="h-4 w-4" />}
+            icon={<MSIcon name="lock" />}
             label="Account password"
             description="Update the password you use to sign in to Wowzi."
             action={
@@ -1123,7 +1172,7 @@ function LoginSecurityTab({ user }: { user: User | null }) {
                 </div>
                 {(passwordStatus || passwordError) && (
                   <div className="space-y-1">
-                    {passwordStatus && <p className="text-[11px] text-green-600">{passwordStatus}</p>}
+                    {passwordStatus && <p className="text-[11px] text-primary">{passwordStatus}</p>}
                     {passwordError && <p className="text-[11px] text-destructive">{passwordError}</p>}
                   </div>
                 )}
@@ -1147,13 +1196,13 @@ function LoginSecurityTab({ user }: { user: User | null }) {
 
           {/* 2FA row */}
           <SettingsRow
-            icon={<ShieldCheck className="h-4 w-4" />}
+            icon={<MSIcon name="verified_user" />}
             label="Two-factor authentication"
             description="Add an extra layer of security with a one-time code when signing in."
             action={
-              <Button type="button" variant="outline" size="xs" disabled className="cursor-not-allowed text-muted-foreground">
+              <span className="text-xs text-muted-foreground px-2 py-1 rounded-md border border-border/50 bg-muted/40">
                 Coming soon
-              </Button>
+              </span>
             }
           />
         </CardContent>
@@ -1169,7 +1218,20 @@ function LoginSecurityTab({ user }: { user: User | null }) {
         </CardHeader>
         <CardContent className="p-0 divide-y divide-black/5">
           {devicesLoading && (
-            <div className="px-5 py-3 text-xs text-muted-foreground">Loading devices…</div>
+            <div className="divide-y divide-black/5">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center justify-between px-5 py-3.5 gap-4">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="h-4 w-4 rounded bg-muted animate-pulse shrink-0" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-3 w-36 rounded bg-muted animate-pulse" />
+                      <div className="h-2.5 w-24 rounded bg-muted animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="h-6 w-16 rounded bg-muted animate-pulse shrink-0" />
+                </div>
+              ))}
+            </div>
           )}
           {!devicesLoading && devices.length === 0 && (
             <div className="px-5 py-3 text-xs text-muted-foreground">No active devices found.</div>
@@ -1177,7 +1239,7 @@ function LoginSecurityTab({ user }: { user: User | null }) {
           {!devicesLoading && devices.map((device) => (
             <SettingsRow
               key={device.id}
-              icon={<Monitor className="h-4 w-4" />}
+              icon={<MSIcon name="devices" />}
               label={device.label}
               description={device.detail}
               action={
@@ -1206,23 +1268,23 @@ function LoginSecurityTab({ user }: { user: User | null }) {
         </CardHeader>
         <CardContent className="p-0 divide-y divide-black/5">
           <SettingsRow
-            icon={<CalendarSync className="h-4 w-4" />}
+            icon={<MSIcon name="calendar_month" />}
             label="Calendar syncing"
             description="Sync your Wowzi activities with Google, Outlook, or Apple calendar."
             action={
-              <Button type="button" variant="outline" size="xs">
-                Add iCal
-              </Button>
+              <span className="text-xs text-muted-foreground px-2 py-1 rounded-md border border-border/50 bg-muted/40">
+                Coming soon
+              </span>
             }
           />
           <SettingsRow
-            icon={<UserCircle className="h-4 w-4" />}
+            icon={<MSIcon name="contacts" />}
             label="Sync contacts with Google"
             description="Sync your Gmail contacts to easily invite families to your events."
             action={
-              <Button type="button" variant="outline" size="xs">
-                Connect
-              </Button>
+              <span className="text-xs text-muted-foreground px-2 py-1 rounded-md border border-border/50 bg-muted/40">
+                Coming soon
+              </span>
             }
           />
         </CardContent>
@@ -1264,14 +1326,14 @@ type CategoryConfig = {
 };
 
 const NOTIF_CATEGORIES: CategoryConfig[] = [
-  { id: "account_activity", section: "Account activity and policies", label: "Account activity", description: "Notifications about your account and payment activity.", icon: <UserCircle className="h-4 w-4" />, defaultEmail: true, defaultSms: true },
-  { id: "two_factor", section: "Account activity and policies", label: "Two-factor authentication", description: "Alerts when two-factor authentication is used or updated.", icon: <ShieldAlert className="h-4 w-4" />, defaultEmail: true, defaultSms: true },
-  { id: "camper_policies", section: "Account activity and policies", label: "Camper policies", description: "Important camper policy updates and changes.", icon: <BookOpen className="h-4 w-4" />, defaultEmail: true, defaultSms: true },
-  { id: "host_policies", section: "Account activity and policies", label: "Host policies", description: "Important host policy updates and changes.", icon: <Gavel className="h-4 w-4" />, defaultEmail: true, defaultSms: true },
-  { id: "reminders", section: "Reminders", label: "Reminders", description: "Helpful reminders about reservations, listings, and account activity.", icon: <Bell className="h-4 w-4" />, defaultEmail: true, defaultSms: true },
-  { id: "messages", section: "Guest and Host messages", label: "Messages", description: "Stay in touch with your host or guests before and during your class.", icon: <MessageCircle className="h-4 w-4" />, defaultEmail: true, defaultSms: true },
-  { id: "news_updates", section: "Wowzi updates", label: "News and updates", description: "New features, ideas, and news from Wowzi.", icon: <Newspaper className="h-4 w-4" />, defaultEmail: false, defaultSms: false },
-  { id: "feedback", section: "Wowzi updates", label: "Feedback", description: "Invitations to share feedback and help us improve Wowzi.", icon: <MessageSquareMore className="h-4 w-4" />, defaultEmail: false, defaultSms: false },
+  { id: "account_activity", section: "Account activity and policies", label: "Account activity", description: "Notifications about your account and payment activity.", icon: <MSIcon name="manage_accounts" />, defaultEmail: true, defaultSms: true },
+  { id: "two_factor", section: "Account activity and policies", label: "Two-factor authentication", description: "Alerts when two-factor authentication is used or updated.", icon: <MSIcon name="security" />, defaultEmail: true, defaultSms: true },
+  { id: "camper_policies", section: "Account activity and policies", label: "Camper policies", description: "Important camper policy updates and changes.", icon: <MSIcon name="menu_book" />, defaultEmail: true, defaultSms: true },
+  { id: "host_policies", section: "Account activity and policies", label: "Host policies", description: "Important host policy updates and changes.", icon: <MSIcon name="gavel" />, defaultEmail: true, defaultSms: true },
+  { id: "reminders", section: "Reminders", label: "Reminders", description: "Helpful reminders about reservations, listings, and account activity.", icon: <MSIcon name="notifications" />, defaultEmail: true, defaultSms: true },
+  { id: "messages", section: "Guest and Host messages", label: "Messages", description: "Stay in touch with your host or guests before and during your class.", icon: <MSIcon name="chat" />, defaultEmail: true, defaultSms: true },
+  { id: "news_updates", section: "Wowzi updates", label: "News and updates", description: "New features, ideas, and news from Wowzi.", icon: <MSIcon name="newspaper" />, defaultEmail: false, defaultSms: false },
+  { id: "feedback", section: "Wowzi updates", label: "Feedback", description: "Invitations to share feedback and help us improve Wowzi.", icon: <MSIcon name="rate_review" />, defaultEmail: false, defaultSms: false },
 ];
 
 const SECTION_DESCRIPTIONS: Record<string, string> = {
@@ -1391,7 +1453,31 @@ function NotificationsTab({ userId }: { userId: string | null }) {
   };
 
   if (loading || !prefsByCategory) {
-    return <section className="space-y-4 text-xs text-muted-foreground">Loading your notification settings…</section>;
+    return (
+      <section className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border border-border overflow-hidden">
+            <div className="px-5 pt-4 pb-3 border-b border-black/5">
+              <div className="h-3.5 w-40 rounded bg-muted animate-pulse" />
+            </div>
+            <div className="divide-y divide-black/5">
+              {[1, 2].map((j) => (
+                <div key={j} className="flex items-center justify-between px-5 py-3.5 gap-4">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="h-4 w-4 rounded bg-muted animate-pulse shrink-0" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-3 w-32 rounded bg-muted animate-pulse" />
+                      <div className="h-2.5 w-24 rounded bg-muted animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="h-6 w-10 rounded bg-muted animate-pulse shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+    );
   }
 
   return (

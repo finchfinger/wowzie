@@ -329,7 +329,7 @@ export const AddressInput: React.FC<AddressInputProps> = ({
           mode === "city" ? "address-level2" : "street-address"
         }
         data-places-ready={ready ? "true" : "false"}
-        className={cn("h-11", className)}
+        className={cn(className)}
       />
 
       {open && !disabled && suggestions.length > 0 && (

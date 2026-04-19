@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { MessageSquare, ChevronLeft, CheckCircle2, XCircle, Timer, AlertTriangle } from "lucide-react";
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -78,19 +77,19 @@ function ApprovalBanner({
 }) {
   if (status === "confirmed") return (
     <div className="flex items-center gap-2 rounded-card bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-800">
-      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+      <span className="material-symbols-rounded select-none text-emerald-600" style={{ fontSize: 16 }} aria-hidden>check_circle</span>
       <p>This booking has been <span className="font-medium">confirmed</span>.</p>
     </div>
   );
   if (status === "declined") return (
     <div className="flex items-center gap-2 rounded-card bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-800">
-      <XCircle className="h-4 w-4 text-red-600" />
+      <span className="material-symbols-rounded select-none text-red-600" style={{ fontSize: 16 }} aria-hidden>cancel</span>
       <p>This booking has been <span className="font-medium">declined</span>.</p>
     </div>
   );
   if (status === "cancelled" || status === "expired") return (
     <div className="flex items-center gap-2 rounded-card bg-muted px-4 py-3 text-xs text-muted-foreground">
-      <XCircle className="h-4 w-4" />
+      <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>cancel</span>
       <p>This booking was <span className="font-medium">{status}</span>.</p>
     </div>
   );
@@ -98,7 +97,7 @@ function ApprovalBanner({
   return (
     <div className="flex items-center justify-between gap-4 rounded-card bg-amber-50 border border-amber-200 px-4 py-3">
       <div className="flex items-center gap-2 text-xs text-amber-900">
-        <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <span className="material-symbols-rounded select-none text-amber-600" style={{ fontSize: 16 }} aria-hidden>warning</span>
         <p>This booking is <span className="font-medium">pending approval</span>.</p>
       </div>
       <div className="flex items-center gap-2">
@@ -310,7 +309,7 @@ export default function GuestDetailPage() {
       {/* Back link */}
       <Link href={`/host/activities/${activityId}`}
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <ChevronLeft className="h-3.5 w-3.5" />
+        <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chevron_left</span>
         Back to activity
       </Link>
 
@@ -330,7 +329,7 @@ export default function GuestDetailPage() {
         </div>
         <button type="button" onClick={() => void handleMessage()}
           className="inline-flex items-center gap-2 rounded-lg bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors">
-          <MessageSquare className="h-4 w-4" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>chat</span>
           Message
         </button>
       </div>

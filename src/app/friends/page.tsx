@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ShareCalendarModal } from "@/components/ShareCalendarModal";
 import { FriendListItem, type FriendKid } from "@/components/FriendListItem";
-import { QrCode } from "lucide-react";
 
 /* ── Types ──────────────────────────────────────────────── */
 
@@ -215,7 +214,7 @@ export default function FriendsPage() {
               className="shrink-0 h-9 w-9 flex items-center justify-center rounded-xl bg-background hover:bg-muted transition-colors text-muted-foreground"
               aria-label="Share via QR / link"
             >
-              <QrCode className="h-4 w-4" />
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>qr_code</span>
             </button>
           </div>
 

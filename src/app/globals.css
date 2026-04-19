@@ -35,8 +35,6 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
-  --color-input-background: var(--input-background);
-  --color-input-background-hover: var(--input-background-hover);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
@@ -62,13 +60,13 @@
 }
 
 :root {
-  --card-radius: 1rem; /* 16px — change here to restyle all cards */
-  --radius: 0.625rem;
+  --card-radius: 1rem;    /* 16px — FormCard only */
+  --radius: 0.625rem;     /* base → rounded-xl = 14px for all controls */
+  /* Spacing rhythm */
+  --space-field: 1rem;    /* 16px = space-y-4 — between fields */
+  --space-section: 1.5rem; /* 24px = space-y-6 — between cards */
   --brand: #7B5CBF;
   --gold: #F5C840;
-  --input-radius: 4px;
-  --input-background: #EAEEF6;
-  --input-background-hover: #DEE3EF;
   --background: #F1F4F9;
   --foreground: oklch(0.13 0 0);
   --card: oklch(1 0 0);
@@ -194,6 +192,12 @@
     span-12 → start col 1  (no margin)
   */
   .span-6-center  { grid-column: 4 / span 6;  }
+  .span-7-center  {
+    grid-column: 1 / -1;
+    --col-w: calc((100% - 11 * 24px) / 12);
+    width: calc(7 * var(--col-w) + 6 * 24px);
+    margin-inline: auto;
+  }
   .span-8-center  { grid-column: 3 / span 8;  }
   .span-10-center { grid-column: 2 / span 10; }
   .span-12        { grid-column: 1 / -1;       }
@@ -207,6 +211,7 @@
 
     /* Widen spans one step so content doesn't get too cramped */
     .span-6-center  { grid-column: 3 / span 8;  }
+    .span-7-center  { grid-column: 2 / span 9;  }
     .span-8-center  { grid-column: 2 / span 10; }
     .span-10-center { grid-column: 1 / -1;       }
   }
@@ -223,6 +228,7 @@
       row-gap: 16px;
     }
     .span-6-center,
+    .span-7-center,
     .span-8-center,
     .span-10-center,
     .span-12 {

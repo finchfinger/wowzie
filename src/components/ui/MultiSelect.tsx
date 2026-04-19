@@ -124,9 +124,8 @@ export const MultiSelect: React.FC<Props> = ({
             focusSearchSoon();
           }}
           className={cn(
-            "flex min-h-11 w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 text-sm transition-colors",
-            "hover:bg-gray-50 focus-visible:outline-none focus-visible:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10",
-            "border-input",
+            "flex w-full min-h-10 items-center justify-between gap-2 rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm transition-colors",
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
             className,
           )}
         >
@@ -152,12 +151,12 @@ export const MultiSelect: React.FC<Props> = ({
               </span>
             ))}
 
-            {selectedOptions.length === 0 ? (
+            {selectedOptions.length === 0 && (
               <span className="text-muted-foreground">{placeholder}</span>
-            ) : null}
+            )}
           </div>
 
-          <ChevronDown className="h-4 w-4 opacity-70" />
+          <ChevronDown className="h-4 w-4 opacity-70 shrink-0" />
         </div>
       </PopoverTrigger>
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, MessageSquare } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 
@@ -181,7 +180,7 @@ export default function GuestDetailPage() {
           onClick={() => router.back()}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="h-3.5 w-3.5" /> Back
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chevron_left</span> Back
         </button>
       </div>
     );
@@ -195,7 +194,7 @@ export default function GuestDetailPage() {
         onClick={() => router.back()}
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ChevronLeft className="h-3.5 w-3.5" />
+        <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chevron_left</span>
         All guests
       </button>
 
@@ -216,7 +215,7 @@ export default function GuestDetailPage() {
           onClick={() => router.push(`/messages?to=${contact.id}`)}
           className="inline-flex items-center gap-2 rounded-lg bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors shrink-0"
         >
-          <MessageSquare className="h-4 w-4" />
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>chat</span>
           Message
         </button>
       </div>

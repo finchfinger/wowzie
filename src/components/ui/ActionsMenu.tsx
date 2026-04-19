@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreVertical } from "lucide-react";
 
 export type ActionItem = {
   label: string;
@@ -47,7 +46,7 @@ export function ActionsMenu({ items, stopPropagation = true }: Props) {
         aria-label="More actions"
         className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 transition-colors"
       >
-        <MoreVertical className="h-4 w-4" />
+        <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
       </button>
 
       {open && (

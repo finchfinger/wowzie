@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { NavTabs } from "@/components/ui/nav-tabs";
+import { Button } from "@/components/ui/button";
 
 type HostStatus = "not_applied" | "pending" | "approved" | "rejected";
 
@@ -135,10 +136,11 @@ export default function HostLayout({
 
   // Approved: dashboard with nav tabs
   const hostTabs = [
-    { id: "listings", label: "Listings", href: "/host/listings" },
-    { id: "guests", label: "Guests", href: "/host/guests" },
-    { id: "financials", label: "Financials", href: "/host/financials" },
-    { id: "settings", label: "Settings", href: "/host/settings" },
+    { id: "listings",  label: "Listings",  href: "/host/listings" },
+    { id: "guests",    label: "Guests",    href: "/host/guests" },
+    { id: "financials",label: "Financials",href: "/host/financials" },
+    { id: "marketing", label: "Marketing", href: "/host/marketing" },
+    { id: "settings",  label: "Settings",  href: "/host/settings" },
   ];
 
   const activeTabId = hostTabs.find((t) => pathname.startsWith(t.href))?.id ?? "listings";
@@ -158,12 +160,12 @@ export default function HostLayout({
                   Manage your activities, families, and payouts.
                 </p>
               </div>
-              <Link
-                href="/host/activities/new"
-                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
-              >
-                + Create listing
-              </Link>
+              <Button asChild size="sm" className="shrink-0">
+                <Link href="/host/activities/new">
+                  <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>add</span>
+                  Create listing
+                </Link>
+              </Button>
             </header>
 
             <NavTabs tabs={hostTabs} activeId={activeTabId} borderless />
@@ -282,17 +284,13 @@ const FAQ_SECTIONS = [
 
 function ChevronDown({ open }: { open: boolean }) {
   return (
-    <svg
-      className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <span
+      className={`material-symbols-rounded text-muted-foreground shrink-0 select-none transition-transform ${open ? "rotate-180" : ""}`}
+      style={{ fontSize: 16 }}
+      aria-hidden
     >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
+      expand_more
+    </span>
   );
 }
 

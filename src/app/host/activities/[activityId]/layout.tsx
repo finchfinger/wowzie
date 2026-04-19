@@ -2,7 +2,6 @@
 
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { MoreHorizontal } from "lucide-react";
 import { ActivityProvider, useActivity } from "@/lib/activity-context";
 import { getHeroImage } from "@/lib/images";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -32,7 +31,7 @@ function ActionsMenu({ items }: { items: ActionItem[] }) {
     <div ref={ref} className="relative inline-flex">
       <button type="button" onClick={() => setOpen(p => !p)} aria-haspopup="menu" aria-expanded={open} aria-label="More actions"
         className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-foreground/8 text-foreground/70 hover:bg-foreground/12 hover:text-foreground transition-colors">
-        <MoreHorizontal className="h-4 w-4" />
+        <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>more_horiz</span>
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-popover shadow-lg z-20 overflow-hidden" role="menu">

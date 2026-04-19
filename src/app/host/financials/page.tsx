@@ -172,7 +172,7 @@ export default function HostFinancialsPage() {
         ].map(({ label, value, muted, highlight }) => (
           <div key={label} className="rounded-card bg-card px-5 py-4 space-y-1">
             <p className="text-xs text-muted-foreground">{label}</p>
-            <p className={`text-2xl font-semibold ${highlight ? "text-emerald-600" : muted ? "text-muted-foreground" : "text-foreground"}`}>
+            <p className={`text-2xl font-semibold ${highlight ? "text-primary" : muted ? "text-muted-foreground" : "text-foreground"}`}>
               {value}
             </p>
           </div>
@@ -192,9 +192,12 @@ export default function HostFinancialsPage() {
         )}
 
         {!loading && bookings.length === 0 && (
-          <p className="text-sm text-muted-foreground py-4">
-            No confirmed bookings yet. Payouts will appear here once families book your activities.
-          </p>
+          <EmptyState
+            icon="payments"
+            title="No payouts yet"
+            description="Payouts will appear here once families book your activities."
+            className="py-10"
+          />
         )}
 
         {!loading && bookings.length > 0 && (

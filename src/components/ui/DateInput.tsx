@@ -73,8 +73,6 @@ export const DateInput: React.FC<DateInputProps> = ({
   const contentId = React.useId();
   const hiddenId = id ? `${id}__hidden` : undefined;
 
-  const displayText = value ? formatDisplayDate(value) : placeholder;
-
   const isDisabled = React.useCallback(
     (date: Date) => {
       const iso = isoOf(date);
@@ -96,10 +94,10 @@ export const DateInput: React.FC<DateInputProps> = ({
           type="button"
           disabled={disabled}
           className={cn(
-            "h-11 w-full rounded border-0 bg-[#f1f3f4] px-3 text-left text-sm outline-none transition-colors",
-            "hover:bg-[#e8eaed] focus-visible:ring-2 focus-visible:ring-foreground/20",
+            "flex items-center h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm transition-colors outline-none text-left",
+            "focus-visible:ring-1 focus-visible:ring-ring",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            error ? "ring-2 ring-destructive/40" : "",
+            error && "border-destructive ring-1 ring-destructive/20",
             className,
           )}
           aria-label={
@@ -112,10 +110,8 @@ export const DateInput: React.FC<DateInputProps> = ({
           aria-expanded={open}
           aria-controls={contentId}
         >
-          <span
-            className={value ? "text-foreground" : "text-muted-foreground"}
-          >
-            {displayText}
+          <span className={value ? "text-foreground" : "text-muted-foreground"}>
+            {value ? formatDisplayDate(value) : placeholder}
           </span>
         </button>
       </PopoverTrigger>
