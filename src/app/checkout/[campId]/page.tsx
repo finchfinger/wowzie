@@ -165,6 +165,11 @@ function CheckoutContent() {
           await onSubmitMock();
           return;
         }
+        // Camp just filled up — send back to camp page where waitlist button shows
+        if (res.status === 409) {
+          router.push(`/camp/${campId}?full=1`);
+          return;
+        }
         throw new Error(json.error || "Could not start checkout.");
       }
 

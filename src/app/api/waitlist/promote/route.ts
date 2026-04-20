@@ -45,19 +45,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ promoted: 0, message: "Camp is still full." });
     }
 
-    // Find all waitlisted bookings, oldest first
+    // How many spots are open?
+    const spotsOpen = totalCapacity != null
+      ? Math.max(0, totalCapacity - (confirmedCount ?? 0))
+      : 1; // unlimited capacity — notify first in line
+
+    // Find waitlisted bookings, oldest first — only notify as many as spots open
     const { data: waitlisted } = await supabase
       .from("bookings")
       .select("id, user_id")
       .eq("camp_id", campId)
       .eq("status", "waitlisted")
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true })
+      .limit(spotsOpen);
 
     if (!waitlisted || waitlisted.length === 0) {
       return NextResponse.json({ promoted: 0, message: "No waitlisted users." });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://golly-roan.vercel.app";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.heywowzi.com";
     const campName = camp.name as string;
     const campSlug = camp.slug as string;
     let promoted = 0;

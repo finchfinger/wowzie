@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
         const { data: hostUser } = await supabase.auth.admin.getUserById(camp.host_id);
         const hostEmail = hostUser?.user?.email;
         if (hostEmail) {
-          const origin = req.headers.get("origin") || "https://golly-roan.vercel.app";
+          const origin = req.headers.get("origin") || "https://www.heywowzi.com";
           await resend.emails.send({
             from: FROM_EMAIL,
             to: hostEmail,

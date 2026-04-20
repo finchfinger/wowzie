@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
@@ -150,6 +150,8 @@ export default function CampDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justFull = searchParams.get("full") === "1";
   const { user } = useAuth();
 
   const [camp, setCamp] = useState<FullCamp | null>(null);
@@ -1232,6 +1234,11 @@ export default function CampDetailPage() {
                         Cancel reservation
                       </button>
                     </div>
+                  </div>
+                )}
+                {justFull && statusVariant !== "waitlisted" && (
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                    This camp just filled up while you were checking out. You can join the waitlist below.
                   </div>
                 )}
                 {statusVariant === "waitlisted" && (
