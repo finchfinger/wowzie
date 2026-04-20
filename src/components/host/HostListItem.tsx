@@ -14,6 +14,7 @@ export type HostListItemData = {
   hero_image_url: string | null;
   status: string | null;
   is_published: boolean | null;
+  approval_status: string | null;
   meta: any;
   capacity: number | null;
   start_time: string | null;
@@ -131,24 +132,18 @@ function getStartBadge(listing: HostListItemData): string | null {
 function StatusBadge({
   status,
   isDraft,
+  approvalStatus,
   onStatusChange,
 }: {
   status: "active" | "inactive";
   isDraft: boolean;
+  approvalStatus: string | null;
   onStatusChange: (s: "active" | "inactive") => void;
 }) {
+  // All hooks must be called unconditionally
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isLive = status === "active" && !isDraft;
-
-  if (isDraft) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
-        Draft
-      </span>
-    );
-  }
 
   useEffect(() => {
     if (!open) return;
@@ -165,6 +160,35 @@ function StatusBadge({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // Pending review — non-interactive badge
+  if (approvalStatus === "pending_review") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700">
+        <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+        In review
+      </span>
+    );
+  }
+
+  // Rejected — non-interactive badge
+  if (approvalStatus === "rejected") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive">
+        <span className="h-1.5 w-1.5 rounded-full bg-destructive/60" />
+        Rejected
+      </span>
+    );
+  }
+
+  if (isDraft) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+        Draft
+      </span>
+    );
+  }
 
   return (
     <div ref={ref} className="relative">
@@ -349,6 +373,7 @@ export function HostListItem({
         <StatusBadge
           status={status}
           isDraft={isDraft}
+          approvalStatus={listing.approval_status ?? null}
           onStatusChange={(s) => onStatusChange(listing.id, s)}
         />
         <ActionsMenu

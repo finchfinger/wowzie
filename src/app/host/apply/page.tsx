@@ -164,6 +164,14 @@ export default function HostApplyPage() {
   const [operatingDuration, setOperatingDuration] = useState("");
   const [referralSource, setReferralSource] = useState("");
 
+  // Shared trust signals
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [socialHandle, setSocialHandle] = useState("");
+  const [hasInsurance, setHasInsurance] = useState(false);
+
+  // Individual operating duration
+  const [indivOperatingDuration, setIndivOperatingDuration] = useState("");
+
   // Certifications
   const [certCPR, setCertCPR] = useState(false);
   const [certFirstAid, setCertFirstAid] = useState(false);
@@ -223,6 +231,7 @@ export default function HostApplyPage() {
       if (!req(firstName)) missing.push("First name");
       if (!req(lastName)) missing.push("Last name");
       if (!req(aboutIndividual)) missing.push("About you");
+      if (!req(indivOperatingDuration)) missing.push("How long you've been running activities");
     } else {
       if (!req(orgName)) missing.push("Organization name");
       if (!req(ein)) missing.push("EIN");
@@ -230,6 +239,7 @@ export default function HostApplyPage() {
       if (!req(primaryContactLast)) missing.push("Contact last name");
       if (!req(aboutOrg)) missing.push("About organization");
       if (!req(operatingDuration)) missing.push("Operating duration");
+      if (!req(websiteUrl)) missing.push("Website");
     }
 
     if (!agreeBackgroundCheck) missing.push("Background check");
@@ -237,7 +247,7 @@ export default function HostApplyPage() {
     if (!agreeTerms) missing.push("Terms of service");
 
     return { ok: missing.length === 0, missing };
-  }, [accountType, emailAddress, phone, address1, city, state, postalCode, firstName, lastName, aboutIndividual, orgName, ein, primaryContactFirst, primaryContactLast, aboutOrg, operatingDuration, agreeBackgroundCheck, agreeChildSafety, agreeTerms]);
+  }, [accountType, emailAddress, phone, address1, city, state, postalCode, firstName, lastName, aboutIndividual, indivOperatingDuration, orgName, ein, primaryContactFirst, primaryContactLast, aboutOrg, operatingDuration, websiteUrl, agreeBackgroundCheck, agreeChildSafety, agreeTerms]);
 
   const clearForm = () => {
     setAccountType("individual");
@@ -245,6 +255,7 @@ export default function HostApplyPage() {
     setFormattedAddress(""); setAddress1(""); setSuite(""); setCity(""); setState("IL"); setPostalCode("");
     setFirstName(""); setLastName(""); setDateOfBirth(""); setAboutIndividual("");
     setOrgName(""); setEin(""); setPrimaryContactFirst(""); setPrimaryContactLast(""); setAboutOrg(""); setOperatingDuration(""); setReferralSource("");
+    setWebsiteUrl(""); setSocialHandle(""); setHasInsurance(false); setIndivOperatingDuration("");
     setCertCPR(false); setCertFirstAid(false); setCertTeaching(false); setCertFoodHandling(false);
     setAgreeBackgroundCheck(false); setAgreeChildSafety(false); setAgreeTerms(false);
     setError(null);
@@ -279,6 +290,7 @@ export default function HostApplyPage() {
 
       const normalizedPostal = postalCode.replace(/\s+/g, "").slice(0, 10);
       const certs: string[] = [];
+      if (hasInsurance) certs.push("Liability Insurance");
       if (certCPR) certs.push("CPR Certified");
       if (certFirstAid) certs.push("First Aid Certified");
       if (certTeaching) certs.push("Teaching License");
@@ -294,6 +306,7 @@ export default function HostApplyPage() {
       if (accountType === "individual") {
         lines.push(`First name: ${firstName.trim()}`, `Last name: ${lastName.trim()}`);
         if (req(dateOfBirth)) lines.push(`Date of birth: ${dateOfBirth.trim()}`);
+        lines.push(`Operating duration: ${indivOperatingDuration}`);
       } else {
         lines.push(`Organization name: ${orgName.trim()}`, `EIN: ${ein.trim()}`);
         lines.push(`Primary contact: ${primaryContactFirst.trim()} ${primaryContactLast.trim()}`);
@@ -302,6 +315,9 @@ export default function HostApplyPage() {
       }
 
       lines.push(`Email: ${emailAddress.trim()}`, `Phone: ${phone.trim()}`, `Address: ${addrJoined}`);
+      if (req(websiteUrl)) lines.push(`Website: ${websiteUrl.trim()}`);
+      if (req(socialHandle)) lines.push(`Social: ${socialHandle.trim()}`);
+      lines.push(`Liability insurance: ${hasInsurance ? "Yes" : "No"}`);
       if (certs.length) { lines.push("", `Certifications: ${certs.join(", ")}`); }
       lines.push("", accountType === "individual" ? "About:" : "About organization:");
       lines.push(accountType === "individual" ? aboutIndividual.trim() : aboutOrg.trim());
@@ -412,6 +428,15 @@ export default function HostApplyPage() {
                     <SelectInput value={referralSource} onChange={setReferralSource} disabled={submitting} options={REFERRAL_SOURCES} placeholder="Select an option" />
                   </Field>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Website" required>
+                    <TextInput value={websiteUrl} onChange={setWebsiteUrl} disabled={submitting} placeholder="https://yourorganization.com" error={!req(websiteUrl) && !!error} />
+                  </Field>
+                  <Field label="Instagram or social media (optional)">
+                    <TextInput value={socialHandle} onChange={setSocialHandle} disabled={submitting} placeholder="@yourinstagram" />
+                  </Field>
+                </div>
               </div>
             </FormCard>
           ) : (
@@ -462,6 +487,15 @@ export default function HostApplyPage() {
                 <Field label="Tell families about yourself" required>
                   <TextareaInput value={aboutIndividual} onChange={setAboutIndividual} disabled={submitting} rows={6} placeholder="Tell us what you host, your experience, and what families should expect." error={!req(aboutIndividual) && !!error} />
                 </Field>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="How long have you been running activities?" required>
+                    <SelectInput value={indivOperatingDuration} onChange={setIndivOperatingDuration} disabled={submitting} options={OPERATING_DURATIONS} placeholder="Select duration" error={!req(indivOperatingDuration) && !!error} />
+                  </Field>
+                  <Field label="Website or social media (optional)">
+                    <TextInput value={websiteUrl} onChange={setWebsiteUrl} disabled={submitting} placeholder="https://yoursite.com or @yourinstagram" />
+                  </Field>
+                </div>
               </div>
             </FormCard>
           )}
@@ -469,6 +503,7 @@ export default function HostApplyPage() {
           {/* Certifications */}
           <FormCard title="Certifications and credentials" subtitle="Not required, but certifications build trust with families and may be needed for certain activity types.">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <CheckboxCard id="cert-insurance" title="Liability Insurance" description="My organization or activity has general liability insurance." checked={hasInsurance} disabled={submitting} onChange={setHasInsurance} />
               <CheckboxCard id="cert-cpr" title="CPR Certified" checked={certCPR} disabled={submitting} onChange={setCertCPR} />
               <CheckboxCard id="cert-first-aid" title="First Aid Certified" checked={certFirstAid} disabled={submitting} onChange={setCertFirstAid} />
               <CheckboxCard id="cert-teaching" title="Teaching License" checked={certTeaching} disabled={submitting} onChange={setCertTeaching} />

@@ -47,7 +47,7 @@ export default function HostListingsPage() {
       const { data, error: dbError } = await supabase
         .from("camps")
         .select(
-          "id, slug, name, image_url, hero_image_url, status, is_published, meta, capacity, start_time, end_time"
+          "id, slug, name, image_url, hero_image_url, status, is_published, approval_status, meta, capacity, start_time, end_time"
         )
         .eq("host_id", user.id)
         .order("name", { ascending: true });
@@ -60,7 +60,7 @@ export default function HostListingsPage() {
         return;
       }
 
-      const rows = (data || []) as Omit<HostListItemData, "bookingCount" | "pendingCount">[];
+      const rows = (data || []) as unknown as Omit<HostListItemData, "bookingCount" | "pendingCount">[];
 
       const withCounts: HostListItemData[] = rows.map((r) => ({
         ...r,
@@ -147,6 +147,7 @@ export default function HostListingsPage() {
         status: "inactive",
         is_published: false,
         is_active: false,
+        approval_status: "pending_review",
         meta: original.meta ?? {},
         capacity: original.capacity,
         image_url: original.image_url,

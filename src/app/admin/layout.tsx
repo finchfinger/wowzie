@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { NavTabs } from "@/components/ui/nav-tabs";
 
 const TABS = [
   { id: "overview", label: "Overview",  href: "/admin/overview" },
@@ -55,32 +56,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-[calc(100dvh-72px)] bg-muted/20">
       {/* Header */}
       <div className="border-b border-border bg-background">
-        <div className="page-container">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-rounded text-primary" style={{ fontSize: 20 }}>admin_panel_settings</span>
-              <span className="text-sm font-semibold text-foreground">Wowzi Admin</span>
+        <div className="page-container py-6 sm:py-8 pb-0">
+          <header className="mb-6 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-rounded text-primary select-none" style={{ fontSize: 22 }}>admin_panel_settings</span>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-semibold text-foreground leading-tight">Wowzi Admin</h1>
+                <p className="text-sm text-muted-foreground">Platform management</p>
+              </div>
             </div>
-            <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0">
               ← Back to site
             </Link>
-          </div>
-          {/* Tabs */}
-          <div className="flex gap-1 -mb-px">
-            {TABS.map((tab) => (
-              <Link
-                key={tab.id}
-                href={tab.href}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeId === tab.id
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </Link>
-            ))}
-          </div>
+          </header>
+          <NavTabs tabs={TABS} activeId={activeId} borderless />
         </div>
       </div>
 

@@ -136,11 +136,12 @@ export default function HostLayout({
 
   // Approved: dashboard with nav tabs
   const hostTabs = [
-    { id: "listings",  label: "Listings",  href: "/host/listings" },
-    { id: "guests",    label: "Guests",    href: "/host/guests" },
-    { id: "financials",label: "Financials",href: "/host/financials" },
-    { id: "marketing", label: "Marketing", href: "/host/marketing" },
-    { id: "settings",  label: "Settings",  href: "/host/settings" },
+    { id: "listings",  label: "Listings",   href: "/host/listings" },
+    { id: "guests",    label: "Guests",     href: "/host/guests" },
+    { id: "analytics", label: "Analytics",  href: "/host/analytics" },
+    { id: "financials",label: "Financials", href: "/host/financials" },
+    { id: "marketing", label: "Marketing",  href: "/host/marketing" },
+    { id: "settings",  label: "Settings",   href: "/host/settings" },
   ];
 
   const activeTabId = hostTabs.find((t) => pathname.startsWith(t.href))?.id ?? "listings";

@@ -8,7 +8,9 @@ type StatusBadgeVariant =
   | "confirmed"
   | "pending"
   | "cancelled"
-  | "refunded";
+  | "refunded"
+  | "reviewing"
+  | "rejected";
 
 const VARIANT_STYLES: Record<StatusBadgeVariant, string> = {
   published: "bg-emerald-50 text-emerald-700",
@@ -17,8 +19,10 @@ const VARIANT_STYLES: Record<StatusBadgeVariant, string> = {
   draft:     "bg-muted text-muted-foreground",
   inactive:  "bg-muted text-muted-foreground",
   pending:   "bg-amber-50 text-amber-700",
+  reviewing: "bg-violet-50 text-violet-700",
   cancelled: "bg-destructive/10 text-destructive",
   refunded:  "bg-destructive/10 text-destructive",
+  rejected:  "bg-destructive/10 text-destructive",
 };
 
 const VARIANT_LABELS: Record<StatusBadgeVariant, string> = {
@@ -28,8 +32,10 @@ const VARIANT_LABELS: Record<StatusBadgeVariant, string> = {
   inactive:  "Inactive",
   confirmed: "Confirmed",
   pending:   "Pending",
+  reviewing: "In review",
   cancelled: "Cancelled",
   refunded:  "Refunded",
+  rejected:  "Rejected",
 };
 
 type StatusBadgeProps = {

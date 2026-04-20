@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { BlockSkeletons } from "@/components/ui/skeleton";
 import Link from "next/link";
 
 type Stats = {
@@ -19,6 +20,22 @@ type Stats = {
 
 const fmt = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+type StatItem = { label: string; value: number | string; href?: string; alert?: boolean; highlight?: boolean };
+
+function StatCard({ label, value, href, alert, highlight }: StatItem) {
+  const inner = (
+    <div className={`rounded-xl border px-4 py-4 space-y-1 transition-colors ${
+      href ? "hover:border-primary/30 cursor-pointer" : ""
+    } ${alert ? "border-amber-300 bg-amber-50" : "border-border bg-background"}`}>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`text-2xl font-semibold ${highlight ? "text-primary" : alert ? "text-amber-700" : "text-foreground"}`}>
+        {value}
+      </p>
+    </div>
+  );
+  return href ? <Link href={href}>{inner}</Link> : <div>{inner}</div>;
+}
 
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -71,8 +88,6 @@ export default function AdminOverviewPage() {
     void load();
   }, []);
 
-  type StatItem = { label: string; value: number | string; href?: string; alert?: boolean; highlight?: boolean };
-
   const statCards: { section: string; items: StatItem[] }[] = stats ? [
     {
       section: "Listings",
@@ -108,49 +123,20 @@ export default function AdminOverviewPage() {
         { label: "Responses received", value: stats.totalFeedback, href: "/admin/feedback" },
       ],
     },
-  ] : [] as { section: string; items: StatItem[] }[];
+  ] : [];
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Overview</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Platform health at a glance.</p>
-      </div>
-
-      {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />
-          ))}
+  return loading ? (
+    <BlockSkeletons count={4} height="h-20" />
+  ) : (
+    <div className="space-y-6">
+      {statCards.map(({ section, items }) => (
+        <div key={section}>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{section}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {items.map((item) => <StatCard key={item.label} {...item} />)}
+          </div>
         </div>
-      ) : (
-        <div className="space-y-6">
-          {statCards.map(({ section, items }) => (
-            <div key={section}>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{section}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {items.map(({ label, value, href, alert, highlight }) => {
-                  const content = (
-                    <div className={`rounded-xl bg-background border px-4 py-4 space-y-1 transition-colors ${
-                      href ? "hover:border-primary/30 cursor-pointer" : ""
-                    } ${alert ? "border-amber-300 bg-amber-50" : "border-border"}`}>
-                      <p className="text-xs text-muted-foreground">{label}</p>
-                      <p className={`text-2xl font-semibold ${highlight ? "text-primary" : alert ? "text-amber-700" : "text-foreground"}`}>
-                        {value}
-                      </p>
-                    </div>
-                  );
-                  return href ? (
-                    <Link key={label} href={href}>{content}</Link>
-                  ) : (
-                    <div key={label}>{content}</div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      ))}
     </div>
   );
 }

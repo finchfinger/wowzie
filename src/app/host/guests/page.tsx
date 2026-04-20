@@ -2,249 +2,250 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ContentCard } from "@/components/ui/ContentCard";
+import { useAuth } from "@/lib/auth-context";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { SortDropdown } from "@/components/ui/SortDropdown";
-import { GuestRosterItem, type GuestRosterItemData } from "@/components/host/GuestRosterItem";
-import { RowSkeletons } from "@/components/ui/skeleton";
 
-function formatPhoneInput(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 10);
-  if (!digits) return "";
-  if (digits.length <= 3) return `(${digits}`;
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
+type BookingRow = {
+  id: string;
+  created_at: string;
+  total_cents: number | null;
+  platform_fee_percent: number | null;
+  guests_count: number | null;
+  contact_email: string | null;
+  camps: { name: string; host_id: string } | null;
+};
 
-type SortOrder = "asc" | "desc";
+type Guest = {
+  email: string;
+  totalSpent: number;
+  bookingCount: number;
+  camps: string[];
+  firstBooked: string;
+  lastBooked: string;
+  bookings: BookingRow[];
+};
 
-const GUEST_SORT_OPTIONS = [
-  { value: "asc" as SortOrder,  label: "Alphabetical (A–Z)" },
-  { value: "desc" as SortOrder, label: "Alphabetical (Z–A)" },
-];
+type SortKey = "spent" | "bookings" | "recent";
+
+const fmt = (cents: number) =>
+  `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 export default function HostGuestsPage() {
-  const [guests, setGuests] = useState<GuestRosterItemData[]>([]);
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-
-  // Add person modal
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [childrenCount, setChildrenCount] = useState("0");
-  const [sendInvite, setSendInvite] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [sort, setSort] = useState<SortKey>("spent");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     const load = async () => {
       setLoading(true);
-      setError(null);
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) {
-        setError("We couldn't load your account.");
-        setLoading(false);
-        return;
-      }
-      const { data, error: dbError } = await supabase
-        .from("host_contacts")
-        .select("id, parent_name, email, phone, children_count, last_activity_name")
-        .eq("host_id", userData.user.id)
-        .order("parent_name", { ascending: true });
-
-      if (dbError) {
-        setError("We couldn't load your guests.");
-        setLoading(false);
-        return;
-      }
-      setGuests((data || []) as GuestRosterItemData[]);
+      const { data } = await supabase
+        .from("bookings")
+        .select("id, created_at, total_cents, platform_fee_percent, guests_count, contact_email, camps:camp_id(name, host_id)")
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: false });
+      const mine = ((data || []) as unknown as BookingRow[]).filter(
+        (b) => b.camps?.host_id === user.id
+      );
+      setBookings(mine);
       setLoading(false);
     };
     void load();
-  }, []);
+  }, [user]);
+
+  const guests = useMemo<Guest[]>(() => {
+    const map: Record<string, Guest> = {};
+    for (const b of bookings) {
+      const e = b.contact_email ?? "unknown";
+      if (!map[e]) {
+        map[e] = {
+          email: e,
+          totalSpent: 0,
+          bookingCount: 0,
+          camps: [],
+          firstBooked: b.created_at,
+          lastBooked: b.created_at,
+          bookings: [],
+        };
+      }
+      map[e].totalSpent += b.total_cents ?? 0;
+      map[e].bookingCount++;
+      map[e].bookings.push(b);
+      const campName = b.camps?.name;
+      if (campName && !map[e].camps.includes(campName)) map[e].camps.push(campName);
+      if (b.created_at < map[e].firstBooked) map[e].firstBooked = b.created_at;
+      if (b.created_at > map[e].lastBooked) map[e].lastBooked = b.created_at;
+    }
+    return Object.values(map).filter((g) => g.email !== "unknown");
+  }, [bookings]);
+
+  // Top spender threshold for VIP badge
+  const vipThreshold = useMemo(() => {
+    if (guests.length < 3) return Infinity;
+    const sorted = [...guests].sort((a, b) => b.totalSpent - a.totalSpent);
+    return sorted[Math.max(0, Math.ceil(guests.length * 0.2) - 1)]?.totalSpent ?? Infinity;
+  }, [guests]);
 
   const filtered = useMemo(() => {
     let list = guests;
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(
-        (g) =>
-          g.parent_name.toLowerCase().includes(q) ||
-          g.email.toLowerCase().includes(q)
-      );
+      list = list.filter((g) => g.email.toLowerCase().includes(q));
     }
     return [...list].sort((a, b) => {
-      const cmp = a.parent_name.localeCompare(b.parent_name);
-      return sortOrder === "asc" ? cmp : -cmp;
+      if (sort === "spent") return b.totalSpent - a.totalSpent;
+      if (sort === "bookings") return b.bookingCount - a.bookingCount;
+      return b.lastBooked.localeCompare(a.lastBooked);
     });
-  }, [guests, search, sortOrder]);
+  }, [guests, search, sort]);
 
-  const resetModal = () => {
-    setFullName(""); setEmail(""); setPhone(""); setChildrenCount("0"); setSendInvite(false);
-  };
-
-  const handleAddPerson = async () => {
-    if (!fullName.trim()) return;
-    setSaving(true);
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) { setSaving(false); return; }
-    const { data, error: insertError } = await supabase
-      .from("host_contacts")
-      .insert({
-        host_id: userData.user.id,
-        parent_name: fullName.trim(),
-        email: email.trim() || "",
-        phone: phone.trim() || null,
-        children_count: parseInt(childrenCount, 10) || 0,
-      })
-      .select("id, parent_name, email, phone, children_count, last_activity_name")
-      .single();
-    if (insertError) { setError("We couldn't add this person."); setSaving(false); return; }
-    setGuests((prev) =>
-      [...prev, data as GuestRosterItemData].sort((a, b) =>
-        a.parent_name.localeCompare(b.parent_name)
-      )
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-16 rounded-card bg-muted animate-pulse" />
+        ))}
+      </div>
     );
-    setSaving(false);
-    setIsAddOpen(false);
-    resetModal();
-  };
+  }
+
+  if (!guests.length) {
+    return (
+      <EmptyState
+        icon="child_hat"
+        iconBg="bg-yellow-300"
+        iconColor="text-yellow-900"
+        title="No guests yet"
+        description="Families who book your activities will appear here with their full booking history."
+      />
+    );
+  }
 
   return (
-    <>
-      <ContentCard
-        title="My guests"
-        bordered={false}
-        bodyClassName="px-8 pb-8"
-        actions={
-          <Button size="sm" onClick={() => setIsAddOpen(true)}>
-            Add person
-          </Button>
-        }
-      >
-        {loading ? (
-          <RowSkeletons count={3} className="mt-4" />
-        ) : guests.length === 0 ? (
-          <EmptyState
-            icon="child_hat"
-            iconBg="bg-yellow-300"
-            iconColor="text-yellow-900"
-            title="No guests yet"
-            description="New bookings will show up here, or you can add someone manually."
-            action={{ label: "Add a person", onClick: () => setIsAddOpen(true) }}
-          />
-        ) : (
-          <>
-            {/* Search + sort */}
-            <div className="mt-4 flex items-center gap-2">
-              <div className="relative flex-1">
-                <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
-                <Input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search"
-                  className="h-9 pl-8"
-                />
-              </div>
-              <SortDropdown
-                options={GUEST_SORT_OPTIONS}
-                value={sortOrder}
-                onChange={setSortOrder}
-              />
-            </div>
-
-            {/* Guest rows */}
-            <div className="mt-4 divide-y divide-border/50">
-              {filtered.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No guests match &ldquo;{search}&rdquo;
-                </p>
-              ) : (
-                filtered.map((guest) => (
-                  <GuestRosterItem key={guest.id} guest={guest} />
-                ))
-              )}
-            </div>
-          </>
-        )}
-      </ContentCard>
-
-      {error && (
-        <p className="mt-3 text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">
-          {error}
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-sm text-muted-foreground">
+          {guests.length} {guests.length === 1 ? "family" : "families"}
         </p>
-      )}
-
-      {/* Add person modal */}
-      {isAddOpen && (
-        <div className="fixed inset-0 z-50">
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={() => { setIsAddOpen(false); resetModal(); }}
-            className="absolute inset-0 bg-black/30"
-          />
-          <div className="relative mx-auto mt-24 w-[92%] max-w-md rounded-card bg-background p-5 shadow-lg">
-            <div className="space-y-5">
-              <div>
-                <h3 className="text-base font-semibold text-foreground">Add a person</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Add a parent or caregiver to your guests.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Parent / caregiver name *</label>
-                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Email address</label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Phone number</label>
-                  <Input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Number of children</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={childrenCount}
-                    onChange={(e) => setChildrenCount(e.target.value)}
-                  />
-                </div>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={sendInvite}
-                    onCheckedChange={(v) => setSendInvite(v === true)}
-                  />
-                  <span className="text-xs text-muted-foreground">Send them an invite later</span>
-                </label>
-              </div>
-              <div className="pt-2 flex gap-2 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => { setIsAddOpen(false); resetModal(); }}>
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleAddPerson} disabled={saving || !fullName.trim()}>
-                  {saving ? "Adding…" : "Add person"}
-                </Button>
-              </div>
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <span className="material-symbols-rounded pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 15 }}>search</span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by email…"
+              className="h-8 rounded-lg border border-input bg-background pl-8 pr-3 text-sm outline-none focus:border-primary/50 w-48"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            {([
+              { key: "spent" as SortKey, label: "Top spenders" },
+              { key: "bookings" as SortKey, label: "Most bookings" },
+              { key: "recent" as SortKey, label: "Recent" },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSort(key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  sort === key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
-      )}
-    </>
+      </div>
+
+      {/* Guest rows */}
+      <div className="rounded-card overflow-hidden divide-y divide-border">
+        {filtered.map((guest) => {
+          const isVip = guest.totalSpent >= vipThreshold && guest.totalSpent > 0;
+          const isOpen = expanded === guest.email;
+          return (
+            <div key={guest.email}>
+              {/* Row */}
+              <button
+                type="button"
+                onClick={() => setExpanded(isOpen ? null : guest.email)}
+                className="w-full flex items-center gap-4 px-4 py-3.5 hover:bg-muted/20 transition-colors text-left"
+              >
+                {/* VIP / avatar */}
+                <div className={`h-8 w-8 rounded-full shrink-0 flex items-center justify-center text-xs font-semibold ${
+                  isVip ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"
+                }`}>
+                  {isVip
+                    ? <span className="material-symbols-rounded select-none" style={{ fontSize: 15 }}>star</span>
+                    : guest.email[0]?.toUpperCase() ?? "?"}
+                </div>
+
+                {/* Email + camps */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{guest.email}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {guest.camps.slice(0, 2).join(" · ")}
+                    {guest.camps.length > 2 ? ` +${guest.camps.length - 2} more` : ""}
+                  </p>
+                </div>
+
+                {/* Stats */}
+                <div className="text-right shrink-0 hidden sm:block">
+                  <p className="text-sm font-semibold text-foreground">{fmt(guest.totalSpent)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {guest.bookingCount} {guest.bookingCount === 1 ? "booking" : "bookings"}
+                  </p>
+                </div>
+
+                <div className="text-right shrink-0 hidden md:block min-w-[80px]">
+                  <p className="text-xs text-muted-foreground">Last booked</p>
+                  <p className="text-xs text-foreground">{fmtDate(guest.lastBooked)}</p>
+                </div>
+
+                <span className={`material-symbols-rounded text-muted-foreground select-none shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} style={{ fontSize: 18 }}>
+                  expand_more
+                </span>
+              </button>
+
+              {/* Expanded booking history */}
+              {isOpen && (
+                <div className="bg-muted/20 border-t border-border px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Booking history</p>
+                    <div className="text-xs text-muted-foreground">
+                      LTV: <span className="font-semibold text-foreground">{fmt(guest.totalSpent)}</span>
+                      {" · "}First booked {fmtDate(guest.firstBooked)}
+                    </div>
+                  </div>
+                  <div className="rounded-lg overflow-hidden divide-y divide-border/60">
+                    {guest.bookings.map((b) => {
+                      const gross = b.total_cents ?? 0;
+                      return (
+                        <div key={b.id} className="flex items-center gap-3 bg-background px-3 py-2.5 text-xs">
+                          <span className="text-muted-foreground whitespace-nowrap w-24 shrink-0">{fmtDate(b.created_at)}</span>
+                          <span className="flex-1 text-foreground truncate">{b.camps?.name ?? "—"}</span>
+                          <span className="text-muted-foreground shrink-0">
+                            {b.guests_count ?? 1} {(b.guests_count ?? 1) === 1 ? "guest" : "guests"}
+                          </span>
+                          <span className="font-medium text-foreground shrink-0">{fmt(gross)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

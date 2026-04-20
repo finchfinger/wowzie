@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { BlockSkeletons } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 
 type FeedbackRow = {
   id: string;
@@ -44,44 +47,37 @@ export default function AdminFeedbackPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Feedback</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {rows.length} responses · {pct}% would book again
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <input
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <p className="text-sm text-muted-foreground">{rows.length} responses · {pct}% would book again</p>
+        <div className="flex items-center gap-2">
+          <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter by camp…"
-            className="h-8 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-primary/50 w-44"
+            className="h-8 w-44 text-sm"
           />
-          {(["all", "yes", "no"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                filter === f ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {f === "all" ? "All" : f === "yes" ? "👍 Would book" : "👎 Not sure"}
-            </button>
-          ))}
+          <div className="flex items-center gap-1">
+            {(["all", "yes", "no"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  filter === f ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                {f === "all" ? "All" : f === "yes" ? "👍 Would book" : "👎 Not sure"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
-        </div>
+        <BlockSkeletons count={4} height="h-24" />
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl bg-background border border-border px-6 py-10 text-center text-sm text-muted-foreground">
-          No feedback yet.
-        </div>
+        <EmptyState icon="chat" title="No feedback yet" description="Feedback from families will appear here after they attend a camp." />
       ) : (
         <div className="space-y-3">
           {filtered.map((row) => (
