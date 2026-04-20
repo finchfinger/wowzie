@@ -98,14 +98,16 @@ function ActivityShell({ children }: { children: React.ReactNode }) {
   const base = `/host/activities/${activityId}`;
 
   const tabs = [
-    { id: "overview", label: "Overview", href: base },
-    { id: "guests", label: "Guests", href: `${base}/guests`, badge: pendingCount || undefined },
+    { id: "overview",   label: "Overview",   href: base },
+    { id: "guests",     label: "Guests",     href: `${base}/guests`, badge: pendingCount || undefined },
     { id: "attendance", label: "Attendance", href: `${base}/attendance` },
-    { id: "more", label: "More", href: `${base}/more` },
+    { id: "feedback",   label: "Feedback",   href: `${base}/feedback` },
+    { id: "more",       label: "More",       href: `${base}/more` },
   ];
 
   const activeId = pathname.startsWith(`${base}/guests`) ? "guests"
     : pathname.startsWith(`${base}/attendance`) ? "attendance"
+    : pathname.startsWith(`${base}/feedback`) ? "feedback"
     : pathname.startsWith(`${base}/more`) ? "more"
     : "overview";
 
