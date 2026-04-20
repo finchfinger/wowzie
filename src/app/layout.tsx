@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: "%s | Wowzi",
   },
   description: "Browse, compare, and book the best kids' camps and classes near you. Everything from summer camps and STEM workshops to art programs and sports camps — all in one place.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://golly-roan.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://www.heywowzi.com"),
   openGraph: {
     siteName: "Wowzi",
     type: "website",

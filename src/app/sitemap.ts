@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
-const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://golly-roan.vercel.app";
+const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.heywowzi.com";
 
 const STATIC_ROUTES = [
   { url: "/", priority: 1.0, changeFrequency: "daily" },
