@@ -8,6 +8,7 @@ import { NavTabs } from "@/components/ui/nav-tabs";
 
 const TABS = [
   { id: "overview", label: "Overview",  href: "/admin/overview" },
+  { id: "users",    label: "Users",     href: "/admin/users" },
   { id: "camps",    label: "Camps",     href: "/admin/camps" },
   { id: "hosts",    label: "Hosts",     href: "/admin/hosts" },
   { id: "bookings", label: "Bookings",  href: "/admin/bookings" },

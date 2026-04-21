@@ -16,6 +16,8 @@ type Stats = {
   netRevenue: number;
   totalFeedback: number;
   waitlisted: number;
+  totalUsers: number;
+  newUsersThisWeek: number;
 };
 
 const fmt = (cents: number) =>
@@ -43,6 +45,8 @@ export default function AdminOverviewPage() {
 
   useEffect(() => {
     const load = async () => {
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
       const [
         { count: totalCamps },
         { count: publishedCamps },
@@ -53,6 +57,8 @@ export default function AdminOverviewPage() {
         { data: bookingRevenue },
         { count: totalFeedback },
         { count: waitlisted },
+        { count: totalUsers },
+        { count: newUsersThisWeek },
       ] = await Promise.all([
         supabase.from("camps").select("*", { count: "exact", head: true }),
         supabase.from("camps").select("*", { count: "exact", head: true }).eq("is_published", true),
@@ -63,6 +69,8 @@ export default function AdminOverviewPage() {
         supabase.from("bookings").select("total_cents, platform_fee_percent").eq("status", "confirmed"),
         supabase.from("feedback").select("*", { count: "exact", head: true }),
         supabase.from("bookings").select("*", { count: "exact", head: true }).eq("status", "waitlisted"),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", weekAgo),
       ]);
 
       const gross = (bookingRevenue ?? []).reduce((sum, b) => sum + (b.total_cents ?? 0), 0);
@@ -82,6 +90,8 @@ export default function AdminOverviewPage() {
         netRevenue: fees,
         totalFeedback: totalFeedback ?? 0,
         waitlisted: waitlisted ?? 0,
+        totalUsers: totalUsers ?? 0,
+        newUsersThisWeek: newUsersThisWeek ?? 0,
       });
       setLoading(false);
     };
@@ -89,6 +99,13 @@ export default function AdminOverviewPage() {
   }, []);
 
   const statCards: { section: string; items: StatItem[] }[] = stats ? [
+    {
+      section: "Users",
+      items: [
+        { label: "Total signups", value: stats.totalUsers, href: "/admin/users" },
+        { label: "New this week", value: stats.newUsersThisWeek, href: "/admin/users", highlight: stats.newUsersThisWeek > 0 },
+      ],
+    },
     {
       section: "Listings",
       items: [
