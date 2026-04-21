@@ -139,6 +139,13 @@ export default function HostListingsPage() {
     const original = listings.find((l) => l.id === id);
     if (!original) return;
 
+    const { data: hp } = await supabase
+      .from("host_profiles")
+      .select("host_status")
+      .eq("user_id", user.id)
+      .single();
+    const approvalStatus = hp?.host_status === "approved" ? "approved" : "pending_review";
+
     const { data, error } = await supabase
       .from("camps")
       .insert([{
@@ -147,7 +154,7 @@ export default function HostListingsPage() {
         status: "inactive",
         is_published: false,
         is_active: false,
-        approval_status: "pending_review",
+        approval_status: approvalStatus,
         meta: original.meta ?? {},
         capacity: original.capacity,
         image_url: original.image_url,

@@ -1929,9 +1929,16 @@ export default function CreateActivityPage({
       if (error || !data) throw error ?? new Error("Update failed");
       savedId = data.id;
     } else {
+      const { data: hp } = await supabase
+        .from("host_profiles")
+        .select("host_status")
+        .eq("user_id", hostId)
+        .single();
+      const approvalStatus = hp?.host_status === "approved" ? "approved" : "pending_review";
+
       const { data, error } = await supabase
         .from("camps")
-        .insert(payload)
+        .insert({ ...payload, approval_status: approvalStatus })
         .select("id, slug")
         .single();
 
@@ -2144,9 +2151,16 @@ export default function CreateActivityPage({
         await supabase.from("camps").update(payload).eq("id", draftId);
         return draftId;
       } else {
+        const { data: hp } = await supabase
+          .from("host_profiles")
+          .select("host_status")
+          .eq("user_id", userData.user.id)
+          .single();
+        const approvalStatus = hp?.host_status === "approved" ? "approved" : "pending_review";
+
         const { data } = await supabase
           .from("camps")
-          .insert(payload)
+          .insert({ ...payload, approval_status: approvalStatus })
           .select("id")
           .single();
         if (data?.id) {
