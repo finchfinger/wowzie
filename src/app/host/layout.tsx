@@ -136,6 +136,7 @@ export default function HostLayout({
 
   // Approved: dashboard with nav tabs
   const hostTabs = [
+    { id: "home",      label: "Home",       href: "/host/home" },
     { id: "listings",  label: "Listings",   href: "/host/listings" },
     { id: "guests",    label: "Guests",     href: "/host/guests" },
     { id: "analytics", label: "Analytics",  href: "/host/analytics" },
@@ -144,7 +145,7 @@ export default function HostLayout({
     { id: "settings",  label: "Settings",   href: "/host/settings" },
   ];
 
-  const activeTabId = hostTabs.find((t) => pathname.startsWith(t.href))?.id ?? "listings";
+  const activeTabId = hostTabs.find((t) => pathname.startsWith(t.href))?.id ?? "home";
 
   return (
     <main className="flex-1">
