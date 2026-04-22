@@ -312,7 +312,7 @@ export default function HostHomePage() {
       {/* ── Empty nudge — no listings at all ── */}
       {totalCamps === 0 && (
         <section>
-          <div className="rounded-xl border border-dashed border-border bg-background px-6 py-8 text-center space-y-3">
+          <div className="px-6 py-8 text-center space-y-3">
             <p className="text-sm font-medium text-foreground">You&apos;re all set up</p>
             <p className="text-sm text-muted-foreground">
               Create your first listing and start welcoming families.

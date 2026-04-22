@@ -681,7 +681,7 @@ export default function HomePage() {
                 value={locationText}
                 onChange={(val: string) => setLocationText(val)}
                 placeholder="Location"
-                className="h-12 rounded-full border-0 outline-none"
+                className="h-12 rounded-full border-0 outline-none shadow-none"
                 style={{ background: "#fff", color: "#1C1B1F" }}
                 onSelect={(selection) => {
                   const formatted = selection?.formattedAddress?.trim();
