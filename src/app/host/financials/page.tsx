@@ -112,7 +112,7 @@ export default function HostFinancialsPage() {
     });
     if (res.ok) {
       const json = await res.json() as { url: string };
-      window.location.href = json.url;
+      window.open(json.url, "_blank");
     } else {
       const json = await res.json().catch(() => ({})) as { error?: string };
       setConnectError(json.error || "Something went wrong. Please try again.");
