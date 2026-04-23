@@ -5,6 +5,7 @@ import { resend, FROM_EMAIL } from "@/lib/resend";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const connectWebhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -30,12 +31,22 @@ export async function POST(req: NextRequest) {
   }
 
   let event: Stripe.Event;
+  const rawBody = await req.text();
+
+  // Try the main webhook secret first, then the connect secret
   try {
-    const rawBody = await req.text();
     event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Webhook verification failed.";
-    return NextResponse.json({ error: message }, { status: 400 });
+  } catch {
+    if (connectWebhookSecret) {
+      try {
+        event = stripe.webhooks.constructEvent(rawBody, sig, connectWebhookSecret);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Webhook verification failed.";
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+    } else {
+      return NextResponse.json({ error: "Webhook verification failed." }, { status: 400 });
+    }
   }
 
   if (event.type === "checkout.session.completed") {
@@ -207,6 +218,23 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    }
+  }
+
+  // When a host completes (or updates) their Stripe Connect onboarding
+  if (event.type === "account.updated") {
+    const account = event.data.object as Stripe.Account;
+    const isConnected =
+      account.charges_enabled &&
+      account.payouts_enabled &&
+      account.details_submitted;
+
+    if (isConnected) {
+      const supabase = getSupabase();
+      await supabase
+        .from("host_profiles")
+        .update({ stripe_connect_status: "connected" })
+        .eq("stripe_account_id", account.id);
     }
   }
 
