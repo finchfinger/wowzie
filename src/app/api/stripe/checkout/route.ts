@@ -166,6 +166,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      ui_mode: "embedded",
       customer_email: email,
       line_items: [
         {
@@ -184,11 +185,10 @@ export async function POST(req: NextRequest) {
         camp_id: campId,
         user_id: userId,
       },
-      success_url: `${origin}/checkout/confirmed/${booking.id}?stripe=1`,
-      cancel_url: `${origin}/checkout/${campId}?guests=${guests}`,
+      return_url: `${origin}/checkout/confirmed/${booking.id}?stripe=1`,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ clientSecret: session.client_secret });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unexpected error.";
     return NextResponse.json({ error: message }, { status: 500 });
