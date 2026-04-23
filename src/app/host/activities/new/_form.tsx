@@ -2953,48 +2953,6 @@ export default function CreateActivityPage({
 
   const renderPhotos = () => (
     <div className="space-y-6">
-      {/* Photo tips modal */}
-      {showPhotoTips && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-          onClick={() => setShowPhotoTips(false)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold">Photo tips</h3>
-              <button
-                type="button"
-                onClick={() => setShowPhotoTips(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>close</span>
-              </button>
-            </div>
-            <ul className="space-y-3 text-sm text-foreground">
-              <li className="flex gap-2.5">
-                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>photo_camera</span>
-                <span><span className="font-medium">Action shots convert best.</span> Kids doing the activity — not logos or flyers.</span>
-              </li>
-              <li className="flex gap-2.5">
-                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>star</span>
-                <span><span className="font-medium">First photo is your cover.</span> Make it bright, clear, and square-friendly.</span>
-              </li>
-              <li className="flex gap-2.5">
-                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>grid_view</span>
-                <span><span className="font-medium">Add 4–6 photos.</span> Listings with more images get significantly more clicks.</span>
-              </li>
-              <li className="flex gap-2.5">
-                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>face</span>
-                <span><span className="font-medium">Show the environment.</span> Parents want to see the space, not just close-ups.</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      )}
-
       <FormCard
         icon="photo_library"
         title="Photos"
@@ -3578,8 +3536,7 @@ export default function CreateActivityPage({
           type="button"
           onClick={handleSaveActivity}
           disabled={submitting || savingDraft}
-          className="rounded-full px-4 py-2 text-sm font-medium text-foreground transition-colors disabled:opacity-50"
-          style={{ background: "rgba(0,0,0,0.06)" }}
+          className="rounded-full px-5 py-2 text-sm font-medium bg-foreground text-background transition-opacity disabled:opacity-50 hover:opacity-90"
         >
           {submitting ? "Saving…" : "Save activity"}
         </button>
@@ -3638,6 +3595,48 @@ export default function CreateActivityPage({
         </div>
 
       </div>
+
+      {/* Photo tips modal */}
+      {showPhotoTips && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setShowPhotoTips(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold">Photo tips</h3>
+              <button
+                type="button"
+                onClick={() => setShowPhotoTips(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>close</span>
+              </button>
+            </div>
+            <ul className="space-y-3 text-sm text-foreground">
+              <li className="flex gap-2.5">
+                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>photo_camera</span>
+                <span><span className="font-medium">Action shots convert best.</span> Kids doing the activity — not logos or flyers.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>star</span>
+                <span><span className="font-medium">First photo is your cover.</span> Make it bright, clear, and square-friendly.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>grid_view</span>
+                <span><span className="font-medium">Add 4–6 photos.</span> Listings with more images get significantly more clicks.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>face</span>
+                <span><span className="font-medium">Show the environment.</span> Parents want to see the space, not just close-ups.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Save for later toast */}
       {savedToast && (
