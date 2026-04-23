@@ -1583,7 +1583,12 @@ export default function CreateActivityPage({
         if (cs.duration) setClassDuration(cs.duration);
         if (cs.studentsPerClass)
           setClassStudentsPerClass(cs.studentsPerClass);
-        if (cs.pricePerClass) setClassPricePerClass(cs.pricePerClass);
+        if (cs.pricePerClass) {
+          setClassPricePerClass(cs.pricePerClass);
+        } else if (cs.mode === "ongoing" && data.price_cents != null) {
+          // Fallback: restore price from top-level price_cents if pricePerClass wasn't stored in meta
+          setClassPricePerClass(formatCentsToMoneyText(data.price_cents));
+        }
         if (cs.frequency) setClassFrequency(cs.frequency);
         if (cs.sessionLength) setClassSessionLength(cs.sessionLength);
         if (cs.sessionEndDate) setClassSessionEndDate(cs.sessionEndDate);
@@ -2180,11 +2185,56 @@ export default function CreateActivityPage({
     }
   };
 
-  /** Edit mode: save current step and return to the activity page */
+  /** Edit mode: upload any new photos, then save and return to the activity page */
   const handleSaveChanges = async () => {
     setSavingDraft(true);
     try {
-      await saveDraft();
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const slug = existingSlug ?? slugify(title || `draft-${Date.now()}`);
+      const ordered = photoItems.slice(0, MAX_PHOTOS);
+      const primaryNewFile = ordered[0]?.origin === "new" ? (ordered[0].file ?? null) : null;
+      const otherNewFiles: File[] = ordered.slice(1)
+        .filter((x) => x.origin === "new" && x.file)
+        .map((x) => x.file!) as File[];
+
+      let uploadedHeroUrl: string | null = null;
+      let uploadedGalleryUrls: string[] = [];
+
+      if (primaryNewFile || otherNewFiles.length) {
+        const uploaded = (await uploadActivityImages({
+          bucket: "activity-images",
+          slug,
+          heroImage: primaryNewFile,
+          galleryImages: otherNewFiles,
+        })) as UploadedImagesResult;
+        uploadedHeroUrl = uploaded?.heroUrl ?? null;
+        uploadedGalleryUrls = Array.isArray(uploaded?.galleryUrls)
+          ? uploaded.galleryUrls.filter(isNonEmptyString) : [];
+      }
+
+      // Build ordered URL list merging existing + newly uploaded
+      let galleryCursor = 0;
+      const orderedUrls = ordered.map((item, idx) => {
+        if (item.origin === "existing") return item.url ?? item.src;
+        if (idx === 0) return uploadedHeroUrl;
+        return uploadedGalleryUrls[galleryCursor++] ?? null;
+      }).filter(isNonEmptyString);
+
+      const heroUrl = orderedUrls[0] ?? null;
+      const galleryUrls = orderedUrls.slice(1);
+
+      const payload = buildPayload(false, userData.user.id);
+      payload.hero_image_url = heroUrl;
+      payload.image_urls = galleryUrls.length ? galleryUrls : [];
+      payload.image_url = heroUrl ?? galleryUrls[0] ?? null;
+
+      const existingId = draftId ?? activityId;
+      if (existingId) {
+        await supabase.from("camps").update(payload).eq("id", existingId);
+      }
+
       if (activityId) router.push(`/host/activities/${activityId}`);
       else router.push("/host/listings");
     } finally {
