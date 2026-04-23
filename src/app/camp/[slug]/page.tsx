@@ -818,9 +818,11 @@ export default function CampDetailPage() {
                                   {sessionsShareDates ? (
                                     /* Same date range — lead with time, show days + date as context */
                                     <>
-                                      <p className="text-sm font-semibold text-foreground">
-                                        {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
-                                      </p>
+                                      {session.startTime && session.endTime && (
+                                        <p className="text-sm font-semibold text-foreground">
+                                          {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
+                                        </p>
+                                      )}
                                       <p className="text-xs text-muted-foreground mt-0.5">
                                         {session.days && session.days.length > 0
                                           ? session.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(", ")
@@ -835,12 +837,14 @@ export default function CampDetailPage() {
                                           ? formatDateRange(session.startDate, session.endDate)
                                           : formatDate(session.startDate).full}
                                       </p>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {session.days && session.days.length > 0 && (
-                                          <span>{session.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(", ")} · </span>
-                                        )}
-                                        {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
-                                      </p>
+                                      {(session.startTime || session.days?.length > 0) && (
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                          {session.days && session.days.length > 0 && (
+                                            <span>{session.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(", ")}{session.startTime ? " · " : ""}</span>
+                                          )}
+                                          {session.startTime && session.endTime && `${formatTimeLocal(session.startTime)} – ${formatTimeLocal(session.endTime)}`}
+                                        </p>
+                                      )}
                                     </>
                                   )}
                                 </div>
@@ -888,12 +892,14 @@ export default function CampDetailPage() {
                           const dayLabels = s.days && s.days.length > 0
                             ? s.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1)).join(", ")
                             : null;
-                          const timeStr = `${formatTimeLocal(s.startTime)} – ${formatTimeLocal(s.endTime)}`;
+                          const startFmt = s.startTime ? formatTimeLocal(s.startTime) : null;
+                          const endFmt = s.endTime ? formatTimeLocal(s.endTime) : null;
+                          const timeStr = startFmt && endFmt ? `${startFmt} – ${endFmt}` : null;
                           const dateRange = formatDateRange(s.startDate, s.endDate);
                           return (
                             <div className="rounded-xl bg-muted/50 px-4 py-3 space-y-0.5">
                               <p className="text-sm font-semibold text-foreground">
-                                {dayLabels ? `Every ${dayLabels}` : dateRange} · {timeStr}
+                                {dayLabels ? `Every ${dayLabels}` : dateRange}{timeStr ? ` · ${timeStr}` : ""}
                               </p>
                               {dayLabels && (
                                 <p className="text-xs text-muted-foreground">{dateRange}</p>
