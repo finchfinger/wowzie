@@ -47,6 +47,8 @@ const fromISODate = (iso?: string) => {
 const formatDisplayDate = (iso: string) => {
   const [y, m, d] = iso.split("-");
   if (!y || !m || !d) return iso;
+  const today = toISODate(new Date());
+  if (iso === today) return `${m}/${d}/${y} (today)`;
   return `${m}/${d}/${y}`;
 };
 

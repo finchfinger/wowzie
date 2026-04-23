@@ -1246,7 +1246,7 @@ export default function CreateActivityPage({
   const [classSessionLength, setClassSessionLength] = useState("");
   const [classSessionEndDate, setClassSessionEndDate] = useState("");
   const [classMeetingLength, setClassMeetingLength] = useState("");
-  const [classSessionStartDate, setClassSessionStartDate] = useState("");
+  const [classSessionStartDate, setClassSessionStartDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [classPricePerMeeting, setClassPricePerMeeting] = useState("");
   const [classSections, setClassSections] = useState<ClassSessionSection[]>(
     () => [makeDefaultClassSection()],
@@ -1489,12 +1489,17 @@ export default function CreateActivityPage({
       if (meta.activityKind) {
         setActivityKind(meta.activityKind);
         setEnrollmentMode(meta.activityKind === "class" ? "choose_sessions" : "full_program");
-        // Legacy: old "class" listing that used classSchedule instead of campSessions
+        // Legacy: old "class" listing that used classSchedule instead of campSessions.
+        // New-style listings always save meta.enrollmentMode — if that's present, it's NOT legacy.
         const hasCampSessionDates =
           Array.isArray(meta.campSessions) &&
           meta.campSessions.length > 0 &&
           Boolean((meta.campSessions[0] as any)?.startDate);
-        if (meta.activityKind === "class" && meta.classSchedule && !hasCampSessionDates) {
+        // Also treat as new-style if classSchedule.mode is explicitly set (our new form always sets it)
+        const isNewStyleListing = Boolean(
+          (meta as any).enrollmentMode || (meta as any).dateEntryMode || meta.classSchedule?.mode
+        );
+        if (meta.activityKind === "class" && meta.classSchedule && !hasCampSessionDates && !isNewStyleListing) {
           setIsLegacyClassListing(true);
         }
       }
@@ -1593,7 +1598,11 @@ export default function CreateActivityPage({
         if (cs.sessionLength) setClassSessionLength(cs.sessionLength);
         if (cs.sessionEndDate) setClassSessionEndDate(cs.sessionEndDate);
         if (cs.meetingLength) setClassMeetingLength(cs.meetingLength);
-        if (cs.sessionStartDate) setClassSessionStartDate(cs.sessionStartDate);
+        if (cs.sessionStartDate) {
+          const today = new Date().toISOString().split("T")[0];
+          // If the saved start date is in the past, reset to today
+          setClassSessionStartDate(cs.sessionStartDate >= today ? cs.sessionStartDate : today);
+        }
         if (cs.pricePerMeeting) setClassPricePerMeeting(cs.pricePerMeeting);
         if (Array.isArray(cs.sections) && cs.sections.length)
           setClassSections(cs.sections);
@@ -1956,7 +1965,12 @@ export default function CreateActivityPage({
     if (savedId) {
       sessionStorage.setItem("wowzi_listing_saved", savedId);
     }
-    router.push("/host/listings");
+    // After editing, return to the activity detail page; after creating, go to listings
+    if (existingId && savedId) {
+      router.push(`/host/activities/${savedId}`);
+    } else {
+      router.push("/host/listings");
+    }
   };
 
   const handleSubmit = async () => {
@@ -2876,10 +2890,7 @@ export default function CreateActivityPage({
 
               </div>
 
-              <Field
-                label="Enrollment start date"
-                hint="Leave blank for rolling enrollment — students join at the next available class"
-              >
+              <Field label="Enrollment start date">
                 <DateInput
                   value={classSessionStartDate}
                   onChange={(e) => setClassSessionStartDate(e.target.value)}
@@ -3213,7 +3224,7 @@ export default function CreateActivityPage({
                     )}
                   </SettingsList>
                 </div>
-                <Field label="Enrollment start date" hint="Leave blank for rolling enrollment — students can join any available slot immediately.">
+                <Field label="Enrollment start date">
                   <DateInput value={classSessionStartDate} onChange={(e) => setClassSessionStartDate(e.target.value)} />
                 </Field>
               </div>
@@ -3626,14 +3637,24 @@ export default function CreateActivityPage({
 
         {/* ── Page header ────────────────────────────────────────── */}
         <div className="space-y-3">
+          {/* Back link in edit mode */}
+          {isEditMode && activityId && (
+            <button
+              type="button"
+              onClick={() => router.push(`/host/activities/${activityId}`)}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>arrow_back</span>
+              Back to listing
+            </button>
+          )}
           {/* Row 1: heading + save */}
           <div className="flex items-center justify-between gap-4">
             <h1 className="text-2xl font-semibold tracking-tight">
-              {FORM_CONFIG.pageHeading}
+              {isEditMode ? "Edit listing" : FORM_CONFIG.pageHeading}
             </h1>
             {actionBar}
           </div>
-
         </div>
 
         {/* Error banner */}
