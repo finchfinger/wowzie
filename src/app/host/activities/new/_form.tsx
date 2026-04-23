@@ -3097,7 +3097,7 @@ export default function CreateActivityPage({
             <div className="w-px bg-border" />
             <button
               type="button"
-              onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); }}
+              onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); setCampSessions([]); }}
               className={[
                 "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all",
                 isOngoing
