@@ -1733,8 +1733,8 @@ export default function CreateActivityPage({
       weeklySchedule,
       // Always persist campSessions — used by both full_program and choose_sessions modes
       campSessions: campSessions.map(({ priceText: _pt, ...rest }) => rest) as CampSession[],
-      // Only preserve classSchedule for legacy class listings edited via the old UI
-      classSchedule: isLegacyClassListing
+      // Save classSchedule for legacy listings AND for ongoing non-legacy listings
+      classSchedule: (isLegacyClassListing || classScheduleMode === "ongoing")
         ? {
             mode: classScheduleMode,
             weekly: classWeekly,
