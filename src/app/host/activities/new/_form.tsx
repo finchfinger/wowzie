@@ -3079,35 +3079,50 @@ export default function CreateActivityPage({
       <>
       <FormCard title="Schedule & pricing" icon="calendar_month">
         <div className="space-y-5">
-          {/* Fixed / Ongoing segmented control */}
-          <div className="flex rounded-xl overflow-hidden border border-border">
-            <button
-              type="button"
-              onClick={() => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); }}
-              className={[
-                "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all",
-                !isOngoing
-                  ? "bg-foreground text-background"
-                  : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50",
-              ].join(" ")}
-            >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>event</span>
-              Fixed
-            </button>
-            <div className="w-px bg-border" />
-            <button
-              type="button"
-              onClick={() => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); setCampSessions([]); }}
-              className={[
-                "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all",
-                isOngoing
-                  ? "bg-foreground text-background"
-                  : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50",
-              ].join(" ")}
-            >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>repeat</span>
-              Ongoing
-            </button>
+          {/* Fixed / Ongoing radio cards */}
+          <div className="grid grid-cols-2 gap-3">
+            {([
+              {
+                mode: "sessions",
+                label: "Fixed dates",
+                description: "Set a start and end date for the term or session.",
+                icon: "event",
+                selected: !isOngoing,
+                onSelect: () => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); },
+              },
+              {
+                mode: "ongoing",
+                label: "Ongoing",
+                description: "Rolling enrollment with a recurring weekly schedule.",
+                icon: "repeat",
+                selected: isOngoing,
+                onSelect: () => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); setCampSessions([]); },
+              },
+            ] as const).map(({ label, description, icon, selected, onSelect }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={onSelect}
+                className={[
+                  "flex flex-col items-start gap-2 rounded-xl border-2 px-4 py-4 text-left transition-all",
+                  selected
+                    ? "border-foreground bg-foreground/[0.03]"
+                    : "border-border hover:border-foreground/30 hover:bg-muted/40",
+                ].join(" ")}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className={`material-symbols-rounded select-none ${selected ? "text-foreground" : "text-muted-foreground"}`} style={{ fontSize: 20 }}>{icon}</span>
+                  {/* Radio dot */}
+                  <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center transition-colors ${selected ? "border-foreground" : "border-muted-foreground/40"}`}>
+                    {selected && <span className="h-2 w-2 rounded-full bg-foreground" />}
+                  </span>
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold ${selected ? "text-foreground" : "text-muted-foreground"}`}>{label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
+                </div>
+              </button>
+            ))}
           </div>
 
           {/* Schedule content */}
