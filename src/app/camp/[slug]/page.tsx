@@ -54,10 +54,13 @@ function formatDate(iso: string): { month: string; day: string; full: string } {
   };
 }
 
-function formatDateRange(startIso: string, endIso: string): string {
+function formatDateRange(startIso: string | null | undefined, endIso: string | null | undefined): string | null {
+  if (!startIso) return null;
   const s = new Date(startIso + "T12:00:00");
-  const e = new Date(endIso + "T12:00:00");
+  const e = endIso ? new Date(endIso + "T12:00:00") : null;
+  if (isNaN(s.getTime())) return null;
   const sStr = s.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (!e || isNaN(e.getTime())) return sStr;
   const eStr = e.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   return `${sStr} – ${eStr}`;
 }
@@ -834,7 +837,7 @@ export default function CampDetailPage() {
                                     <>
                                       <p className="text-sm font-semibold text-foreground">
                                         {isCamp
-                                          ? formatDateRange(session.startDate, session.endDate)
+                                          ? (formatDateRange(session.startDate, session.endDate) ?? "Dates TBD")
                                           : formatDate(session.startDate).full}
                                       </p>
                                       {(session.startTime || (session.days && session.days.length > 0)) && (
