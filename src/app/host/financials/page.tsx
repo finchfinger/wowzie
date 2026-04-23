@@ -37,6 +37,7 @@ export default function HostFinancialsPage() {
   const [loading, setLoading] = useState(true);
   const [connectStatus, setConnectStatus] = useState<ConnectStatus>("loading");
   const [connectLoading, setConnectLoading] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
 
   // Load bookings
   useEffect(() => {
@@ -102,8 +103,9 @@ export default function HostFinancialsPage() {
 
   const handleConnectStripe = async () => {
     setConnectLoading(true);
+    setConnectError(null);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) { setConnectLoading(false); return; }
     const res = await fetch("/api/stripe/connect/onboard", {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
@@ -112,6 +114,8 @@ export default function HostFinancialsPage() {
       const json = await res.json() as { url: string };
       window.location.href = json.url;
     } else {
+      const json = await res.json().catch(() => ({})) as { error?: string };
+      setConnectError(json.error || "Something went wrong. Please try again.");
       setConnectLoading(false);
     }
   };
@@ -138,6 +142,9 @@ export default function HostFinancialsPage() {
             onClick: handleConnectStripe,
           }}
         />
+        {connectError && (
+          <p className="text-center text-xs text-destructive -mt-2">{connectError}</p>
+        )}
 
         {/* Fee breakdown explainer */}
         <div className="mx-auto max-w-sm rounded-card bg-card p-5 space-y-0">
@@ -293,9 +300,12 @@ export default function HostFinancialsPage() {
             </a>
           )}
           {connectStatus === "pending" && (
-            <Button size="sm" onClick={handleConnectStripe} disabled={connectLoading}>
-              {connectLoading ? "Redirecting…" : "Finish setup"}
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button size="sm" onClick={handleConnectStripe} disabled={connectLoading}>
+                {connectLoading ? "Redirecting…" : "Finish setup"}
+              </Button>
+              {connectError && <p className="text-xs text-destructive">{connectError}</p>}
+            </div>
           )}
         </div>
       </div>

@@ -33,34 +33,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  // Check if host already has a Stripe account
-  const { data: hostProfile } = await supabase
-    .from("host_profiles")
-    .select("stripe_account_id")
-    .eq("user_id", user.id)
-    .single();
-
-  let accountId = hostProfile?.stripe_account_id;
-
-  // Create a new Express account if none exists
-  if (!accountId) {
-    const account = await stripe.accounts.create({ type: "express" });
-    accountId = account.id;
-
-    await supabase
+  try {
+    // Check if host already has a Stripe account
+    const { data: hostProfile } = await supabase
       .from("host_profiles")
-      .update({ stripe_account_id: accountId, stripe_connect_status: "pending" })
-      .eq("user_id", user.id);
+      .select("stripe_account_id")
+      .eq("user_id", user.id)
+      .single();
+
+    let accountId = hostProfile?.stripe_account_id;
+
+    // Create a new Express account if none exists
+    if (!accountId) {
+      const account = await stripe.accounts.create({ type: "express" });
+      accountId = account.id;
+
+      await supabase
+        .from("host_profiles")
+        .update({ stripe_account_id: accountId, stripe_connect_status: "pending" })
+        .eq("user_id", user.id);
+    }
+
+    // Create an account link for onboarding
+    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${origin}/host/financials?refresh=true`,
+      return_url: `${origin}/host/financials?connected=true`,
+      type: "account_onboarding",
+    });
+
+    return NextResponse.json({ url: accountLink.url });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Stripe error.";
+    console.error("[stripe/connect/onboard]", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  // Create an account link for onboarding
-  const origin = req.headers.get("origin") || "http://localhost:3000";
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${origin}/host/financials?refresh=true`,
-    return_url: `${origin}/host/financials?connected=true`,
-    type: "account_onboarding",
-  });
-
-  return NextResponse.json({ url: accountLink.url });
 }
