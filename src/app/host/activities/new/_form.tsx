@@ -1676,12 +1676,16 @@ export default function CreateActivityPage({
     const min = minAgeText ? (parseInt(minAgeText, 10) || null) : null;
     const max = maxAgeText ? (parseInt(maxAgeText, 10) || null) : null;
 
-    /* Derive effective price: per-session min for all unified listings, top-level for legacy class */
+    /* Derive effective price: per-session min for unified, top-level for legacy class,
+       or classPricePerClass for ongoing class listings */
     const sessionPrices = !isLegacyClassListing
       ? campSessions.map((s) => s.price_cents).filter((p): p is number => p != null)
       : [];
+    const ongoingClassPriceCents = isOngoing && classPricePerClass
+      ? parseMoneyToCents(classPricePerClass)
+      : null;
     const effectivePriceCents = !isLegacyClassListing
-      ? (sessionPrices.length > 0 ? Math.min(...sessionPrices) : null)
+      ? (sessionPrices.length > 0 ? Math.min(...sessionPrices) : ongoingClassPriceCents)
       : priceCents;
 
     const legacyAgeBucket: AgeBucket =
@@ -2026,8 +2030,11 @@ export default function CreateActivityPage({
     const sessionPrices = !isLegacyClassListing
       ? campSessions.map((s) => s.price_cents).filter((p): p is number => p != null)
       : [];
+    const ongoingClassPriceCents = isOngoing && classPricePerClass
+      ? parseMoneyToCents(classPricePerClass)
+      : null;
     const effectivePriceCents = !isLegacyClassListing
-      ? (sessionPrices.length > 0 ? Math.min(...sessionPrices) : null)
+      ? (sessionPrices.length > 0 ? Math.min(...sessionPrices) : ongoingClassPriceCents)
       : priceCents;
 
     const legacyAgeBucket: AgeBucket = ageBuckets.length === 1 ? ageBuckets[0] : "all";
