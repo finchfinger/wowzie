@@ -1681,7 +1681,7 @@ export default function CreateActivityPage({
     const sessionPrices = !isLegacyClassListing
       ? campSessions.map((s) => s.price_cents).filter((p): p is number => p != null)
       : [];
-    const ongoingClassPriceCents = isOngoing && classPricePerClass
+    const ongoingClassPriceCents = classScheduleMode === "ongoing" && classPricePerClass
       ? parseMoneyToCents(classPricePerClass)
       : null;
     const effectivePriceCents = !isLegacyClassListing
@@ -2030,7 +2030,7 @@ export default function CreateActivityPage({
     const sessionPrices = !isLegacyClassListing
       ? campSessions.map((s) => s.price_cents).filter((p): p is number => p != null)
       : [];
-    const ongoingClassPriceCents = isOngoing && classPricePerClass
+    const ongoingClassPriceCents = classScheduleMode === "ongoing" && classPricePerClass
       ? parseMoneyToCents(classPricePerClass)
       : null;
     const effectivePriceCents = !isLegacyClassListing
