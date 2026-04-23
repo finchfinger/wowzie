@@ -149,7 +149,7 @@ export function ActivityProvider({
     return () => { alive = false; };
   }, [activity?.id]);
 
-  const handleEdit = () => router.push(`/host/activities/${activityId}/edit`);
+  const handleEdit = () => router.push(`/host/activities/new?activityId=${activityId}`);
 
   const handleDuplicate = async () => {
     if (!activity || busyAction) return;

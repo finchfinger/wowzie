@@ -1956,7 +1956,12 @@ export default function CreateActivityPage({
     if (savedId) {
       sessionStorage.setItem("wowzi_listing_saved", savedId);
     }
-    router.push("/host/listings");
+    // After editing an existing activity, return to its detail page
+    if (existingId && savedId) {
+      router.push(`/host/activities/${savedId}`);
+    } else {
+      router.push("/host/listings");
+    }
   };
 
   const handleSubmit = async () => {
@@ -3626,10 +3631,21 @@ export default function CreateActivityPage({
 
         {/* ── Page header ────────────────────────────────────────── */}
         <div className="space-y-3">
+          {/* Back link in edit mode */}
+          {isEditMode && activityId && (
+            <button
+              type="button"
+              onClick={() => router.push(`/host/activities/${activityId}`)}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>arrow_back</span>
+              Back to listing
+            </button>
+          )}
           {/* Row 1: heading + save */}
           <div className="flex items-center justify-between gap-4">
             <h1 className="text-2xl font-semibold tracking-tight">
-              {FORM_CONFIG.pageHeading}
+              {isEditMode ? "Edit listing" : FORM_CONFIG.pageHeading}
             </h1>
             {actionBar}
           </div>
