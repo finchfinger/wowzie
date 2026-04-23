@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import type { Camp } from "@/components/CampCard";
@@ -42,20 +42,32 @@ function formatDateShort(iso: string) {
 
 /* ── Inner payment form (needs stripe/elements context) ── */
 function PaymentForm({
-  camp, guests, setGuests, selectedSessions, sessionCount, totalCents, bookingId, email, setEmail, messageToHost, setMessageToHost,
+  camp, guests, setGuests, selectedSessions, sessionCount, totalCents, bookingId, clientSecret, email, setEmail, messageToHost, setMessageToHost,
 }: {
   camp: CampDetail; guests: number; setGuests: (n: number) => void;
   selectedSessions: CampSession[]; sessionCount: number; totalCents: number;
-  bookingId: string; email: string; setEmail: (s: string) => void;
+  bookingId: string; clientSecret: string; email: string; setEmail: (s: string) => void;
   messageToHost: string; setMessageToHost: (s: string) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [paymentReady, setPaymentReady] = useState(false);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "https://heywowzi.com";
+
+  // Stripe element appearance matching the site's input style
+  const cardStyle = {
+    style: {
+      base: {
+        fontSize: "14px",
+        fontFamily: "inherit",
+        color: "#18181b",
+        "::placeholder": { color: "#a1a1aa" },
+      },
+      invalid: { color: "#ef4444" },
+    },
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,19 +75,34 @@ function PaymentForm({
     setSubmitting(true);
     setSubmitError(null);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${origin}/checkout/confirmed/${bookingId}?stripe=1`,
-        receipt_email: email,
-      },
+    const cardNumber = elements.getElement(CardNumberElement);
+    if (!cardNumber) { setSubmitting(false); return; }
+
+    // Create payment method then confirm
+    const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
+      type: "card",
+      card: cardNumber,
+      billing_details: { email },
     });
 
-    if (error) {
-      setSubmitError(error.message ?? "Payment failed. Please try again.");
+    if (pmError) {
+      setSubmitError(pmError.message ?? "Card error. Please try again.");
       setSubmitting(false);
+      return;
     }
-    // On success Stripe redirects — no need to handle here
+
+    const { error: confirmError } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: paymentMethod.id,
+      receipt_email: email,
+    });
+
+    if (confirmError) {
+      setSubmitError(confirmError.message ?? "Payment failed. Please try again.");
+      setSubmitting(false);
+    } else {
+      // Redirect to confirmation
+      window.location.href = `${origin}/checkout/confirmed/${bookingId}?stripe=1`;
+    }
   };
 
   const heroImage = camp.hero_image_url || camp.image_url || "https://placehold.co/1200";
@@ -108,18 +135,28 @@ function PaymentForm({
               <h2 className="text-sm font-semibold">Payment</h2>
               <p className="text-xs text-muted-foreground">Your card details are encrypted and never stored on our servers.</p>
             </div>
-            <div className={`transition-opacity duration-300 ${paymentReady ? "opacity-100" : "opacity-0"}`}>
-              <PaymentElement
-                onReady={() => setPaymentReady(true)}
-                options={{ layout: "tabs" }}
-              />
-            </div>
-            {!paymentReady && (
-              <div className="space-y-3">
-                <div className="h-10 rounded-xl bg-muted animate-pulse" />
-                <div className="h-10 rounded-xl bg-muted animate-pulse" />
+            <div className="space-y-3">
+              <label className="block space-y-1">
+                <span className="text-xs font-medium">Card number</span>
+                <div className="rounded-xl border border-input bg-transparent px-3 py-2.5">
+                  <CardNumberElement options={cardStyle} />
+                </div>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium">Expiration</span>
+                  <div className="rounded-xl border border-input bg-transparent px-3 py-2.5">
+                    <CardExpiryElement options={cardStyle} />
+                  </div>
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium">CVC</span>
+                  <div className="rounded-xl border border-input bg-transparent px-3 py-2.5">
+                    <CardCvcElement options={cardStyle} />
+                  </div>
+                </label>
               </div>
-            )}
+            </div>
           </section>
 
           {/* Message */}
@@ -144,7 +181,7 @@ function PaymentForm({
 
           <button
             type="submit"
-            disabled={!stripe || !elements || submitting || !paymentReady}
+            disabled={!stripe || !elements || submitting}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60 hover:bg-foreground/90 transition-colors"
           >
             <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>lock</span>
@@ -362,20 +399,7 @@ function CheckoutContent() {
                 <div className="rounded-card bg-card p-5 h-48 animate-pulse" />
               </div>
             ) : (
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  appearance: {
-                    theme: "stripe",
-                    variables: {
-                      borderRadius: "12px",
-                      fontFamily: "inherit",
-                      colorPrimary: "#18181b",
-                    },
-                  },
-                }}
-              >
+              <Elements stripe={stripePromise}>
                 <PaymentForm
                   camp={camp}
                   guests={guests}
@@ -384,6 +408,7 @@ function CheckoutContent() {
                   sessionCount={sessionCount}
                   totalCents={totalCents}
                   bookingId={bookingId!}
+                  clientSecret={clientSecret}
                   email={email}
                   setEmail={setEmail}
                   messageToHost={messageToHost}
