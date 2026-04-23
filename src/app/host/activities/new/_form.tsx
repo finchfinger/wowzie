@@ -15,7 +15,6 @@ import { MultiSelect } from "@/components/ui/MultiSelect";
 import { AddressInput } from "@/components/ui/AddressInput";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { FormCard } from "@/components/ui/form-card";
-import { Snackbar } from "@/components/ui/Snackbar";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 
 import {
@@ -1383,7 +1382,6 @@ export default function CreateActivityPage({
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [savingDraft, setSavingDraft] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
-  const [publishSnackbar, setPublishSnackbar] = useState<{ open: boolean; activityId: string | null }>({ open: false, activityId: null });
   const [stepError, setStepError] = useState<string | null>(null);
   const [initialError, setInitialError] = useState<string | null>(null);
   const [existingSlug, setExistingSlug] = useState<string | null>(null);
@@ -1947,10 +1945,9 @@ export default function CreateActivityPage({
     }
 
     if (savedId) {
-      setPublishSnackbar({ open: true, activityId: savedId });
-    } else {
-      router.push("/host/listings");
+      sessionStorage.setItem("wowzi_listing_saved", savedId);
     }
+    router.push("/host/listings");
   };
 
   const handleSubmit = async () => {
@@ -3675,19 +3672,6 @@ export default function CreateActivityPage({
         </div>
       </main>
 
-      <Snackbar
-        open={publishSnackbar.open}
-        message={`You have successfully created a ${kindLabel[activityDisplayKind]}.`}
-        duration={5000}
-        action={publishSnackbar.activityId ? {
-          label: "View details",
-          onClick: () => router.push(`/host/activities/${publishSnackbar.activityId}`),
-        } : undefined}
-        onClose={() => {
-          setPublishSnackbar({ open: false, activityId: null });
-          router.push("/host/listings");
-        }}
-      />
     </>
   );
 }

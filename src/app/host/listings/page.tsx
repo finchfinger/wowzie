@@ -34,6 +34,16 @@ export default function HostListingsPage() {
   const [deleteTarget, setDeleteTarget] = useState<HostListItemData | null>(null);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("alphabetical");
+  const [savedToast, setSavedToast] = useState(false);
+
+  useEffect(() => {
+    const savedId = sessionStorage.getItem("wowzi_listing_saved");
+    if (savedId) {
+      sessionStorage.removeItem("wowzi_listing_saved");
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 4000);
+    }
+  }, []);
 
   /* ── load ── */
   useEffect(() => {
@@ -276,6 +286,13 @@ export default function HostListingsPage() {
           onConfirm={confirmDelete}
           onCancel={() => setDeleteTarget(null)}
         />
+      )}
+
+      {savedToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background shadow-lg">
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>check</span>
+          Listing saved
+        </div>
       )}
     </>
   );
