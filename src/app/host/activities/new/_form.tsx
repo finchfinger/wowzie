@@ -2133,9 +2133,10 @@ export default function CreateActivityPage({
       is_published: publish,
       is_active: publish,
       status: publish ? "active" : "inactive",
-      hero_image_url: null,
-      image_urls: null,
-      image_url: null,
+      // Preserve already-uploaded photos in autosave (new files are only uploaded on full save)
+      hero_image_url: photoItems.find((p) => p.origin === "existing")?.url ?? photoItems.find((p) => p.origin === "existing")?.src ?? null,
+      image_urls: photoItems.filter((p, i) => p.origin === "existing" && i > 0).map((p) => p.url ?? p.src ?? "").filter(Boolean) || null,
+      image_url: photoItems.find((p) => p.origin === "existing")?.url ?? photoItems.find((p) => p.origin === "existing")?.src ?? null,
       meta,
       schedule_tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Chicago",
       start_local: null,
