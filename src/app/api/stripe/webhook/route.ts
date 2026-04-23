@@ -221,6 +221,70 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Payment confirmed via PaymentIntent (inline card form)
+  if (event.type === "payment_intent.succeeded") {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    const bookingId = pi.metadata?.booking_id;
+
+    if (bookingId) {
+      const supabase = getSupabase();
+
+      await supabase.from("bookings").update({
+        payment_status: "paid",
+        status: "confirmed",
+        stripe_payment_intent: pi.id,
+      }).eq("id", bookingId);
+
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("user_id, total_cents, contact_email, camps:camp_id(name, host_id)")
+        .eq("id", bookingId).single();
+
+      const camp = booking?.camps as unknown as { name: string; host_id: string } | null;
+      const campName = camp?.name ?? "your camp";
+      const parentEmail = booking?.contact_email as string | null;
+
+      if (booking?.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: booking.user_id, type: "booking_confirmed",
+          title: "Booking confirmed!",
+          body: `Your booking for ${campName} is confirmed.`,
+          meta: { campName, bookingId },
+        });
+      }
+
+      if (parentEmail) {
+        try {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://heywowzi.com";
+          await resend.emails.send({
+            from: FROM_EMAIL, to: parentEmail,
+            subject: `Your booking for ${campName} is confirmed 🎉`,
+            html: bookingConfirmedEmailHtml({ campName, bookingId, appUrl }),
+          });
+        } catch (e) {
+          console.error("[webhook] parent confirmation email failed:", e);
+        }
+      }
+
+      if (camp?.host_id && parentEmail) {
+        try {
+          const { data: hostUser } = await supabase.auth.admin.getUserById(camp.host_id);
+          const hostEmail = hostUser?.user?.email;
+          if (hostEmail) {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://heywowzi.com";
+            await resend.emails.send({
+              from: FROM_EMAIL, to: hostEmail,
+              subject: `New booking confirmed for ${campName}`,
+              html: hostBookingConfirmedEmailHtml({ campName, parentEmail, bookingId, appUrl }),
+            });
+          }
+        } catch (e) {
+          console.error("[webhook] host confirmation email failed:", e);
+        }
+      }
+    }
+  }
+
   // When a host completes (or updates) their Stripe Connect onboarding
   if (event.type === "account.updated") {
     const account = event.data.object as Stripe.Account;
