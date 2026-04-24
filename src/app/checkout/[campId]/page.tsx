@@ -340,6 +340,7 @@ function CheckoutContent() {
 
   const guestsParam = Math.max(1, Math.min(10, Number(searchParams.get("guests") || "1") || 1));
   const sessionIdsParam = (searchParams.get("sessions") || "").split(",").filter(Boolean);
+  const slotParam = searchParams.get("slot") ?? null; // pre-selected from detail page
 
   const [camp, setCamp] = useState<CampDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -401,6 +402,13 @@ function CheckoutContent() {
     if (!isOngoing) return [];
     return extractTimeSlots(camp.meta);
   }, [camp]);
+
+  // If slot was pre-selected on the detail page, apply it once slots are known
+  useEffect(() => {
+    if (!slotParam || !timeSlots.length || preferredSlot) return;
+    const match = timeSlots.find((s) => s.key === slotParam);
+    if (match) setPreferredSlot(match);
+  }, [slotParam, timeSlots]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sessionCount = Math.max(selectedSessions.length, 1);
   const totalCents = (camp?.price_cents ?? 0) * sessionCount * guests;

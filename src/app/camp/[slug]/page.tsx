@@ -117,6 +117,34 @@ function parseAddonPriceCents(priceStr?: string): number {
 
 const WEEK_ORDINALS = ["one", "two", "three", "four", "five", "six", "seven", "eight"];
 
+/* ── Time slot helpers (ongoing classes) ── */
+const DAY_FULL: Record<string, string> = {
+  sun: "Sunday", mon: "Monday", tue: "Tuesday", wed: "Wednesday",
+  thu: "Thursday", fri: "Friday", sat: "Saturday",
+};
+const DAY_ORDER = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+type TimeSlot = { key: string; label: string; day: string; start: string; end: string };
+
+function extractTimeSlots(meta: any): TimeSlot[] {
+  const weekly: Record<string, any> =
+    meta?.classSchedule?.weekly ?? meta?.weeklySchedule ?? {};
+  const slots: TimeSlot[] = [];
+  for (const dayKey of DAY_ORDER) {
+    const val = weekly[dayKey];
+    if (!val) continue;
+    if (val.available !== false && Array.isArray(val.blocks)) {
+      for (const b of val.blocks) {
+        if (!b.start || !b.end) continue;
+        slots.push({ key: `${dayKey}-${b.start}-${b.end}`, label: `${DAY_FULL[dayKey]} · ${formatTimeLocal(b.start)} – ${formatTimeLocal(b.end)}`, day: dayKey, start: b.start, end: b.end });
+      }
+    } else if (typeof val.start === "string" && typeof val.end === "string") {
+      slots.push({ key: `${dayKey}-${val.start}-${val.end}`, label: `${DAY_FULL[dayKey]} · ${formatTimeLocal(val.start)} – ${formatTimeLocal(val.end)}`, day: dayKey, start: val.start, end: val.end });
+    }
+  }
+  return slots;
+}
+
 function generateDaysByWeek(startIso: string, endIso: string) {
   const start = new Date(startIso + "T00:00:00");
   const end = new Date(endIso + "T23:59:59");
@@ -171,6 +199,7 @@ export default function CampDetailPage() {
 
   // Reservation state
   const [reservationGuests, setReservationGuests] = useState(1);
+  const [selectedSlotKey, setSelectedSlotKey] = useState<string>("");
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
   const [showAllSlots, setShowAllSlots] = useState(false);
   const [addonsExpanded, setAddonsExpanded] = useState(false);
@@ -395,6 +424,10 @@ export default function CampDetailPage() {
     sessionStartDate?: string;
     weekly?: Record<string, { available?: boolean; blocks?: { start: string; end: string }[] }>;
   } | undefined;
+
+  // Time slots for ongoing classes (appointment model)
+  const timeSlots = useMemo(() => extractTimeSlots(meta), [meta]);
+  const isAppointmentClass = activityKind === "class" && timeSlots.length > 0;
 
   // Compute first class date for ongoing recurring classes
   const firstClassDate = (() => {
@@ -781,6 +814,25 @@ export default function CampDetailPage() {
 
                 {statusVariant === null && (
                   <>
+                    {/* Appointment-style slot picker for ongoing classes */}
+                    {isAppointmentClass && (
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5">
+                          Choose your time
+                        </label>
+                        <Select value={selectedSlotKey} onValueChange={setSelectedSlotKey}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a time slot" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeSlots.map((slot) => (
+                              <SelectItem key={slot.key} value={slot.key}>{slot.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
                     {/* Class multi-slot picker */}
                     {isMultiSlotClass ? (
                       <div className="space-y-2">
@@ -1182,12 +1234,15 @@ export default function CampDetailPage() {
                     {/* Buttons */}
                     <div className="flex gap-3">
                       <button
+                        disabled={isAppointmentClass && !selectedSlotKey}
                         onClick={() => {
+                          if (!user) { setAuthReason("booking"); setAuthOpen(true); return; }
                           const params = new URLSearchParams({ guests: String(reservationGuests) });
                           if (selectedSessionIds.size > 0) params.set("sessions", [...selectedSessionIds].join(","));
+                          if (selectedSlotKey) params.set("slot", selectedSlotKey);
                           router.push(`/checkout/${id}?${params.toString()}`);
                         }}
-                        className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                        className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         Reserve
                       </button>
