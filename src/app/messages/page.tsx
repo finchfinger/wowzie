@@ -276,7 +276,7 @@ function MessagesPageInner() {
             setLoading(false);
             return;
           }
-          const { data: created } = await supabase
+          const { data: created, error: convErr } = await supabase
             .from("conversations")
             .insert({
               user_id: myId,
@@ -291,6 +291,7 @@ function MessagesPageInner() {
               "id, participant_name, avatar_emoji, last_message_preview, last_message_at, unread_count, participant_profile_id, camp_slug, camp_name"
             )
             .single();
+          if (convErr) console.error("[messages] conversation insert failed:", convErr.message, convErr.details, convErr.hint);
           if (created) {
             const newConvs = sortConvs([created as Conversation, ...clearedConvs]);
             setConversations(newConvs);
