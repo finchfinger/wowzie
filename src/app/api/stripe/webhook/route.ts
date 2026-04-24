@@ -262,14 +262,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      const { data: booking } = await supabase
+      const { data: booking, error: bookingFetchErr } = await supabase
         .from("bookings")
         .select("user_id, total_cents, contact_email, camps:camp_id(name, host_id)")
         .eq("id", bookingId).single();
 
+      console.log("[webhook] booking fetch:", { bookingId, booking: !!booking, err: bookingFetchErr?.message });
+
       const camp = booking?.camps as unknown as { name: string; host_id: string } | null;
       const campName = camp?.name ?? "your camp";
       const parentEmail = booking?.contact_email as string | null;
+
+      console.log("[webhook] email targets:", { parentEmail, hostId: camp?.host_id, campName, FROM_EMAIL });
 
       if (booking?.user_id) {
         await supabase.from("notifications").insert({
@@ -283,31 +287,38 @@ export async function POST(req: NextRequest) {
       if (parentEmail) {
         try {
           const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://heywowzi.com";
-          await resend.emails.send({
+          const result = await resend.emails.send({
             from: FROM_EMAIL, to: parentEmail,
             subject: `Your booking for ${campName} is confirmed 🎉`,
             html: bookingConfirmedEmailHtml({ campName, bookingId, appUrl }),
           });
+          console.log("[webhook] parent email result:", JSON.stringify(result));
         } catch (e) {
           console.error("[webhook] parent confirmation email failed:", e);
         }
+      } else {
+        console.warn("[webhook] no parentEmail — skipping parent email");
       }
 
       if (camp?.host_id && parentEmail) {
         try {
           const { data: hostUser } = await supabase.auth.admin.getUserById(camp.host_id);
           const hostEmail = hostUser?.user?.email;
+          console.log("[webhook] host email target:", hostEmail);
           if (hostEmail) {
             const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://heywowzi.com";
-            await resend.emails.send({
+            const result = await resend.emails.send({
               from: FROM_EMAIL, to: hostEmail,
               subject: `New booking confirmed for ${campName}`,
               html: hostBookingConfirmedEmailHtml({ campName, parentEmail, bookingId, appUrl }),
             });
+            console.log("[webhook] host email result:", JSON.stringify(result));
           }
         } catch (e) {
           console.error("[webhook] host confirmation email failed:", e);
         }
+      } else {
+        console.warn("[webhook] skipping host email:", { hostId: camp?.host_id, parentEmail });
       }
     }
   }
