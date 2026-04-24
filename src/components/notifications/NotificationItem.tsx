@@ -92,14 +92,12 @@ function NotificationTitle({
     );
   }
 
-  if (type === "booking_pending" && actorName && campName && childName) {
+  if (type === "booking_pending" && actorName && campName) {
     return (
       <p className="text-sm text-foreground leading-snug">
         <strong className="font-semibold">{actorName}</strong>
-        {" requested a spot in "}
+        {" would like to book "}
         <strong className="font-semibold">{campName}</strong>
-        {" for "}
-        <strong className="font-semibold">{childName}</strong>
       </p>
     );
   }
