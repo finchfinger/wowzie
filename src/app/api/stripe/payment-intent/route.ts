@@ -94,9 +94,13 @@ export async function POST(req: NextRequest) {
       .select("preferred_first_name, legal_name")
       .eq("id", userId)
       .single();
+    const { data: parentAuthUser } = await supabase.auth.admin.getUserById(userId);
+    const parentMeta = parentAuthUser?.user?.user_metadata ?? {};
     const parentName =
       parentProfile?.preferred_first_name?.trim() ||
       parentProfile?.legal_name?.trim() ||
+      (parentMeta.first_name as string | undefined)?.trim() ||
+      ([parentMeta.first_name, parentMeta.last_name].filter(Boolean).join(" ").trim()) ||
       email;
 
     /* ── Notify host of pending booking ── */
