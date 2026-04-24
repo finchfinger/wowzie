@@ -130,14 +130,25 @@ export async function POST(req: NextRequest) {
       .update({ platform_fee_percent: platformFeePercent, is_promoted_booking: isPromoted })
       .eq("id", booking.id);
 
+    /* ── Look up parent's name ── */
+    const { data: parentProfile } = await supabase
+      .from("profiles")
+      .select("preferred_first_name, legal_name")
+      .eq("id", userId)
+      .single();
+    const parentName =
+      parentProfile?.preferred_first_name?.trim() ||
+      parentProfile?.legal_name?.trim() ||
+      email;
+
     if (camp?.host_id) {
       await supabase.from("notifications").insert({
         user_id: camp.host_id,
         type: "booking_pending",
         title: "New booking request",
-        body: `${email} wants to book ${campName}.`,
+        body: `${parentName} wants to book ${campName}.`,
         meta: {
-          actorName: email,
+          actorName: parentName,
           campName,
           campId,
           bookingId: booking.id,
@@ -154,7 +165,7 @@ export async function POST(req: NextRequest) {
             from: FROM_EMAIL,
             to: hostEmail,
             subject: `New booking request for ${campName}`,
-            html: hostBookingRequestEmailHtml({ campName, parentEmail: email, bookingId: booking.id, appUrl: origin }),
+            html: hostBookingRequestEmailHtml({ campName, parentName, bookingId: booking.id, appUrl: origin }),
           });
         }
       } catch (e) {
@@ -199,12 +210,12 @@ export async function POST(req: NextRequest) {
 
 function hostBookingRequestEmailHtml({
   campName,
-  parentEmail,
+  parentName,
   bookingId,
   appUrl,
 }: {
   campName: string;
-  parentEmail: string;
+  parentName: string;
   bookingId: string;
   appUrl: string;
 }) {
@@ -225,7 +236,7 @@ function hostBookingRequestEmailHtml({
           <td style="padding:32px;">
             <h1 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#111;">Someone wants to book your camp!</h1>
             <p style="margin:0 0 20px;color:#666;font-size:15px;line-height:1.5;">
-              <strong style="color:#111;">${parentEmail}</strong> is completing a booking for <strong style="color:#111;">${campName}</strong>. You'll receive another email once payment is confirmed.
+              <strong style="color:#111;">${parentName}</strong> is completing a booking for <strong style="color:#111;">${campName}</strong>. You'll receive another email once payment is confirmed.
             </p>
             <a href="${dashboardUrl}"
                style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;padding:14px 28px;border-radius:100px;font-size:15px;font-weight:600;letter-spacing:-0.2px;">

@@ -131,6 +131,20 @@ export async function POST(req: NextRequest) {
       // Email host: new booking confirmed
       if (hostId && parentEmail) {
         try {
+          /* Look up parent's name for the host email */
+          let checkoutParentName = parentEmail;
+          if (booking?.user_id) {
+            const { data: pp } = await supabase
+              .from("profiles")
+              .select("preferred_first_name, legal_name")
+              .eq("id", booking.user_id)
+              .single();
+            checkoutParentName =
+              pp?.preferred_first_name?.trim() ||
+              pp?.legal_name?.trim() ||
+              parentEmail;
+          }
+
           const { data: hostUser } = await supabase.auth.admin.getUserById(hostId);
           const hostEmail = hostUser?.user?.email;
           if (hostEmail) {
@@ -139,7 +153,7 @@ export async function POST(req: NextRequest) {
               from: FROM_EMAIL,
               to: hostEmail,
               subject: `New booking confirmed for ${campName}`,
-              html: hostBookingConfirmedEmailHtml({ campName, parentEmail, bookingId, appUrl }),
+              html: hostBookingConfirmedEmailHtml({ campName, parentName: checkoutParentName, bookingId, appUrl }),
             });
           }
         } catch (e) {
@@ -273,6 +287,21 @@ export async function POST(req: NextRequest) {
       const campName = camp?.name ?? "your camp";
       const parentEmail = booking?.contact_email as string | null;
 
+      /* ── Look up parent's name ── */
+      let parentName = parentEmail ?? "A parent";
+      if (booking?.user_id) {
+        const { data: parentProfile } = await supabase
+          .from("profiles")
+          .select("preferred_first_name, legal_name")
+          .eq("id", booking.user_id)
+          .single();
+        parentName =
+          parentProfile?.preferred_first_name?.trim() ||
+          parentProfile?.legal_name?.trim() ||
+          parentEmail ||
+          "A parent";
+      }
+
       console.log("[webhook] email targets:", { parentEmail, hostId: camp?.host_id, campName, FROM_EMAIL });
 
       if (booking?.user_id) {
@@ -310,7 +339,7 @@ export async function POST(req: NextRequest) {
             const result = await resend.emails.send({
               from: FROM_EMAIL, to: hostEmail,
               subject: `New booking confirmed for ${campName}`,
-              html: hostBookingConfirmedEmailHtml({ campName, parentEmail, bookingId, appUrl }),
+              html: hostBookingConfirmedEmailHtml({ campName, parentName, bookingId, appUrl }),
             });
             console.log("[webhook] host email result:", JSON.stringify(result));
           }
@@ -446,12 +475,12 @@ function waitlistPromotedEmailHtml({
 
 function hostBookingConfirmedEmailHtml({
   campName,
-  parentEmail,
+  parentName,
   bookingId,
   appUrl,
 }: {
   campName: string;
-  parentEmail: string;
+  parentName: string;
   bookingId: string;
   appUrl: string;
 }) {
@@ -472,7 +501,7 @@ function hostBookingConfirmedEmailHtml({
           <td style="padding:32px;">
             <h1 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#111;">New booking confirmed!</h1>
             <p style="margin:0 0 20px;color:#666;font-size:15px;line-height:1.5;">
-              <strong style="color:#111;">${parentEmail}</strong> just completed a booking for <strong style="color:#111;">${campName}</strong>. Payment has been processed and funds are on their way.
+              <strong style="color:#111;">${parentName}</strong> just completed a booking for <strong style="color:#111;">${campName}</strong>. Payment has been processed and funds are on their way.
             </p>
             <a href="${dashboardUrl}"
                style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;padding:14px 28px;border-radius:100px;font-size:15px;font-weight:600;letter-spacing:-0.2px;">

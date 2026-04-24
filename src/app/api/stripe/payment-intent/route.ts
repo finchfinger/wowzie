@@ -88,13 +88,24 @@ export async function POST(req: NextRequest) {
       .update({ platform_fee_percent: platformFeePercent, is_promoted_booking: isPromoted })
       .eq("id", booking.id);
 
+    /* ── Look up parent's name ── */
+    const { data: parentProfile } = await supabase
+      .from("profiles")
+      .select("preferred_first_name, legal_name")
+      .eq("id", userId)
+      .single();
+    const parentName =
+      parentProfile?.preferred_first_name?.trim() ||
+      parentProfile?.legal_name?.trim() ||
+      email;
+
     /* ── Notify host of pending booking ── */
     if (camp?.host_id) {
       await supabase.from("notifications").insert({
         user_id: camp.host_id, type: "booking_pending",
         title: "New booking request",
-        body: `${email} wants to book ${campName}.`,
-        meta: { actorName: email, campName, campId, bookingId: booking.id },
+        body: `${parentName} wants to book ${campName}.`,
+        meta: { actorName: parentName, campName, campId, bookingId: booking.id },
       });
 
       try {
@@ -105,7 +116,7 @@ export async function POST(req: NextRequest) {
           await resend.emails.send({
             from: FROM_EMAIL, to: hostEmail,
             subject: `New booking request for ${campName}`,
-            html: hostBookingRequestEmailHtml({ campName, parentEmail: email, bookingId: booking.id, appUrl: origin }),
+            html: hostBookingRequestEmailHtml({ campName, parentName, bookingId: booking.id, appUrl: origin }),
           });
         }
       } catch (e) {
@@ -144,8 +155,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function hostBookingRequestEmailHtml({ campName, parentEmail, bookingId, appUrl }: {
-  campName: string; parentEmail: string; bookingId: string; appUrl: string;
+function hostBookingRequestEmailHtml({ campName, parentName, bookingId, appUrl }: {
+  campName: string; parentName: string; bookingId: string; appUrl: string;
 }) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -158,7 +169,7 @@ function hostBookingRequestEmailHtml({ campName, parentEmail, bookingId, appUrl 
         <tr><td style="padding:32px;">
           <h1 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#111;">New booking request!</h1>
           <p style="margin:0 0 20px;color:#666;font-size:15px;line-height:1.5;">
-            <strong style="color:#111;">${parentEmail}</strong> is completing a booking for <strong style="color:#111;">${campName}</strong>.
+            <strong style="color:#111;">${parentName}</strong> is completing a booking for <strong style="color:#111;">${campName}</strong>.
           </p>
           <a href="${appUrl}/host/bookings" style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;padding:14px 28px;border-radius:100px;font-size:15px;font-weight:600;">View bookings →</a>
           <p style="margin:24px 0 0;font-size:12px;color:#999;">Booking reference: <span style="color:#666;font-family:monospace;">${bookingId}</span></p>
