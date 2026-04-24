@@ -1252,6 +1252,8 @@ export default function CreateActivityPage({
   const [classMeetingLength, setClassMeetingLength] = useState("");
   const [classSessionStartDate, setClassSessionStartDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [classPricePerMeeting, setClassPricePerMeeting] = useState("");
+  const [classSessionCount, setClassSessionCount] = useState("");
+  const [classStartMode, setClassStartMode] = useState<"rolling" | "fixed">("rolling");
   const [classSections, setClassSections] = useState<ClassSessionSection[]>(
     () => [makeDefaultClassSection()],
   );
@@ -1609,6 +1611,8 @@ export default function CreateActivityPage({
           setClassSessionStartDate(cs.sessionStartDate >= today ? cs.sessionStartDate : today);
         }
         if (cs.pricePerMeeting) setClassPricePerMeeting(cs.pricePerMeeting);
+        if (cs.sessionCount) setClassSessionCount(cs.sessionCount);
+        if (cs.startMode) setClassStartMode(cs.startMode);
         if (Array.isArray(cs.sections) && cs.sections.length)
           setClassSections(cs.sections);
       }
@@ -1764,7 +1768,9 @@ export default function CreateActivityPage({
             sessionLength: classSessionLength || undefined,
             sessionEndDate: classSessionEndDate || undefined,
             meetingLength: classMeetingLength || undefined,
-            sessionStartDate: classSessionStartDate || undefined,
+            sessionStartDate: classStartMode === "fixed" ? classSessionStartDate || undefined : undefined,
+            startMode: classStartMode,
+            sessionCount: classSessionCount || undefined,
             pricePerMeeting: classPricePerMeeting || undefined,
             sections: classSections.length ? classSections : undefined,
           }
@@ -2111,7 +2117,9 @@ export default function CreateActivityPage({
             sessionLength: classSessionLength || undefined,
             sessionEndDate: classSessionEndDate || undefined,
             meetingLength: classMeetingLength || undefined,
-            sessionStartDate: classSessionStartDate || undefined,
+            sessionStartDate: classStartMode === "fixed" ? classSessionStartDate || undefined : undefined,
+            startMode: classStartMode,
+            sessionCount: classSessionCount || undefined,
             pricePerMeeting: classPricePerMeeting || undefined,
             sections: classSections.length ? classSections : undefined,
           }
@@ -2898,31 +2906,65 @@ export default function CreateActivityPage({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Price per class">
+                <Field label="Classes per enrollment" hint="Optional — e.g. 8 for an 8-week session">
+                  <Input
+                    type="number"
+                    min={1}
+                    value={classSessionCount}
+                    onChange={(e) => setClassSessionCount(e.target.value)}
+                    placeholder="Ongoing"
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label={classSessionCount ? "Price per session" : "Price per class"}>
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
                       $
                     </span>
                     <Input
                       value={classPricePerClass}
-                      onChange={(e) =>
-                        setClassPricePerClass(sanitizeMoneyInput(e.target.value))
-                      }
+                      onChange={(e) => setClassPricePerClass(sanitizeMoneyInput(e.target.value))}
                       placeholder=""
                       className="pl-8"
                       inputMode="decimal"
                       autoComplete="off"
                     />
                   </div>
+                  {classSessionCount && classPricePerClass && Number(classSessionCount) > 0 && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      = ${(parseFloat(classPricePerClass) / Number(classSessionCount)).toFixed(2)}/class
+                    </p>
+                  )}
                 </Field>
-
               </div>
 
-              <Field label="Enrollment start date">
-                <DateInput
-                  value={classSessionStartDate}
-                  onChange={(e) => setClassSessionStartDate(e.target.value)}
-                />
+              <Field label="Enrollment start">
+                <div className="inline-flex rounded-lg border border-input bg-muted/30 p-0.5 w-full">
+                  {(["rolling", "fixed"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setClassStartMode(mode)}
+                      className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                        classStartMode === mode
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {mode === "rolling" ? "Rolling — start anytime" : "Fixed start date"}
+                    </button>
+                  ))}
+                </div>
+                {classStartMode === "fixed" && (
+                  <div className="mt-2">
+                    <DateInput
+                      value={classSessionStartDate}
+                      onChange={(e) => setClassSessionStartDate(e.target.value)}
+                    />
+                  </div>
+                )}
               </Field>
             </div>
           </FormCard>
