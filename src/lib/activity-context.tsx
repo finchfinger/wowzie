@@ -70,6 +70,7 @@ type ActivityContextValue = {
   error: string | null;
   pendingBookings: CampBookingRow[];
   pendingCount: number;
+  refreshPendingBookings: () => Promise<void>;
   busyAction: "duplicate" | "delete" | null;
   deleteOpen: boolean;
   deleteError: string | null;
@@ -132,21 +133,20 @@ export function ActivityProvider({
   }, [activityId]);
 
   /* Load pending bookings (lightweight — for header badge + overview cards) */
-  useEffect(() => {
+  const refreshPendingBookings = async () => {
     if (!activity?.id) return;
-    let alive = true;
-    const loadPending = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token ?? "";
-      const res = await fetch(`/api/host/camp-bookings?campId=${activity.id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!alive) return;
-      const rows: CampBookingRow[] = res.ok ? await res.json() : [];
-      setPendingBookings(rows.filter(r => r.status === "pending"));
-    };
-    void loadPending();
-    return () => { alive = false; };
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token ?? "";
+    const res = await fetch(`/api/host/camp-bookings?campId=${activity.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const rows: CampBookingRow[] = res.ok ? await res.json() : [];
+    setPendingBookings(rows.filter(r => r.status === "pending"));
+  };
+
+  useEffect(() => {
+    void refreshPendingBookings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activity?.id]);
 
   const handleEdit = () => router.push(`/host/activities/new?activityId=${activityId}`);
@@ -198,6 +198,7 @@ export function ActivityProvider({
       activity, loading, error,
       pendingBookings,
       pendingCount: pendingBookings.length,
+      refreshPendingBookings,
       busyAction, deleteOpen, deleteError,
       setDeleteOpen, handleEdit, handleDuplicate, confirmDelete,
     }}>

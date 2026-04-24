@@ -42,3 +42,34 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(bookings ?? []);
 }
+
+export async function PATCH(req: NextRequest) {
+  const authHeader = req.headers.get("authorization") ?? "";
+  const token = authHeader.replace("Bearer ", "");
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const anonSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://fzdhexysoleaegzwtryf.supabase.co",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZGhleHlzb2xlYWVnend0cnlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1MzE2MDYsImV4cCI6MjA3ODEwNzYwNn0.kEU-hZW2TJ2sNz_TDPo_lNu0OYu6GKfn1t5Sv-UVj6U"
+  );
+  const { data: { user } } = await anonSupabase.auth.getUser(token);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json() as { bookingId?: string; status?: string };
+  const { bookingId, status } = body;
+  if (!bookingId || !status) return NextResponse.json({ error: "Missing bookingId or status" }, { status: 400 });
+  if (!["confirmed", "declined"].includes(status)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+
+  const sb = getServiceSupabase();
+
+  // Verify user is the host of the camp this booking belongs to
+  const { data: booking } = await sb.from("bookings").select("camp_id").eq("id", bookingId).single();
+  if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+
+  const { data: camp } = await sb.from("camps").select("host_id").eq("id", booking.camp_id).single();
+  if (!camp || camp.host_id !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { error } = await sb.from("bookings").update({ status, updated_at: new Date().toISOString() }).eq("id", bookingId);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}

@@ -193,29 +193,26 @@ export default function OverviewPage() {
   return (
     <div className="space-y-4">
 
-      {/* Pending booking requests */}
-      {pendingBookings.map(g => (
-        <div key={g.id} className="flex items-center justify-between gap-4 rounded-card bg-card border border-border px-4 py-3">
+      {/* Pending booking requests — collapsed into one card */}
+      {pendingBookings.length > 0 && (
+        <div className="flex items-center justify-between gap-4 rounded-card bg-card border border-border px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-semibold shrink-0 text-muted-foreground">
-              {(g.parentName || "G").charAt(0).toUpperCase()}
+              {pendingBookings.length > 1 ? pendingBookings.length : (pendingBookings[0].parentName || "G").charAt(0).toUpperCase()}
             </div>
-            <div className="min-w-0">
-              <p className="text-sm text-foreground">
-                <span className="font-semibold">{g.parentName || g.parentEmail || "Someone"}</span>{" "}
-                would like to book this {activityKind}.
-              </p>
-              {g.children && g.children.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">{g.children.map(c => c.name).join(", ")}</p>
-              )}
-            </div>
+            <p className="text-sm text-foreground">
+              {pendingBookings.length === 1
+                ? <><span className="font-semibold">{pendingBookings[0].parentName || pendingBookings[0].parentEmail || "Someone"}</span> would like to book this {activityKind}.</>
+                : <><span className="font-semibold">{pendingBookings.length} people</span> would like to book this {activityKind}.</>
+              }
+            </p>
           </div>
-          <a href={`/host/activities/${activityId}/guests`}
+          <a href={`/host/activities/${activityId}/guests?filter=pending`}
             className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors">
             Review
           </a>
         </div>
-      ))}
+      )}
 
       {/* Listing details + description combined */}
       <Card>

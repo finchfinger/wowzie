@@ -45,7 +45,7 @@ export default function GuestsPage() {
   const params = useParams<{ activityId: string }>();
   const router = useRouter();
   const activityId = params.activityId;
-  const { activity } = useActivity();
+  const { activity, refreshPendingBookings } = useActivity();
 
   const [guests, setGuests] = useState<CampBookingRow[]>([]);
   const [guestsLoading, setGuestsLoading] = useState(true);
@@ -96,8 +96,18 @@ export default function GuestsPage() {
 
   const updateGuestStatus = async (bookingId: string, status: BookingStatus) => {
     setGuests(prev => prev.map(g => g.id === bookingId ? { ...g, status } : g));
-    const { error } = await supabase.from("bookings").update({ status, updated_at: new Date().toISOString() }).eq("id", bookingId);
-    if (error) setGuests(prev => prev.map(g => g.id === bookingId ? { ...g, status: "pending" } : g));
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token ?? "";
+    const res = await fetch("/api/host/camp-bookings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ bookingId, status }),
+    });
+    if (!res.ok) {
+      setGuests(prev => prev.map(g => g.id === bookingId ? { ...g, status: "pending" } : g));
+    } else {
+      void refreshPendingBookings();
+    }
   };
 
   const pendingCount = guests.filter(g => g.status === "pending").length;

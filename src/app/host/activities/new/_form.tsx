@@ -2734,7 +2734,7 @@ export default function CreateActivityPage({
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {mode === "ongoing" ? "Ongoing" : "Fixed"}
+                  {mode === "ongoing" ? "Weekly package" : "Specific dates"}
                 </button>
               );
             })}
@@ -3174,16 +3174,16 @@ export default function CreateActivityPage({
             {([
               {
                 mode: "sessions",
-                label: "Fixed dates",
-                description: "Set a start and end date for the term or session.",
+                label: "Specific dates",
+                description: "Set a start and end date for the program or session.",
                 icon: "event",
                 selected: !isOngoing,
                 onSelect: () => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); },
               },
               {
                 mode: "ongoing",
-                label: "Ongoing",
-                description: "Rolling enrollment with a recurring weekly schedule.",
+                label: "Weekly package",
+                description: "Families pick a recurring slot and book a set number of classes.",
                 icon: "repeat",
                 selected: isOngoing,
                 onSelect: () => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); setCampSessions([]); },
@@ -3269,29 +3269,33 @@ export default function CreateActivityPage({
           <div className="space-y-3">
             <p className="text-sm font-medium text-foreground">Add-ons</p>
 
-            <ExpandableCheckboxCard
-              checked={offerEarlyDropoff}
-              onCheckedChange={setOfferEarlyDropoff}
-              title="Early drop-off"
-              description="Allow families to drop off their child before the activity starts."
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <MoneyInput label="Price per day" value={earlyDropoffPrice} onChange={setEarlyDropoffPrice} />
-                <Field label="End time"><TimeSelect value={earlyDropoffStart} onChange={setEarlyDropoffStart} /></Field>
-              </div>
-            </ExpandableCheckboxCard>
+            {activityKind !== "class" && (
+              <>
+                <ExpandableCheckboxCard
+                  checked={offerEarlyDropoff}
+                  onCheckedChange={setOfferEarlyDropoff}
+                  title="Early drop-off"
+                  description="Allow families to drop off their child before the activity starts."
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <MoneyInput label="Price per day" value={earlyDropoffPrice} onChange={setEarlyDropoffPrice} />
+                    <Field label="End time"><TimeSelect value={earlyDropoffStart} onChange={setEarlyDropoffStart} /></Field>
+                  </div>
+                </ExpandableCheckboxCard>
 
-            <ExpandableCheckboxCard
-              checked={offerExtendedDay}
-              onCheckedChange={setOfferExtendedDay}
-              title="Extended day"
-              description="Let families pick up their child after the activity ends."
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <MoneyInput label="Price per day" value={extendedDayPrice} onChange={setExtendedDayPrice} />
-                <Field label="Ends at"><TimeSelect value={extendedDayEnd} onChange={setExtendedDayEnd} /></Field>
-              </div>
-            </ExpandableCheckboxCard>
+                <ExpandableCheckboxCard
+                  checked={offerExtendedDay}
+                  onCheckedChange={setOfferExtendedDay}
+                  title="Extended day"
+                  description="Let families pick up their child after the activity ends."
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <MoneyInput label="Price per day" value={extendedDayPrice} onChange={setExtendedDayPrice} />
+                    <Field label="Ends at"><TimeSelect value={extendedDayEnd} onChange={setExtendedDayEnd} /></Field>
+                  </div>
+                </ExpandableCheckboxCard>
+              </>
+            )}
 
             {/* Custom fees — flat AddOnRow, no card-in-card */}
             {customAddOns.length > 0 && (

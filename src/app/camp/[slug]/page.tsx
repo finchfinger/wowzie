@@ -520,8 +520,8 @@ export default function CampDetailPage() {
   const totalCampDays = daysByWeek.reduce((sum, w) => sum + w.days.length, 0);
 
   const hasAddons = !!(
-    (advanced?.earlyDropoff?.enabled && advanced?.earlyDropoff?.price) ||
-    (advanced?.extendedDay?.enabled && advanced?.extendedDay?.price) ||
+    (!isAppointmentClass && advanced?.earlyDropoff?.enabled && advanced?.earlyDropoff?.price) ||
+    (!isAppointmentClass && advanced?.extendedDay?.enabled && advanced?.extendedDay?.price) ||
     (advanced?.siblingDiscount?.enabled && advanced?.siblingDiscount?.value)
   );
 
@@ -1026,7 +1026,7 @@ export default function CampDetailPage() {
                           <div className="border-t border-border p-3 space-y-2">
 
                             {/* Early drop-off */}
-                            {advanced?.earlyDropoff?.enabled && advanced?.earlyDropoff?.price && (
+                            {!isAppointmentClass && advanced?.earlyDropoff?.enabled && advanced?.earlyDropoff?.price && (
                               <div className={`rounded-xl border px-4 py-3 space-y-3 transition-colors ${earlyDropoffSelected ? "border-blue-300 bg-blue-50/40" : "border-border"}`}>
                                 {/* Top row */}
                                 <div className="flex items-start justify-between gap-3">
@@ -1107,7 +1107,7 @@ export default function CampDetailPage() {
                             )}
 
                             {/* Extended day */}
-                            {advanced?.extendedDay?.enabled && advanced?.extendedDay?.price && (
+                            {!isAppointmentClass && advanced?.extendedDay?.enabled && advanced?.extendedDay?.price && (
                               <div className={`rounded-xl border px-4 py-3 space-y-3 transition-colors ${extendedDaySelected ? "border-blue-300 bg-blue-50/40" : "border-border"}`}>
                                 {/* Top row */}
                                 <div className="flex items-start justify-between gap-3">

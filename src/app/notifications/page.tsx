@@ -209,20 +209,24 @@ export default function NotificationsPage() {
       .eq("user_id", userId);
   };
 
+  const updateBookingStatus = async (bookingId: string, status: "confirmed" | "declined") => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token ?? "";
+    await fetch("/api/host/camp-bookings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ bookingId, status }),
+    });
+  };
+
   const handleApprove = async (notifId: string, bookingId: string) => {
-    // Optimistic: mark notification read and remove approve/decline UI
     setItems((prev) =>
       prev.map((n) =>
-        n.id === notifId
-          ? { ...n, is_read: true, type: "booking_confirmed" }
-          : n,
+        n.id === notifId ? { ...n, is_read: true, type: "booking_confirmed" } : n,
       ),
     );
     if (!userId) return;
-    await supabase
-      .from("bookings")
-      .update({ status: "confirmed" })
-      .eq("id", bookingId);
+    await updateBookingStatus(bookingId, "confirmed");
     await supabase
       .from("notifications")
       .update({ is_read: true, type: "booking_confirmed" })
@@ -233,16 +237,11 @@ export default function NotificationsPage() {
   const handleDecline = async (notifId: string, bookingId: string) => {
     setItems((prev) =>
       prev.map((n) =>
-        n.id === notifId
-          ? { ...n, is_read: true, type: "booking_canceled" }
-          : n,
+        n.id === notifId ? { ...n, is_read: true, type: "booking_canceled" } : n,
       ),
     );
     if (!userId) return;
-    await supabase
-      .from("bookings")
-      .update({ status: "declined" })
-      .eq("id", bookingId);
+    await updateBookingStatus(bookingId, "declined");
     await supabase
       .from("notifications")
       .update({ is_read: true, type: "booking_canceled" })
