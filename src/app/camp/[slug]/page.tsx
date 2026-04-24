@@ -197,6 +197,9 @@ export default function CampDetailPage() {
     avatar_url: string | null;
   } | null>(null);
 
+  // Time slots — derived from camp meta, computed here so it's above early returns
+  const timeSlots = useMemo(() => extractTimeSlots(camp?.meta), [camp?.meta]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Reservation state
   const [reservationGuests, setReservationGuests] = useState(1);
   const [selectedSlotKey, setSelectedSlotKey] = useState<string>("");
@@ -425,8 +428,7 @@ export default function CampDetailPage() {
     weekly?: Record<string, { available?: boolean; blocks?: { start: string; end: string }[] }>;
   } | undefined;
 
-  // Time slots for ongoing classes (appointment model)
-  const timeSlots = useMemo(() => extractTimeSlots(meta), [meta]);
+  // Appointment model: ongoing class with selectable time slots
   const isAppointmentClass = activityKind === "class" && timeSlots.length > 0;
 
   // Compute first class date for ongoing recurring classes
