@@ -19,6 +19,7 @@ type BookingDetail = {
   total_cents: number | null;
   created_at: string;
   contact_email: string | null;
+  preferred_slot?: { day: string; start: string; end: string; label: string } | null;
 };
 
 type CampDetail = {
@@ -148,7 +149,7 @@ export default function BookingDetailPage() {
 
       const { data: bookingData, error: bookingErr } = await supabase
         .from("bookings")
-        .select("id, user_id, camp_id, status, guests_count, total_cents, created_at, contact_email")
+        .select("id, user_id, camp_id, status, guests_count, total_cents, created_at, contact_email, preferred_slot")
         .eq("id", bookingId)
         .eq("user_id", userId) // security: only own bookings
         .single();
@@ -241,6 +242,15 @@ export default function BookingDetailPage() {
         </span>
         <p className="text-xs text-muted-foreground mt-2">Booked {bookedOn} · {guestsLabel}</p>
       </div>
+
+      {/* Preferred time slot (ongoing classes) */}
+      {booking.preferred_slot && (
+        <div className="rounded-card bg-card p-4">
+          <SectionLabel>Your class time</SectionLabel>
+          <p className="text-sm font-medium text-foreground">{booking.preferred_slot.label}</p>
+          <p className="text-xs text-muted-foreground mt-1">Recurring weekly</p>
+        </div>
+      )}
 
       {/* Who's going */}
       {children.length > 0 && (

@@ -229,11 +229,38 @@ export async function POST(req: NextRequest) {
     if (bookingId) {
       const supabase = getSupabase();
 
+      // Check if host requires manual approval for this camp
+      const { data: bookingForCamp } = await supabase
+        .from("bookings").select("camp_id").eq("id", bookingId).single();
+      const { data: campForApproval } = bookingForCamp?.camp_id
+        ? await supabase.from("camps").select("meta").eq("id", bookingForCamp.camp_id).single()
+        : { data: null };
+      const requiresApproval = Boolean((campForApproval as any)?.meta?.requiresApproval);
+
       await supabase.from("bookings").update({
         payment_status: "paid",
-        status: "confirmed",
+        status: requiresApproval ? "pending" : "confirmed",
         stripe_payment_intent: pi.id,
       }).eq("id", bookingId);
+
+      // Skip confirmation notifications/emails if host still needs to approve
+      if (requiresApproval) {
+        // Notify host that payment was received and needs approval
+        const { data: booking } = await supabase
+          .from("bookings")
+          .select("contact_email, camps:camp_id(name, host_id)")
+          .eq("id", bookingId).single();
+        const camp = booking?.camps as unknown as { name: string; host_id: string } | null;
+        if (camp?.host_id) {
+          await supabase.from("notifications").insert({
+            user_id: camp.host_id, type: "booking_pending",
+            title: "Booking awaiting approval",
+            body: `${booking?.contact_email} booked ${camp.name} — payment received, needs your approval.`,
+            meta: { campName: camp.name, bookingId },
+          });
+        }
+        return NextResponse.json({ received: true });
+      }
 
       const { data: booking } = await supabase
         .from("bookings")

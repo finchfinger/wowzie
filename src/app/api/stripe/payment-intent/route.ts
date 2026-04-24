@@ -21,11 +21,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { campId, campName, priceCents, guests, sessionCount, sessionIds, email, userId, messageToHost } =
+    const { campId, campName, priceCents, guests, sessionCount, sessionIds, email, userId, messageToHost, preferredSlot } =
       body as {
         campId: string; campName: string; priceCents: number;
         guests: number; sessionCount?: number; sessionIds?: string[];
         email: string; userId: string; messageToHost?: string;
+        preferredSlot?: { day: string; start: string; end: string; label: string } | null;
       };
 
     if (!campId || !priceCents || !guests || !email || !userId) {
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
         contact_email: email, message_to_host: messageToHost || null,
         payment_status: "pending",
         ...(sessionIds && sessionIds.length > 0 && { selected_sessions: sessionIds }),
+        ...(preferredSlot && { preferred_slot: preferredSlot }),
       })
       .select("id").single();
 

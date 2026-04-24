@@ -141,6 +141,7 @@ type CampMeta = {
     pricePerMeeting?: string;
     sections?: ClassSessionSection[];
   };
+  requiresApproval?: boolean;
   advanced?: {
     earlyDropoff?: {
       enabled?: boolean;
@@ -1107,6 +1108,9 @@ export default function CreateActivityPage({
     CANCELLATION_OPTIONS[0]?.value ?? "",
   );
 
+  /* Booking settings */
+  const [requiresApproval, setRequiresApproval] = useState(false);
+
   /* Photos */
   const [photoItems, setPhotoItems] = useState<PhotoItem[]>([]);
   const [originalExistingUrls, setOriginalExistingUrls] = useState<string[]>(
@@ -1539,6 +1543,7 @@ export default function CreateActivityPage({
       if (meta.whatsIncluded) setWhatsIncluded(meta.whatsIncluded);
       if (meta.clubEnrollmentType) setClubEnrollmentType(meta.clubEnrollmentType);
       if (meta.websiteUrl) setWebsiteUrl(meta.websiteUrl);
+      if (meta.requiresApproval != null) setRequiresApproval(Boolean(meta.requiresApproval));
       if (meta.min_age != null) setMinAgeText(String(meta.min_age));
       if (meta.max_age != null) setMaxAgeText(String(meta.max_age));
 
@@ -2075,6 +2080,7 @@ export default function CreateActivityPage({
       categories: categories.length ? categories : undefined,
       category: categories[0] || undefined,
       cancellation_policy: cancellationPolicy || null,
+      requiresApproval: requiresApproval || undefined,
       additionalDetails: additionalDetails || undefined,
       whatToBring: whatToBring || undefined,
       whatsIncluded: whatsIncluded || undefined,
@@ -2446,6 +2452,28 @@ export default function CreateActivityPage({
               </SelectContent>
             </Select>
           </Field>
+
+          {/* Booking approval */}
+          <div className="rounded-md border border-border overflow-hidden">
+            <label className="flex min-h-12 w-full items-center justify-between gap-4 px-4 py-3 cursor-pointer">
+              <div className="min-w-0">
+                <p className="text-sm text-foreground">Require approval for bookings</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {requiresApproval
+                    ? "You'll manually approve each booking after payment"
+                    : "Bookings confirm automatically after payment"}
+                </p>
+              </div>
+              <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                <ToggleSwitch
+                  checked={requiresApproval}
+                  onChange={setRequiresApproval}
+                  variant="switch-only"
+                  srLabel="Require approval for bookings"
+                />
+              </div>
+            </label>
+          </div>
 
         </div>
       </FormCard>

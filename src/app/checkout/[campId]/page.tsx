@@ -30,6 +30,61 @@ type CampDetail = Camp & {
   location?: string | null;
 };
 
+type TimeSlot = {
+  key: string;      // "mon-09:00-10:00"
+  dayKey: string;   // "mon"
+  dayLabel: string; // "Monday"
+  start: string;    // "09:00"
+  end: string;      // "10:00"
+  label: string;    // "Monday · 9:00AM – 10:00AM"
+};
+
+const DAY_FULL: Record<string, string> = {
+  sun: "Sunday", mon: "Monday", tue: "Tuesday", wed: "Wednesday",
+  thu: "Thursday", fri: "Friday", sat: "Saturday",
+};
+const DAY_ORDER = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+function fmt12(hhmm: string): string {
+  const [hStr, mStr] = hhmm.split(":");
+  const h = parseInt(hStr ?? "0", 10);
+  const m = parseInt(mStr ?? "0", 10);
+  const suffix = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return m === 0 ? `${h12}${suffix}` : `${h12}:${String(m).padStart(2, "0")}${suffix}`;
+}
+
+function extractTimeSlots(meta: any): TimeSlot[] {
+  const weekly: Record<string, any> =
+    meta?.classSchedule?.weekly ?? meta?.weeklySchedule ?? {};
+  const slots: TimeSlot[] = [];
+  for (const dayKey of DAY_ORDER) {
+    const val = weekly[dayKey];
+    if (!val) continue;
+    // New shape: { available, blocks: [{ start, end }] }
+    if (val.available !== false && Array.isArray(val.blocks)) {
+      for (const b of val.blocks) {
+        if (!b.start || !b.end) continue;
+        slots.push({
+          key: `${dayKey}-${b.start}-${b.end}`,
+          dayKey, dayLabel: DAY_FULL[dayKey] ?? dayKey,
+          start: b.start, end: b.end,
+          label: `${DAY_FULL[dayKey] ?? dayKey} · ${fmt12(b.start)} – ${fmt12(b.end)}`,
+        });
+      }
+    } else if (typeof val.start === "string" && typeof val.end === "string") {
+      // Legacy flat shape: { start, end }
+      slots.push({
+        key: `${dayKey}-${val.start}-${val.end}`,
+        dayKey, dayLabel: DAY_FULL[dayKey] ?? dayKey,
+        start: val.start, end: val.end,
+        label: `${DAY_FULL[dayKey] ?? dayKey} · ${fmt12(val.start)} – ${fmt12(val.end)}`,
+      });
+    }
+  }
+  return slots;
+}
+
 const isUuid = (v: string | undefined | null) =>
   !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
@@ -42,12 +97,13 @@ function formatDateShort(iso: string) {
 
 /* ── Inner payment form (needs stripe/elements context) ── */
 function PaymentForm({
-  camp, guests, setGuests, selectedSessions, sessionCount, totalCents, bookingId, clientSecret, email, setEmail, messageToHost, setMessageToHost,
+  camp, guests, setGuests, selectedSessions, sessionCount, totalCents, bookingId, clientSecret, email, setEmail, messageToHost, setMessageToHost, preferredSlot,
 }: {
   camp: CampDetail; guests: number; setGuests: (n: number) => void;
   selectedSessions: CampSession[]; sessionCount: number; totalCents: number;
   bookingId: string; clientSecret: string; email: string; setEmail: (s: string) => void;
   messageToHost: string; setMessageToHost: (s: string) => void;
+  preferredSlot: TimeSlot | null;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -209,6 +265,12 @@ function PaymentForm({
             </div>
 
             <dl className="mt-4 space-y-2 text-xs">
+              {preferredSlot && (
+                <div className="pb-2 border-b border-border">
+                  <dt className="text-muted-foreground font-medium mb-1">Class time</dt>
+                  <dd className="text-foreground">{preferredSlot.label}</dd>
+                </div>
+              )}
               {selectedSessions.length > 0 && (
                 <div className="space-y-1 pb-2 border-b border-border">
                   <dt className="text-muted-foreground font-medium">Sessions</dt>
@@ -288,6 +350,9 @@ function CheckoutContent() {
     "Hi there, we\u2019re excited to join. Anything we should know before we arrive?"
   );
 
+  // Time slot selection (ongoing classes)
+  const [preferredSlot, setPreferredSlot] = useState<TimeSlot | null>(null);
+
   // Payment Intent state
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -326,12 +391,25 @@ function CheckoutContent() {
     return camp.meta.campSessions.filter((s) => sessionIdsParam.includes(s.id));
   }, [camp, sessionIdsParam]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Derive available time slots for ongoing classes
+  const timeSlots = useMemo<TimeSlot[]>(() => {
+    if (!camp?.meta) return [];
+    const isOngoing = (camp.meta as any)?.classSchedule?.mode === "ongoing"
+      || ((camp.meta as any)?.activityKind === "class" && (
+        (camp.meta as any)?.classSchedule?.weekly || (camp.meta as any)?.weeklySchedule
+      ));
+    if (!isOngoing) return [];
+    return extractTimeSlots(camp.meta);
+  }, [camp]);
+
   const sessionCount = Math.max(selectedSessions.length, 1);
   const totalCents = (camp?.price_cents ?? 0) * sessionCount * guests;
 
-  // Create PaymentIntent once camp + user are loaded
+  // Create PaymentIntent once camp + user + slot (if needed) are ready
   useEffect(() => {
     if (!camp || !user || !email || piLoading || clientSecret) return;
+    // If this is an ongoing class with slots, wait until one is selected
+    if (timeSlots.length > 0 && !preferredSlot) return;
     const create = async () => {
       setPiLoading(true);
       setPiError(null);
@@ -346,6 +424,9 @@ function CheckoutContent() {
             sessionIds: selectedSessions.map((s) => s.id),
             email: email.trim(), userId: user.id,
             messageToHost: messageToHost.trim() || null,
+            preferredSlot: preferredSlot
+              ? { day: preferredSlot.dayKey, start: preferredSlot.start, end: preferredSlot.end, label: preferredSlot.label }
+              : null,
           }),
         });
         const json = await res.json();
@@ -362,7 +443,7 @@ function CheckoutContent() {
       }
     };
     void create();
-  }, [camp, user, email]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [camp, user, email, preferredSlot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <div className="py-10 text-center text-muted-foreground">Loading…</div>;
   if (error || !camp) return <div className="py-10 text-center text-destructive">{error || "Camp not found"}</div>;
@@ -384,6 +465,31 @@ function CheckoutContent() {
             ) : piError ? (
               <div className="rounded-card bg-card p-5">
                 <p className="text-sm text-destructive">{piError}</p>
+              </div>
+            ) : timeSlots.length > 0 && !preferredSlot ? (
+              /* Step 1: Choose a time slot */
+              <div className="max-w-lg">
+                <div className="rounded-card bg-card p-5 space-y-4">
+                  <div>
+                    <h2 className="text-sm font-semibold">Choose your class time</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Pick the weekly slot that works best for you.</p>
+                  </div>
+                  <div className="space-y-2">
+                    {timeSlots.map((slot) => (
+                      <button
+                        key={slot.key}
+                        type="button"
+                        onClick={() => setPreferredSlot(slot)}
+                        className="w-full flex items-center justify-between rounded-xl border border-input px-4 py-3 text-sm text-left hover:bg-muted/50 hover:border-foreground/30 transition-colors"
+                      >
+                        <span className="font-medium">{slot.label}</span>
+                        <svg className="h-4 w-4 text-muted-foreground/50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : !clientSecret ? (
               /* Loading skeleton while PaymentIntent is being created */
@@ -413,6 +519,7 @@ function CheckoutContent() {
                   setEmail={setEmail}
                   messageToHost={messageToHost}
                   setMessageToHost={setMessageToHost}
+                  preferredSlot={preferredSlot}
                 />
               </Elements>
             )}
