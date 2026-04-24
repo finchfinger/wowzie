@@ -66,7 +66,7 @@ export function ActivityRow({ ev }: { ev: CalendarEvent }) {
 
   return (
     <article
-      onClick={() => router.push(`/bookings/${ev.id}`)}
+      onClick={() => router.push(`/bookings/${ev.bookingId ?? ev.id}`)}
       className="flex items-center gap-3 bg-card rounded-card px-4 py-3 hover:bg-accent/30 transition-colors cursor-pointer select-none"
     >
       {/* Thumbnail */}

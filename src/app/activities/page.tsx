@@ -268,6 +268,7 @@ function generateRecurringEvents(
 
         results.push({
           id: `${bookingId}-${dayKey}-${cursor.toISOString().slice(0, 10)}`,
+          bookingId,
           camp_id: camp.id,
           start_at: startDate.toISOString(),
           end_at: endDate.toISOString(),

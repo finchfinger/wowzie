@@ -13,7 +13,8 @@ export type CalendarCamp = {
 };
 
 export type CalendarEvent = {
-  id: string; // booking id
+  id: string; // stable React key (may be composite for recurring events)
+  bookingId?: string; // actual booking UUID — use this for navigation
   camp_id: string;
   start_at: string;
   end_at: string;
