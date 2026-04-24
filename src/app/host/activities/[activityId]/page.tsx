@@ -224,7 +224,7 @@ export default function OverviewPage() {
         </CardHeader>
         <CardContent>
           <FieldRow label="Price" value={priceLabel} />
-          {isOngoing && <FieldRow label="Weekly availability" value={weeklyInline} />}
+
 
           <FieldRow label="Type" value={activityKind.charAt(0).toUpperCase() + activityKind.slice(1)} />
           <FieldRow label="Title" value={activity.name} />
