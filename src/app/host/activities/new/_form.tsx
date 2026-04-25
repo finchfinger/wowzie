@@ -138,6 +138,8 @@ type CampMeta = {
     sessionEndDate?: string;
     meetingLength?: string;
     sessionStartDate?: string;
+    startMode?: "rolling" | "fixed";
+    sessionCount?: string;
     pricePerMeeting?: string;
     sections?: ClassSessionSection[];
   };
