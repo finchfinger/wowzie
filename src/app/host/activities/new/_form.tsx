@@ -3342,65 +3342,62 @@ export default function CreateActivityPage({
       </FormCard>
     );
 
-    /* ── Class model: separate FormCards matching the design ── */
+    /* ── Class model: scheduling + session duration in one card ── */
     if (isOngoing) {
       return (
         <div className="space-y-6">
           <FormCard title="Scheduling details" icon="schedule">
-            {modeTiles}
-          </FormCard>
-
-          <FormCard
-            title="Session duration"
-            subtitle="How long does each class run and what is the total program length"
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Session length">
-                  <Select value={classDuration} onValueChange={setClassDuration}>
-                    <SelectTrigger className="w-full text-sm">
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CLASS_DURATION_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Program length">
-                  <Select value={classSessionCount} onValueChange={setClassSessionCount}>
-                    <SelectTrigger className="w-full text-sm">
-                      <SelectValue placeholder="Ongoing" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SESSION_LENGTH_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                      <SelectItem value="ongoing">Ongoing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Program starts">
-                  <Select value={classStartMode} onValueChange={(v) => setClassStartMode(v as "rolling" | "fixed")}>
-                    <SelectTrigger className="w-full text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fixed">Starts on a fixed date</SelectItem>
-                      <SelectItem value="rolling">Starts when parent books</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                {classStartMode === "fixed" && (
-                  <Field label="Start date">
-                    <DateInput value={classSessionStartDate} onChange={(e) => setClassSessionStartDate(e.target.value)} />
+            <div className="space-y-5">
+              {modeTiles}
+              <div className="border-t border-border" />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Session length">
+                    <Select value={classDuration} onValueChange={setClassDuration}>
+                      <SelectTrigger className="w-full text-sm">
+                        <SelectValue placeholder="Select duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CLASS_DURATION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
-                )}
+                  <Field label="Program length">
+                    <Select value={classSessionCount} onValueChange={setClassSessionCount}>
+                      <SelectTrigger className="w-full text-sm">
+                        <SelectValue placeholder="Ongoing" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SESSION_LENGTH_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                        <SelectItem value="ongoing">Ongoing</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Program starts">
+                    <Select value={classStartMode} onValueChange={(v) => setClassStartMode(v as "rolling" | "fixed")}>
+                      <SelectTrigger className="w-full text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Starts on a fixed date</SelectItem>
+                        <SelectItem value="rolling">Starts when parent books</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  {classStartMode === "fixed" && (
+                    <Field label="Start date">
+                      <DateInput value={classSessionStartDate} onChange={(e) => setClassSessionStartDate(e.target.value)} />
+                    </Field>
+                  )}
+                </div>
+                <Field label="Class capacity">
+                  <Input type="number" min={1} value={classStudentsPerClass} onChange={(e) => setClassStudentsPerClass(e.target.value)} placeholder="Unlimited" />
+                </Field>
               </div>
-              <Field label="Class capacity">
-                <Input type="number" min={1} value={classStudentsPerClass} onChange={(e) => setClassStudentsPerClass(e.target.value)} placeholder="Unlimited" />
-              </Field>
             </div>
           </FormCard>
 
