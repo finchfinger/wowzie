@@ -3195,7 +3195,7 @@ export default function CreateActivityPage({
             description: "Set a start and end date for the program or session.",
             icon: "event",
             selected: !isOngoing,
-            onSelect: () => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); },
+            onSelect: () => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); setCampSessions(prev => prev.length === 0 ? [makeDefaultCampSession()] : prev); },
           },
           {
             mode: "ongoing",
