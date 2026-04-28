@@ -3186,107 +3186,56 @@ export default function CreateActivityPage({
 
     const isOngoing = classScheduleMode === "ongoing";
 
-    return (
-      <>
-      <FormCard title="Schedule & pricing" icon="calendar_month">
-        <div className="space-y-5">
-          {/* Fixed / Ongoing radio cards */}
-          <div className="grid grid-cols-2 gap-3">
-            {([
-              {
-                mode: "sessions",
-                label: "Specific dates",
-                description: "Set a start and end date for the program or session.",
-                icon: "event",
-                selected: !isOngoing,
-                onSelect: () => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); },
-              },
-              {
-                mode: "ongoing",
-                label: "Weekly package",
-                description: "Families pick a recurring slot and book a set number of classes.",
-                icon: "repeat",
-                selected: isOngoing,
-                onSelect: () => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); setCampSessions([]); },
-              },
-            ] as const).map(({ label, description, icon, selected, onSelect }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={onSelect}
-                className={[
-                  "flex flex-col items-start gap-2 rounded-xl border-2 px-4 py-4 text-left transition-all",
-                  selected
-                    ? "border-foreground bg-foreground/[0.03]"
-                    : "border-border hover:border-foreground/30 hover:bg-muted/40",
-                ].join(" ")}
-              >
-                <div className="flex items-center justify-between w-full">
-                  <span className={`material-symbols-rounded select-none ${selected ? "text-foreground" : "text-muted-foreground"}`} style={{ fontSize: 20 }}>{icon}</span>
-                  {/* Radio dot */}
-                  <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center transition-colors ${selected ? "border-foreground" : "border-muted-foreground/40"}`}>
-                    {selected && <span className="h-2 w-2 rounded-full bg-foreground" />}
-                  </span>
-                </div>
-                <div>
-                  <p className={`text-sm font-semibold ${selected ? "text-foreground" : "text-muted-foreground"}`}>{label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+    const modeTiles = (
+      <div className="grid grid-cols-2 gap-3">
+        {([
+          {
+            mode: "sessions",
+            label: "Program model",
+            description: "Set a start and end date for the program or session.",
+            icon: "event",
+            selected: !isOngoing,
+            onSelect: () => { setClassScheduleMode("sessions"); setActivityKind("camp"); setEnrollmentMode("full_program"); setBookingModel("per_session"); },
+          },
+          {
+            mode: "ongoing",
+            label: "Class model",
+            description: "Families pick a recurring slot and book a set number of classes.",
+            icon: "repeat",
+            selected: isOngoing,
+            onSelect: () => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); setCampSessions([]); },
+          },
+        ] as const).map(({ label, description, icon, selected, onSelect }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={onSelect}
+            className={[
+              "flex flex-col items-start gap-2 rounded-xl border-2 px-4 py-4 text-left transition-all",
+              selected
+                ? "border-foreground bg-foreground/[0.03]"
+                : "border-border hover:border-foreground/30 hover:bg-muted/40",
+            ].join(" ")}
+          >
+            <div className="flex items-center justify-between w-full">
+              <span className={`material-symbols-rounded select-none ${selected ? "text-foreground" : "text-muted-foreground"}`} style={{ fontSize: 20 }}>{icon}</span>
+              <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center transition-colors ${selected ? "border-foreground" : "border-muted-foreground/40"}`}>
+                {selected && <span className="h-2 w-2 rounded-full bg-foreground" />}
+              </span>
+            </div>
+            <div>
+              <p className={`text-sm font-semibold ${selected ? "text-foreground" : "text-muted-foreground"}`}>{label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    );
 
-          {/* Schedule content */}
-          {!isOngoing ? renderUnifiedSessions() : renderOngoingContent()}
-
-          {/* ── Ongoing pricing fields ────────────────────────────── */}
-          {isOngoing && (
-            <>
-              <div className="border-t border-border" />
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <MoneyInput
-                    label="Price per class"
-                    value={classPricePerClass}
-                    onChange={setClassPricePerClass}
-                  />
-                  <SettingsList>
-                    <SettingsRow label="Limit capacity" asLabel>
-                      <Checkbox
-                        checked={limitClassCapacity}
-                        onCheckedChange={(checked) => {
-                          setLimitClassCapacity(checked === true);
-                          if (!checked) { setClassStudentsPerClass(""); setClassCapacityWaitlist(false); }
-                          else if (!classStudentsPerClass) setClassStudentsPerClass("10");
-                        }}
-                      />
-                    </SettingsRow>
-                    {limitClassCapacity && (
-                      <>
-                        <SettingsRow label="Max students">
-                          <Input type="number" min={1} value={classStudentsPerClass} onChange={(e) => setClassStudentsPerClass(e.target.value)} className="w-20 text-right h-9" />
-                        </SettingsRow>
-                        <SettingsRow label="Enable waitlist" asLabel>
-                          <Checkbox checked={classCapacityWaitlist} onCheckedChange={(checked) => setClassCapacityWaitlist(checked === true)} />
-                        </SettingsRow>
-                      </>
-                    )}
-                  </SettingsList>
-                </div>
-                <Field label="Enrollment start date">
-                  <DateInput value={classSessionStartDate} onChange={(e) => setClassSessionStartDate(e.target.value)} />
-                </Field>
-              </div>
-            </>
-          )}
-
-        </div>
-      </FormCard>
-
+    const additionalDetails = (
       <FormCard title="Additional details" icon="tune">
         <div className="space-y-6">
 
-          {/* ── Add-ons ──────────────────────────────────────────── */}
           <div className="space-y-3">
             <p className="text-sm font-medium text-foreground">Add-ons</p>
 
@@ -3318,7 +3267,6 @@ export default function CreateActivityPage({
               </>
             )}
 
-            {/* Custom fees — flat AddOnRow, no card-in-card */}
             {customAddOns.length > 0 && (
               <div className="space-y-2">
                 {customAddOns.map((addon, i) => (
@@ -3344,7 +3292,6 @@ export default function CreateActivityPage({
             </button>
           </div>
 
-          {/* ── Discounts ────────────────────────────────────────── */}
           <div className="space-y-3">
             <p className="text-sm font-medium text-foreground">Discounts</p>
 
@@ -3358,17 +3305,12 @@ export default function CreateActivityPage({
               title="Sibling discount"
               description="Offer a discount when families register more than one child."
             >
-              {/* ChoiceChip = single-select, clearly signaled by pill shape */}
               <div className="flex gap-2">
                 <ChoiceChip selected={siblingDiscountType === "percent"} onClick={() => setSiblingDiscountType("percent")}>Percentage</ChoiceChip>
                 <ChoiceChip selected={siblingDiscountType === "amount"} onClick={() => setSiblingDiscountType("amount")}>Fixed amount</ChoiceChip>
               </div>
               {siblingDiscountType === "amount" ? (
-                <MoneyInput
-                  label="Discount per additional child"
-                  value={siblingDiscountValue}
-                  onChange={setSiblingDiscountValue}
-                />
+                <MoneyInput label="Discount per additional child" value={siblingDiscountValue} onChange={setSiblingDiscountValue} />
               ) : (
                 <Field label="Discount percentage">
                   <div className="relative">
@@ -3398,6 +3340,139 @@ export default function CreateActivityPage({
 
         </div>
       </FormCard>
+    );
+
+    /* ── Class model: separate FormCards matching the design ── */
+    if (isOngoing) {
+      return (
+        <div className="space-y-6">
+          <FormCard title="Scheduling details" icon="schedule">
+            {modeTiles}
+          </FormCard>
+
+          <FormCard
+            title="Session duration"
+            subtitle="How long does each class run and what is the total program length"
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Session length">
+                  <Select value={classDuration} onValueChange={setClassDuration}>
+                    <SelectTrigger className="w-full text-sm">
+                      <SelectValue placeholder="Select duration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CLASS_DURATION_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Program length">
+                  <Select value={classSessionCount} onValueChange={setClassSessionCount}>
+                    <SelectTrigger className="w-full text-sm">
+                      <SelectValue placeholder="Ongoing" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SESSION_LENGTH_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                      <SelectItem value="">Ongoing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Program starts">
+                  <Select value={classStartMode} onValueChange={(v) => setClassStartMode(v as "rolling" | "fixed")}>
+                    <SelectTrigger className="w-full text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Starts on a fixed date</SelectItem>
+                      <SelectItem value="rolling">Starts when parent books</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                {classStartMode === "fixed" && (
+                  <Field label="Start date">
+                    <DateInput value={classSessionStartDate} onChange={(e) => setClassSessionStartDate(e.target.value)} />
+                  </Field>
+                )}
+              </div>
+              <Field label="Class capacity">
+                <Input type="number" min={1} value={classStudentsPerClass} onChange={(e) => setClassStudentsPerClass(e.target.value)} placeholder="Unlimited" />
+              </Field>
+            </div>
+          </FormCard>
+
+          <FormCard
+            title="General availability"
+            subtitle="Set when you're available each week."
+          >
+            <div className="space-y-0">
+              {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
+                const day = classWeekly[dayKey];
+                return (
+                  <div
+                    key={dayKey}
+                    className="flex items-start gap-3 border-b border-border/50 py-3 last:border-0 last:pb-0 first:pt-0"
+                  >
+                    <span className="w-20 shrink-0 pt-2 text-xs font-medium text-foreground">{dayLabelFull}</span>
+                    {day.available ? (
+                      <div className="flex-1 space-y-2">
+                        {day.blocks.map((block) => (
+                          <div key={block.id} className="flex items-center gap-2">
+                            <div className="flex-1"><TimeSelect value={block.start} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "start", v)} /></div>
+                            <span className="text-xs text-muted-foreground">–</span>
+                            <div className="flex-1"><TimeSelect value={block.end} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "end", v)} /></div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex-1">
+                        <div className="flex h-11 items-center rounded-lg bg-rose-50 px-3">
+                          <span className="text-xs font-medium text-rose-400">Unavailable</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-0.5 shrink-0 pt-1.5">
+                      {day.available ? (
+                        <>
+                          <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Disable day">
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                          </button>
+                          <button type="button" onClick={() => addClassTimeBlock(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Add time block"><IconPlus /></button>
+                          {day.blocks.length > 0 && (
+                            <button type="button" onClick={() => copyClassTimeBlock(dayKey, day.blocks[day.blocks.length - 1].id)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Copy time block"><IconCopy /></button>
+                          )}
+                        </>
+                      ) : (
+                        <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground/50 hover:bg-gray-50 hover:text-foreground transition-colors" title="Enable day"><IconPlus /></button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="border-t border-border mt-4 pt-4">
+              <MoneyInput label="Price per class" value={classPricePerClass} onChange={setClassPricePerClass} />
+            </div>
+          </FormCard>
+
+          {additionalDetails}
+        </div>
+      );
+    }
+
+    /* ── Program model: single card with date-based sessions ── */
+    return (
+      <>
+        <FormCard title="Schedule & pricing" icon="calendar_month">
+          <div className="space-y-5">
+            {modeTiles}
+            {renderUnifiedSessions()}
+          </div>
+        </FormCard>
+        {additionalDetails}
       </>
     );
   };
