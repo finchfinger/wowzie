@@ -309,7 +309,7 @@ function TimeSelect({
           if (e.key === "Escape") { setOpen(false); setInputText(""); }
           if (e.key === "Enter" && filtered.length > 0) { e.preventDefault(); select(filtered[0]!.value); }
         }}
-        className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm transition-colors outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+        className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm transition-colors outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
       />
       {open && (
         <ul
