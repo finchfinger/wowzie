@@ -52,7 +52,7 @@ function formatTime(iso: string) {
 }
 
 /* ── ActivityRow ── extracted so it's easy to tweak independently ── */
-export function ActivityRow({ ev }: { ev: CalendarEvent }) {
+export function ActivityRow({ ev, variant = "card" }: { ev: CalendarEvent; variant?: "card" | "row" }) {
   const router = useRouter();
   const badge = getStatusBadge(ev);
 
@@ -67,7 +67,11 @@ export function ActivityRow({ ev }: { ev: CalendarEvent }) {
   return (
     <article
       onClick={() => router.push(`/bookings/${ev.bookingId ?? ev.id}`)}
-      className="flex items-center gap-3 bg-card rounded-card px-4 py-3 hover:bg-accent/30 transition-colors cursor-pointer select-none"
+      className={`flex items-center gap-3 cursor-pointer select-none transition-colors ${
+        variant === "row"
+          ? "py-3 hover:bg-muted/50"
+          : "bg-card rounded-card px-4 py-3 hover:bg-accent/30"
+      }`}
     >
       {/* Thumbnail */}
       <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-muted shrink-0">
@@ -117,8 +121,8 @@ export function CalendarEventList({ events, loading, error, mode = "agenda" }: P
   /* ── flat list mode ── */
   if (mode === "list") {
     return (
-      <div className="space-y-2">
-        {events.map((ev) => <ActivityRow key={ev.id} ev={ev} />)}
+      <div>
+        {events.map((ev) => <ActivityRow key={ev.id} ev={ev} variant="row" />)}
       </div>
     );
   }

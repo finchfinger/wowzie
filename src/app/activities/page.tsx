@@ -6,6 +6,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CalendarEventList } from "@/components/calendar/CalendarEventList";
 import { ShareCalendarModal } from "@/components/ShareCalendarModal";
@@ -577,11 +579,12 @@ export default function ActivitiesPage() {
     return allEvents.filter((ev) => new Date(ev.end_at) >= now);
   }, [allEvents]);
 
+  const [activitySearch, setActivitySearch] = useState("");
+
   /* ── list view events: deduplicate recurring classes to one row per camp ── */
   const listEvents = useMemo(() => {
     const now = new Date();
     const upcoming = allEvents.filter((ev) => new Date(ev.end_at) >= now);
-    // Group by camp_id. For recurring (has recurrenceLabel), keep only the earliest upcoming.
     const seen = new Map<string, CalendarEvent>();
     for (const ev of upcoming) {
       const key = ev.recurrenceLabel ? `recurring-${ev.camp_id}` : ev.id;
@@ -589,6 +592,12 @@ export default function ActivitiesPage() {
     }
     return Array.from(seen.values()).sort((a, b) => a.start_at.localeCompare(b.start_at));
   }, [allEvents]);
+
+  const filteredListEvents = useMemo(() => {
+    const q = activitySearch.trim().toLowerCase();
+    if (!q) return listEvents;
+    return listEvents.filter((ev) => ev.camp.name.toLowerCase().includes(q));
+  }, [listEvents, activitySearch]);
 
   /* ── month navigation ── */
   const goToday = () => setViewMonth(monthStart(new Date()));
@@ -899,12 +908,37 @@ export default function ActivitiesPage() {
               <>
                 {/* List view */}
                 {viewMode === "list" && (
-                  <CalendarEventList
-                    events={listEvents}
-                    loading={false}
-                    error={null}
-                    mode="list"
-                  />
+                  <Card className="py-0">
+                    <CardHeader className="px-6 pt-6 pb-4">
+                      <CardTitle>My activities</CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-6 pb-6">
+                      <div className="relative">
+                        <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
+                        <Input
+                          type="text"
+                          value={activitySearch}
+                          onChange={(e) => setActivitySearch(e.target.value)}
+                          placeholder="Search"
+                          className="h-9 pl-8"
+                        />
+                      </div>
+                      <div className="mt-4 divide-y divide-border/50">
+                        {filteredListEvents.length === 0 ? (
+                          <p className="py-8 text-center text-sm text-muted-foreground">
+                            {activitySearch ? `No activities match "${activitySearch}"` : "No upcoming activities."}
+                          </p>
+                        ) : (
+                          <CalendarEventList
+                            events={filteredListEvents}
+                            loading={false}
+                            error={null}
+                            mode="list"
+                          />
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
 
                 {/* Calendar agenda (schedule) */}

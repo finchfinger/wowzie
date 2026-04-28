@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest) {
   const { data: camp } = await sb.from("camps").select("host_id").eq("id", booking.camp_id).single();
   if (!camp || camp.host_id !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { error } = await sb.from("bookings").update({ status, updated_at: new Date().toISOString() }).eq("id", bookingId);
+  const { error } = await sb.from("bookings").update({ status }).eq("id", bookingId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
