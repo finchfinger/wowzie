@@ -3342,14 +3342,28 @@ export default function CreateActivityPage({
       </FormCard>
     );
 
-    /* ── Class model: scheduling + session duration in one card ── */
+    /* ── Class model: one card with internal dashed sections ── */
     if (isOngoing) {
+      const SectionHeader = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
+        <div className="mb-4">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 16 }}>{icon}</span>
+            <span className="text-[13px] font-semibold text-foreground">{title}</span>
+          </div>
+          <p className="text-xs text-muted-foreground pl-[22px]">{subtitle}</p>
+        </div>
+      );
+
       return (
         <div className="space-y-6">
-          <FormCard title="Scheduling details" icon="schedule">
-            <div className="space-y-5">
-              {modeTiles}
-              <div className="border-t border-border" />
+          <FormCard title="Schedule and pricing" icon="calendar_month">
+
+            {/* Mode toggle */}
+            {modeTiles}
+
+            {/* Session duration */}
+            <div className="border-t border-dashed border-border mt-5 pt-5">
+              <SectionHeader icon="timelapse" title="Session duration" subtitle="How long each class runs and the total program length" />
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Session length">
@@ -3399,59 +3413,62 @@ export default function CreateActivityPage({
                 </Field>
               </div>
             </div>
-              <div className="border-t border-border" />
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-1">General availability</p>
-                <p className="text-xs text-muted-foreground mb-4">Set when you're available each week.</p>
-                <div className="space-y-0">
-                  {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
-                    const day = classWeekly[dayKey];
-                    return (
-                      <div
-                        key={dayKey}
-                        className="flex items-start gap-3 border-b border-border/50 py-3 last:border-0 last:pb-0 first:pt-0"
-                      >
-                        <span className="w-20 shrink-0 pt-2 text-xs font-medium text-foreground">{dayLabelFull}</span>
-                        {day.available ? (
-                          <div className="flex-1 space-y-2">
-                            {day.blocks.map((block) => (
-                              <div key={block.id} className="flex items-center gap-2">
-                                <div className="flex-1"><TimeSelect value={block.start} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "start", v)} /></div>
-                                <span className="text-xs text-muted-foreground">–</span>
-                                <div className="flex-1"><TimeSelect value={block.end} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "end", v)} /></div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="flex-1">
-                            <div className="flex h-11 items-center rounded-lg bg-rose-50 px-3">
-                              <span className="text-xs font-medium text-rose-400">Unavailable</span>
+
+            {/* General availability */}
+            <div className="border-t border-dashed border-border mt-5 pt-5">
+              <SectionHeader icon="schedule" title="General availability" subtitle="Set which days and times this class meets" />
+              <div className="space-y-0">
+                {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
+                  const day = classWeekly[dayKey];
+                  return (
+                    <div
+                      key={dayKey}
+                      className="flex items-start gap-3 border-b border-border/50 py-3 last:border-0 last:pb-0 first:pt-0"
+                    >
+                      <span className="w-20 shrink-0 pt-2 text-xs font-medium text-foreground">{dayLabelFull}</span>
+                      {day.available ? (
+                        <div className="flex-1 space-y-2">
+                          {day.blocks.map((block) => (
+                            <div key={block.id} className="flex items-center gap-2">
+                              <div className="flex-1"><TimeSelect value={block.start} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "start", v)} /></div>
+                              <span className="text-xs text-muted-foreground">–</span>
+                              <div className="flex-1"><TimeSelect value={block.end} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "end", v)} /></div>
                             </div>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-0.5 shrink-0 pt-1.5">
-                          {day.available ? (
-                            <>
-                              <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Disable day">
-                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                              </button>
-                              <button type="button" onClick={() => addClassTimeBlock(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Add time block"><IconPlus /></button>
-                              {day.blocks.length > 0 && (
-                                <button type="button" onClick={() => copyClassTimeBlock(dayKey, day.blocks[day.blocks.length - 1].id)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Copy time block"><IconCopy /></button>
-                              )}
-                            </>
-                          ) : (
-                            <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground/50 hover:bg-gray-50 hover:text-foreground transition-colors" title="Enable day"><IconPlus /></button>
-                          )}
+                          ))}
                         </div>
+                      ) : (
+                        <div className="flex-1">
+                          <div className="flex h-11 items-center rounded-lg bg-rose-50 px-3">
+                            <span className="text-xs font-medium text-rose-400">Unavailable</span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-0.5 shrink-0 pt-1.5">
+                        {day.available ? (
+                          <>
+                            <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Disable day">
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                            </button>
+                            <button type="button" onClick={() => addClassTimeBlock(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Add time block"><IconPlus /></button>
+                            {day.blocks.length > 0 && (
+                              <button type="button" onClick={() => copyClassTimeBlock(dayKey, day.blocks[day.blocks.length - 1].id)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Copy time block"><IconCopy /></button>
+                            )}
+                          </>
+                        ) : (
+                          <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground/50 hover:bg-gray-50 hover:text-foreground transition-colors" title="Enable day"><IconPlus /></button>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="border-t border-border pt-4">
-                <MoneyInput label="Price per class" value={classPricePerClass} onChange={setClassPricePerClass} />
-              </div>
+            </div>
+
+            {/* Pricing */}
+            <div className="border-t border-dashed border-border mt-5 pt-5">
+              <MoneyInput label="Price per class" value={classPricePerClass} onChange={setClassPricePerClass} />
+            </div>
+
           </FormCard>
 
           {additionalDetails}
