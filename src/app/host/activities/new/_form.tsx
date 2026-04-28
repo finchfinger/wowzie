@@ -1080,7 +1080,7 @@ export default function CreateActivityPage({
   const [bookingModel, setBookingModel] = useState<"per_session" | "per_class">("per_session");
   // True only for existing "class" listings created with the old scheduler
   const [isLegacyClassListing, setIsLegacyClassListing] = useState(false);
-  const [listingStatus, setListingStatus] = useState<ListingStatus>("draft");
+  const [listingStatus, setListingStatus] = useState<ListingStatus>("active");
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [locationLat, setLocationLat] = useState<number | null>(null);
@@ -1255,7 +1255,7 @@ export default function CreateActivityPage({
   const [classSessionStartDate, setClassSessionStartDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [classPricePerMeeting, setClassPricePerMeeting] = useState("");
   const [classSessionCount, setClassSessionCount] = useState("");
-  const [classStartMode, setClassStartMode] = useState<"rolling" | "fixed">("rolling");
+  const [classStartMode, setClassStartMode] = useState<"rolling" | "fixed">("fixed");
   const [classSections, setClassSections] = useState<ClassSessionSection[]>(
     () => [makeDefaultClassSection()],
   );
@@ -2382,17 +2382,17 @@ export default function CreateActivityPage({
             />
           </Field>
 
-          {/* Status */}
-          <Field label="Status">
+          {/* Visibility */}
+          <Field label="Visibility">
             <Select value={listingStatus} onValueChange={(v) => setListingStatus(v as ListingStatus)}>
               <SelectTrigger className="w-full text-sm">
                 <SelectValue>
-                  {{ active: "Active", draft: "Draft", unlisted: "Unlisted" }[listingStatus]}
+                  {{ active: "Live", draft: "Draft", unlisted: "Unlisted" }[listingStatus]}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active" textValue="Active">
-                  <div><div className="font-medium">Active</div><div className="text-xs text-muted-foreground">Visible and open for bookings</div></div>
+                <SelectItem value="active" textValue="Live">
+                  <div><div className="font-medium">Live</div><div className="text-xs text-muted-foreground">Visible and open for bookings</div></div>
                 </SelectItem>
                 <SelectItem value="draft" textValue="Draft">
                   <div><div className="font-medium">Draft</div><div className="text-xs text-muted-foreground">Not visible to families yet</div></div>
@@ -2725,35 +2725,32 @@ export default function CreateActivityPage({
       {/* Scheduling mode */}
       <FormCard title="Scheduling details" icon="schedule">
         {/* Segmented control */}
-        <div className="space-y-3">
-          <div className="inline-flex rounded-md border border-input bg-muted/30 p-0.5">
-            {(["ongoing", "sessions"] as const).map((mode) => {
-              const isSelected = classScheduleMode === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => {
-                    setClassScheduleMode(mode);
-                    setActivityKind(mode === "ongoing" ? "class" : "camp");
-                  }}
-                  className={cn(
-                    "rounded-sm px-4 py-1.5 text-sm font-medium transition-all",
-                    isSelected
-                      ? "bg-white text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {mode === "ongoing" ? "Weekly package" : "Specific dates"}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {classScheduleMode === "ongoing"
-              ? "Students book individual time slots from your weekly availability. Best for lessons, tutoring, and drop-in classes."
-              : "Students enroll in a program with set start and end dates. Best for camps, courses, and workshops."}
-          </p>
+        <div className="inline-flex rounded-md border border-input bg-muted/30 p-0.5">
+          {([
+            { mode: "sessions", label: "Program model", tooltip: "Fixed sessions with set dates — like a summer camp or weekend workshop." },
+            { mode: "ongoing",  label: "Class model",   tooltip: "Recurring weekly classes parents can enroll in — like martial arts or music lessons." },
+          ] as const).map(({ mode, label, tooltip }) => {
+            const isSelected = classScheduleMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                title={tooltip}
+                onClick={() => {
+                  setClassScheduleMode(mode);
+                  setActivityKind(mode === "ongoing" ? "class" : "camp");
+                }}
+                className={cn(
+                  "rounded-sm px-4 py-1.5 text-sm font-medium transition-all",
+                  isSelected
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </FormCard>
 
@@ -2876,12 +2873,13 @@ export default function CreateActivityPage({
 
           {/* Class details for ongoing */}
           <FormCard
-            title="Class details"
-            subtitle="Help families understand the logistics."
+            title="Session duration"
+            subtitle="How long does each class run and what is the total program length"
           >
             <div className="space-y-4">
+              {/* Row 1: session length + program length */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="How long is each class?">
+                <Field label="Session length">
                   <Select value={classDuration} onValueChange={setClassDuration}>
                     <SelectTrigger className="w-full text-sm">
                       <SelectValue placeholder="Select duration" />
@@ -2896,77 +2894,56 @@ export default function CreateActivityPage({
                   </Select>
                 </Field>
 
-                <Field label="How many students per class?">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={classStudentsPerClass}
-                    onChange={(e) => setClassStudentsPerClass(e.target.value)}
-                    placeholder=""
-                  />
+                <Field label="Program length">
+                  <Select value={classSessionCount} onValueChange={setClassSessionCount}>
+                    <SelectTrigger className="w-full text-sm">
+                      <SelectValue placeholder="Ongoing" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SESSION_LENGTH_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="">Ongoing</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </Field>
               </div>
 
+              {/* Row 2: program starts + start date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Classes per enrollment" hint="Optional — e.g. 8 for an 8-week session">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={classSessionCount}
-                    onChange={(e) => setClassSessionCount(e.target.value)}
-                    placeholder="Ongoing"
-                  />
+                <Field label="Program starts">
+                  <Select value={classStartMode} onValueChange={(v) => setClassStartMode(v as "rolling" | "fixed")}>
+                    <SelectTrigger className="w-full text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Starts on a fixed date</SelectItem>
+                      <SelectItem value="rolling">Starts when parent books</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </Field>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label={classSessionCount ? "Price per session" : "Price per class"}>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground z-10">
-                      $
-                    </span>
-                    <Input
-                      value={classPricePerClass}
-                      onChange={(e) => setClassPricePerClass(sanitizeMoneyInput(e.target.value))}
-                      placeholder=""
-                      className="pl-8"
-                      inputMode="decimal"
-                      autoComplete="off"
-                    />
-                  </div>
-                  {classSessionCount && classPricePerClass && Number(classSessionCount) > 0 && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      = ${(parseFloat(classPricePerClass) / Number(classSessionCount)).toFixed(2)}/class
-                    </p>
-                  )}
-                </Field>
-              </div>
-
-              <Field label="Enrollment start">
-                <div className="inline-flex rounded-lg border border-input bg-muted/30 p-0.5 w-full">
-                  {(["rolling", "fixed"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setClassStartMode(mode)}
-                      className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                        classStartMode === mode
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {mode === "rolling" ? "Rolling — start anytime" : "Fixed start date"}
-                    </button>
-                  ))}
-                </div>
                 {classStartMode === "fixed" && (
-                  <div className="mt-2">
+                  <Field label="Start date">
                     <DateInput
                       value={classSessionStartDate}
                       onChange={(e) => setClassSessionStartDate(e.target.value)}
                     />
-                  </div>
+                  </Field>
                 )}
+              </div>
+
+              {/* Row 3: class capacity full width */}
+              <Field label="Class capacity">
+                <Input
+                  type="number"
+                  min={1}
+                  value={classStudentsPerClass}
+                  onChange={(e) => setClassStudentsPerClass(e.target.value)}
+                  placeholder="Unlimited"
+                />
               </Field>
             </div>
           </FormCard>
