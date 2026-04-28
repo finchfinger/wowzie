@@ -3399,60 +3399,59 @@ export default function CreateActivityPage({
                 </Field>
               </div>
             </div>
-          </FormCard>
-
-          <FormCard
-            title="General availability"
-            subtitle="Set when you're available each week."
-          >
-            <div className="space-y-0">
-              {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
-                const day = classWeekly[dayKey];
-                return (
-                  <div
-                    key={dayKey}
-                    className="flex items-start gap-3 border-b border-border/50 py-3 last:border-0 last:pb-0 first:pt-0"
-                  >
-                    <span className="w-20 shrink-0 pt-2 text-xs font-medium text-foreground">{dayLabelFull}</span>
-                    {day.available ? (
-                      <div className="flex-1 space-y-2">
-                        {day.blocks.map((block) => (
-                          <div key={block.id} className="flex items-center gap-2">
-                            <div className="flex-1"><TimeSelect value={block.start} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "start", v)} /></div>
-                            <span className="text-xs text-muted-foreground">–</span>
-                            <div className="flex-1"><TimeSelect value={block.end} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "end", v)} /></div>
+              <div className="border-t border-border" />
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-1">General availability</p>
+                <p className="text-xs text-muted-foreground mb-4">Set when you're available each week.</p>
+                <div className="space-y-0">
+                  {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
+                    const day = classWeekly[dayKey];
+                    return (
+                      <div
+                        key={dayKey}
+                        className="flex items-start gap-3 border-b border-border/50 py-3 last:border-0 last:pb-0 first:pt-0"
+                      >
+                        <span className="w-20 shrink-0 pt-2 text-xs font-medium text-foreground">{dayLabelFull}</span>
+                        {day.available ? (
+                          <div className="flex-1 space-y-2">
+                            {day.blocks.map((block) => (
+                              <div key={block.id} className="flex items-center gap-2">
+                                <div className="flex-1"><TimeSelect value={block.start} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "start", v)} /></div>
+                                <span className="text-xs text-muted-foreground">–</span>
+                                <div className="flex-1"><TimeSelect value={block.end} onChange={(v) => updateClassTimeBlock(dayKey, block.id, "end", v)} /></div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex-1">
-                        <div className="flex h-11 items-center rounded-lg bg-rose-50 px-3">
-                          <span className="text-xs font-medium text-rose-400">Unavailable</span>
+                        ) : (
+                          <div className="flex-1">
+                            <div className="flex h-11 items-center rounded-lg bg-rose-50 px-3">
+                              <span className="text-xs font-medium text-rose-400">Unavailable</span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-0.5 shrink-0 pt-1.5">
+                          {day.available ? (
+                            <>
+                              <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Disable day">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                              </button>
+                              <button type="button" onClick={() => addClassTimeBlock(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Add time block"><IconPlus /></button>
+                              {day.blocks.length > 0 && (
+                                <button type="button" onClick={() => copyClassTimeBlock(dayKey, day.blocks[day.blocks.length - 1].id)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Copy time block"><IconCopy /></button>
+                              )}
+                            </>
+                          ) : (
+                            <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground/50 hover:bg-gray-50 hover:text-foreground transition-colors" title="Enable day"><IconPlus /></button>
+                          )}
                         </div>
                       </div>
-                    )}
-                    <div className="flex items-center gap-0.5 shrink-0 pt-1.5">
-                      {day.available ? (
-                        <>
-                          <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Disable day">
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                          </button>
-                          <button type="button" onClick={() => addClassTimeBlock(dayKey)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Add time block"><IconPlus /></button>
-                          {day.blocks.length > 0 && (
-                            <button type="button" onClick={() => copyClassTimeBlock(dayKey, day.blocks[day.blocks.length - 1].id)} className="rounded p-1.5 text-muted-foreground hover:bg-gray-50 hover:text-foreground transition-colors" title="Copy time block"><IconCopy /></button>
-                          )}
-                        </>
-                      ) : (
-                        <button type="button" onClick={() => toggleClassDayAvailable(dayKey)} className="rounded p-1.5 text-muted-foreground/50 hover:bg-gray-50 hover:text-foreground transition-colors" title="Enable day"><IconPlus /></button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="border-t border-border mt-4 pt-4">
-              <MoneyInput label="Price per class" value={classPricePerClass} onChange={setClassPricePerClass} />
-            </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="border-t border-border pt-4">
+                <MoneyInput label="Price per class" value={classPricePerClass} onChange={setClassPricePerClass} />
+              </div>
           </FormCard>
 
           {additionalDetails}
