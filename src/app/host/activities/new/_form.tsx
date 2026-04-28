@@ -1254,7 +1254,7 @@ export default function CreateActivityPage({
   const [classMeetingLength, setClassMeetingLength] = useState("");
   const [classSessionStartDate, setClassSessionStartDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [classPricePerMeeting, setClassPricePerMeeting] = useState("");
-  const [classSessionCount, setClassSessionCount] = useState("");
+  const [classSessionCount, setClassSessionCount] = useState("ongoing");
   const [classStartMode, setClassStartMode] = useState<"rolling" | "fixed">("fixed");
   const [classSections, setClassSections] = useState<ClassSessionSection[]>(
     () => [makeDefaultClassSection()],
@@ -1613,7 +1613,7 @@ export default function CreateActivityPage({
           setClassSessionStartDate(cs.sessionStartDate >= today ? cs.sessionStartDate : today);
         }
         if (cs.pricePerMeeting) setClassPricePerMeeting(cs.pricePerMeeting);
-        if (cs.sessionCount) setClassSessionCount(cs.sessionCount);
+        if (cs.sessionCount) setClassSessionCount(cs.sessionCount); else setClassSessionCount("ongoing");
         if (cs.startMode) setClassStartMode(cs.startMode);
         if (Array.isArray(cs.sections) && cs.sections.length)
           setClassSections(cs.sections);
@@ -1772,7 +1772,7 @@ export default function CreateActivityPage({
             meetingLength: classMeetingLength || undefined,
             sessionStartDate: classStartMode === "fixed" ? classSessionStartDate || undefined : undefined,
             startMode: classStartMode,
-            sessionCount: classSessionCount || undefined,
+            sessionCount: (classSessionCount && classSessionCount !== "ongoing") ? classSessionCount : undefined,
             pricePerMeeting: classPricePerMeeting || undefined,
             sections: classSections.length ? classSections : undefined,
           }
@@ -2121,7 +2121,7 @@ export default function CreateActivityPage({
             meetingLength: classMeetingLength || undefined,
             sessionStartDate: classStartMode === "fixed" ? classSessionStartDate || undefined : undefined,
             startMode: classStartMode,
-            sessionCount: classSessionCount || undefined,
+            sessionCount: (classSessionCount && classSessionCount !== "ongoing") ? classSessionCount : undefined,
             pricePerMeeting: classPricePerMeeting || undefined,
             sections: classSections.length ? classSections : undefined,
           }
@@ -2905,7 +2905,7 @@ export default function CreateActivityPage({
                           {opt.label}
                         </SelectItem>
                       ))}
-                      <SelectItem value="">Ongoing</SelectItem>
+                      <SelectItem value="ongoing">Ongoing</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
@@ -3377,7 +3377,7 @@ export default function CreateActivityPage({
                       {SESSION_LENGTH_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
-                      <SelectItem value="">Ongoing</SelectItem>
+                      <SelectItem value="ongoing">Ongoing</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
