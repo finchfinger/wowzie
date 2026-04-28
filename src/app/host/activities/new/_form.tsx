@@ -980,7 +980,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-foreground">{label}</label>
+      <label className="block text-[13px] font-medium text-foreground">{label}</label>
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
       {!error && hint && (
@@ -3348,7 +3348,7 @@ export default function CreateActivityPage({
         <div className="mb-4">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 16 }}>{icon}</span>
-            <span className="text-[13px] font-semibold text-foreground">{title}</span>
+            <span className="text-sm font-semibold text-foreground">{title}</span>
           </div>
           <p className="text-xs text-muted-foreground pl-[22px]">{subtitle}</p>
         </div>
