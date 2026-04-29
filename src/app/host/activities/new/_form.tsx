@@ -53,6 +53,7 @@ type ClassFrequency =
   | "three_week"
   | "multiple_week"
   | "daily"
+  | "biweekly"
   | "flexible";
 
 /** A single time block within a day (classes can have multiple per day) */
@@ -63,18 +64,29 @@ type ClassDaySchedule = { available: boolean; blocks: TimeBlock[] };
 type ClassWeeklySchedule = Record<DayKey, ClassDaySchedule>;
 
 /** A single camp session (camps can have multiple sessions) */
-type CampSession = {
+/** A single schedule option within a session (days + time window + capacity) */
+type ScheduleOption = {
   id: string;
-  label: string;              // optional host-defined name, e.g. "Week 1" or "Beginner Track"
-  startDate: string;
-  endDate: string;
-  days: DayKey[];             // which days of the week this session runs
+  days: DayKey[];
   startTime: string;
   endTime: string;
   capacity: string;
+};
+
+type CampSession = {
+  id: string;
+  label: string;
+  startDate: string;
+  endDate: string;
+  scheduleOptions: ScheduleOption[];
+  // legacy fields kept for backward compat — migrated to scheduleOptions on load
+  days?: DayKey[];
+  startTime?: string;
+  endTime?: string;
+  capacity?: string;
   enableWaitlist: boolean;
-  price_cents: number | null; // persisted per-session price
-  priceText: string;          // UI-only shadow, stripped at save
+  price_cents: number | null;
+  priceText: string;
   experienceLevel: ExperienceLevel[];
 };
 
@@ -475,6 +487,7 @@ const CLASS_FREQUENCY_OPTIONS: Array<{
   { value: "three_week", label: "Three times a week" },
   { value: "multiple_week", label: "Multiple times a week" },
   { value: "daily", label: "Daily" },
+  { value: "biweekly", label: "Every two weeks" },
   { value: "flexible", label: "Flexible" },
 ];
 
@@ -555,15 +568,20 @@ const makeDefaultClassWeekly = (): ClassWeeklySchedule => ({
   sat: { available: false, blocks: [] },
 });
 
+const makeDefaultScheduleOption = (): ScheduleOption => ({
+  id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  days: ["mon", "tue", "wed", "thu", "fri"],
+  startTime: "",
+  endTime: "",
+  capacity: "",
+});
+
 const makeDefaultCampSession = (): CampSession => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   label: "",
   startDate: "",
   endDate: "",
-  days: ["mon", "tue", "wed", "thu", "fri"],
-  startTime: "",
-  endTime: "",
-  capacity: "",
+  scheduleOptions: [makeDefaultScheduleOption()],
   enableWaitlist: false,
   price_cents: null,
   experienceLevel: [],
@@ -1199,11 +1217,36 @@ export default function CreateActivityPage({
       const copy: CampSession = {
         ...source,
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        scheduleOptions: source.scheduleOptions.map(o => ({ ...o, id: `${Date.now()}-${Math.random().toString(16).slice(2)}` })),
       };
       const next = [...prev];
       next.splice(idx + 1, 0, copy);
       return next;
     });
+  };
+
+  const addScheduleOption = (sessionId: string) => {
+    setCampSessions(prev => prev.map(s =>
+      s.id === sessionId
+        ? { ...s, scheduleOptions: [...s.scheduleOptions, makeDefaultScheduleOption()] }
+        : s
+    ));
+  };
+
+  const removeScheduleOption = (sessionId: string, optionId: string) => {
+    setCampSessions(prev => prev.map(s =>
+      s.id === sessionId
+        ? { ...s, scheduleOptions: s.scheduleOptions.filter(o => o.id !== optionId) }
+        : s
+    ));
+  };
+
+  const updateScheduleOption = (sessionId: string, optionId: string, patch: Partial<ScheduleOption>) => {
+    setCampSessions(prev => prev.map(s =>
+      s.id === sessionId
+        ? { ...s, scheduleOptions: s.scheduleOptions.map(o => o.id === optionId ? { ...o, ...patch } : o) }
+        : s
+    ));
   };
 
   /* Activity helpers */
@@ -1238,7 +1281,7 @@ export default function CreateActivityPage({
 
   /* Class schedule */
   const [classScheduleMode, setClassScheduleMode] =
-    useState<ClassScheduleMode>("ongoing");
+    useState<ClassScheduleMode>("sessions");
   const [classWeekly, setClassWeekly] = useState<ClassWeeklySchedule>(
     makeDefaultClassWeekly,
   );
@@ -1572,15 +1615,28 @@ export default function CreateActivityPage({
         setWeeklySchedule((prev) => ({ ...prev, ...meta.weeklySchedule! }));
       }
 
-      /* Camp sessions — rehydrate priceText from persisted price_cents */
+      /* Camp sessions — rehydrate priceText and migrate legacy fields */
       if (Array.isArray(meta.campSessions) && meta.campSessions.length) {
         setCampSessions(
-          meta.campSessions.map((s: any) => ({
-            ...s,
-            price_cents: s.price_cents ?? null,
-            priceText: s.price_cents != null ? formatCentsToMoneyText(s.price_cents) : "",
-            experienceLevel: s.experienceLevel ?? [],
-          })),
+          meta.campSessions.map((s: any) => {
+            // Migrate old flat days/startTime/endTime/capacity to scheduleOptions
+            const scheduleOptions: ScheduleOption[] = Array.isArray(s.scheduleOptions) && s.scheduleOptions.length
+              ? s.scheduleOptions
+              : [{
+                  id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                  days: s.days ?? ["mon", "tue", "wed", "thu", "fri"],
+                  startTime: s.startTime ?? "",
+                  endTime: s.endTime ?? "",
+                  capacity: s.capacity ?? "",
+                }];
+            return {
+              ...s,
+              scheduleOptions,
+              price_cents: s.price_cents ?? null,
+              priceText: s.price_cents != null ? formatCentsToMoneyText(s.price_cents) : "",
+              experienceLevel: s.experienceLevel ?? [],
+            };
+          }),
         );
       }
 
@@ -2494,206 +2550,143 @@ export default function CreateActivityPage({
   /* Schedule renderers                                               */
   /* ---------------------------------------------------------------- */
 
-  /** Render a single camp session's date + time + capacity + price fields */
-  const renderCampSessionFields = (session: CampSession, hasMultiple: boolean) => (
-    <div className="space-y-4">
-      {/* Optional session label — only shown when there are multiple sessions */}
-      {hasMultiple && (
-        <Field label="Session name (optional)">
-          <Input
-            value={session.label}
-            onChange={(e) => updateCampSession(session.id, { label: e.target.value })}
-            placeholder=""
-          />
-        </Field>
-      )}
+  /** Render a single schedule option (days + times + capacity) */
+  const renderScheduleOption = (session: CampSession, option: ScheduleOption, canRemove: boolean) => (
+    <div key={option.id} className="rounded-xl bg-muted/40 px-4 py-4 space-y-3">
+      {/* Days */}
+      <div className="flex gap-1.5 flex-wrap">
+        {(["sun","mon","tue","wed","thu","fri","sat"] as DayKey[]).map((d) => {
+          const label = d.charAt(0).toUpperCase() + d.slice(1, 3);
+          const active = option.days.includes(d);
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => {
+                const next = active ? option.days.filter(x => x !== d) : [...option.days, d];
+                updateScheduleOption(session.id, option.id, { days: next });
+              }}
+              className={`h-9 w-11 rounded-lg text-xs font-semibold transition-colors ${
+                active ? "bg-foreground text-background" : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
-
-      {/* Date field(s) — adapts to dateEntryMode */}
-      {dateEntryMode === "range" ? (
-        <div className="space-y-1.5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Start date">
-              <DateInput
-                value={session.startDate}
-                onChange={(e) =>
-                  updateCampSession(session.id, { startDate: e.target.value })
-                }
-              />
-            </Field>
-            <Field label="End date">
-              <DateInput
-                value={session.endDate}
-                onChange={(e) =>
-                  updateCampSession(session.id, { endDate: e.target.value })
-                }
-              />
-            </Field>
-          </div>
-          {session.startDate && session.endDate && session.endDate < session.startDate && (
-            <p className="text-xs text-destructive">End date must be after start date.</p>
-          )}
-        </div>
-      ) : (
-        <Field label="Date">
-          <DateInput
-            value={session.startDate}
-            onChange={(e) =>
-              updateCampSession(session.id, {
-                startDate: e.target.value,
-                endDate: e.target.value,
-              })
-            }
-          />
-        </Field>
-      )}
-
-      {/* Days of the week */}
-      <Field label="Days">
-        <div className="flex gap-1.5 flex-wrap">
-          {(["sun","mon","tue","wed","thu","fri","sat"] as DayKey[]).map((d) => {
-            const label = d.charAt(0).toUpperCase() + d.slice(1, 3);
-            const active = session.days.includes(d);
-            return (
-              <button
-                key={d}
-                type="button"
-                onClick={() => {
-                  const next = active
-                    ? session.days.filter((x) => x !== d)
-                    : [...session.days, d];
-                  updateCampSession(session.id, { days: next });
-                }}
-                className={`h-9 w-11 rounded-lg text-xs font-semibold transition-colors ${
-                  active
-                    ? "bg-foreground text-background"
-                    : "bg-muted text-muted-foreground hover:bg-muted/70"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </Field>
-
-      {/* Times row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Times */}
+      <div className="grid grid-cols-2 gap-3">
         <Field label="Start time">
-          <TimeSelect
-            value={session.startTime}
-            onChange={(v) => updateCampSession(session.id, { startTime: v })}
-            placeholder="Select time"
-          />
+          <TimeSelect value={option.startTime} onChange={(v) => updateScheduleOption(session.id, option.id, { startTime: v })} placeholder="Start" />
         </Field>
         <Field label="End time">
-          <TimeSelect
-            value={session.endTime}
-            onChange={(v) => updateCampSession(session.id, { endTime: v })}
-            placeholder="Select time"
-          />
+          <TimeSelect value={option.endTime} onChange={(v) => updateScheduleOption(session.id, option.id, { endTime: v })} placeholder="End" />
         </Field>
       </div>
 
-      {/* Capacity */}
-      <SettingsList>
-        <SettingsRow label="Limit capacity" asLabel>
-          <Checkbox
-            checked={session.capacity !== ""}
-            onCheckedChange={(checked) =>
-              updateCampSession(session.id, {
-                capacity: checked ? "10" : "",
-                enableWaitlist: checked ? session.enableWaitlist : false,
-              })
-            }
-          />
-        </SettingsRow>
-        {session.capacity !== "" && (
-          <>
-            <SettingsRow label="Max capacity">
-              <Input
-                type="number"
-                min={1}
-                value={session.capacity}
-                onChange={(e) => updateCampSession(session.id, { capacity: e.target.value })}
-                className="w-20 text-right h-9"
-              />
-            </SettingsRow>
-            <SettingsRow label="Enable waitlist" asLabel>
-              <Checkbox
-                checked={session.enableWaitlist}
-                onCheckedChange={(checked) =>
-                  updateCampSession(session.id, { enableWaitlist: checked === true })
-                }
-              />
-            </SettingsRow>
-          </>
+      {/* Capacity + remove */}
+      <div className="flex items-end gap-3">
+        <div className="w-40">
+          <Field label="Capacity">
+            <Input type="number" min={1} value={option.capacity} onChange={(e) => updateScheduleOption(session.id, option.id, { capacity: e.target.value })} placeholder="Unlimited" />
+          </Field>
+        </div>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={() => removeScheduleOption(session.id, option.id)}
+            className="mb-0.5 text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+          >
+            Remove
+          </button>
         )}
-      </SettingsList>
-
-      {/* Price per child */}
-      <MoneyInput
-        label="Price per child"
-        value={session.priceText}
-        onChange={(next) =>
-          updateCampSession(session.id, {
-            priceText: next,
-            price_cents: parseMoneyToCents(next),
-          })
-        }
-        onBlur={() => {
-          if (!session.priceText.trim()) return;
-          if (session.price_cents == null) { updateCampSession(session.id, { priceText: "" }); return; }
-          updateCampSession(session.id, { priceText: formatCentsToMoneyText(session.price_cents) });
-        }}
-      />
+      </div>
     </div>
   );
 
-  /** Session list — renders flat content, no card wrapper (card lives in formContent) */
+  /** Session list */
   const renderUnifiedSessions = () => {
     const hasMultiple = campSessions.length > 1;
-    const addLabel = dateEntryMode === "individual" ? "Add another date" : "Add another session";
-    const sessionLabel = (idx: number) =>
-      dateEntryMode === "individual" ? `Date ${idx + 1}` : `Session ${idx + 1}`;
 
     return (
-      <div className="space-y-0">
+      <div className="space-y-6">
         {campSessions.map((session, idx) => (
-          <div key={session.id}>
-            {idx > 0 && <div className="border-t border-border my-4" />}
-
-            <div className="space-y-4">
+          <div key={session.id} className="space-y-4">
+            {/* Session header */}
+            <div className="flex items-center justify-between">
               {hasMultiple && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">{sessionLabel(idx)}</span>
-                  <div className="flex gap-1">
-                    <button type="button" onClick={() => copyCampSession(session.id)}
-                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                      <IconCopy />Copy
-                    </button>
-                    {campSessions.length > 1 && (
-                      <button type="button"
-                        onClick={() => { if (window.confirm("Remove this session? This cannot be undone.")) removeCampSession(session.id); }}
-                        className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/5 transition-colors">
-                        <IconTrash />Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <span className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
+                  Session {idx + 1}
+                </span>
               )}
-              {renderCampSessionFields(session, hasMultiple)}
+              <div className="flex gap-1 ml-auto">
+                <button type="button" onClick={() => copyCampSession(session.id)}
+                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                  <IconCopy />Copy
+                </button>
+                {campSessions.length > 1 && (
+                  <button type="button"
+                    onClick={() => { if (window.confirm("Remove this session?")) removeCampSession(session.id); }}
+                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/5 transition-colors">
+                    <IconTrash />Remove
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Date range */}
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Start date">
+                  <DateInput value={session.startDate} onChange={(e) => updateCampSession(session.id, { startDate: e.target.value })} />
+                </Field>
+                <Field label="End date">
+                  <DateInput value={session.endDate} onChange={(e) => updateCampSession(session.id, { endDate: e.target.value })} />
+                </Field>
+              </div>
+              {session.startDate && session.endDate && session.endDate < session.startDate && (
+                <p className="text-xs text-destructive">End date must be after start date.</p>
+              )}
+            </div>
+
+            {/* Schedule options */}
+            <div className="space-y-2">
+              {session.scheduleOptions.map(option =>
+                renderScheduleOption(session, option, session.scheduleOptions.length > 1)
+              )}
+            </div>
+
+            {/* Add schedule option */}
+            <button type="button" onClick={() => addScheduleOption(session.id)}
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <IconPlus className="h-3.5 w-3.5" />
+              Add schedule option
+            </button>
+
+            {/* Price at session level */}
+            <MoneyInput
+              label="Price per child"
+              value={session.priceText}
+              onChange={(next) => updateCampSession(session.id, { priceText: next, price_cents: parseMoneyToCents(next) })}
+              onBlur={() => {
+                if (!session.priceText.trim()) return;
+                if (session.price_cents == null) { updateCampSession(session.id, { priceText: "" }); return; }
+                updateCampSession(session.id, { priceText: formatCentsToMoneyText(session.price_cents) });
+              }}
+            />
+
+            {idx < campSessions.length - 1 && <div className="border-t border-dashed border-border pt-2" />}
           </div>
         ))}
 
-        <div className="pt-4">
-          <button type="button" onClick={addCampSession}
-            className="inline-flex items-center gap-1.5 rounded-full bg-foreground/8 hover:bg-foreground/12 px-4 py-2 text-sm font-medium text-foreground transition-colors">
-            <IconPlus className="h-4 w-4" />
-            {addLabel}
-          </button>
-        </div>
+        {/* Add session */}
+        <button type="button" onClick={addCampSession}
+          className="inline-flex items-center gap-1.5 rounded-full bg-foreground/8 hover:bg-foreground/12 px-4 py-2 text-sm font-medium text-foreground transition-colors">
+          <IconPlus className="h-4 w-4" />
+          Add session
+        </button>
       </div>
     );
   };
@@ -3205,28 +3198,25 @@ export default function CreateActivityPage({
             selected: isOngoing,
             onSelect: () => { setClassScheduleMode("ongoing"); setActivityKind("class"); setEnrollmentMode("choose_sessions"); setBookingModel("per_class"); setCampSessions([]); },
           },
-        ] as const).map(({ label, description, icon, selected, onSelect }) => (
+        ] as const).map(({ label, description, selected, onSelect }) => (
           <button
             key={label}
             type="button"
             onClick={onSelect}
             className={[
-              "flex flex-col items-start gap-2 rounded-xl border-2 px-4 py-4 text-left transition-all",
+              "flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all",
               selected
                 ? "border-foreground bg-foreground/[0.03]"
                 : "border-border hover:border-foreground/30 hover:bg-muted/40",
             ].join(" ")}
           >
-            <div className="flex items-center justify-between w-full">
-              <span className={`material-symbols-rounded select-none ${selected ? "text-foreground" : "text-muted-foreground"}`} style={{ fontSize: 20 }}>{icon}</span>
-              <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center transition-colors ${selected ? "border-foreground" : "border-muted-foreground/40"}`}>
-                {selected && <span className="h-2 w-2 rounded-full bg-foreground" />}
-              </span>
-            </div>
-            <div>
+            <div className="flex-1">
               <p className={`text-sm font-semibold ${selected ? "text-foreground" : "text-muted-foreground"}`}>{label}</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
             </div>
+            <span className={`shrink-0 h-4 w-4 rounded-full border-2 flex items-center justify-center transition-colors ${selected ? "border-foreground" : "border-muted-foreground/40"}`}>
+              {selected && <span className="h-2 w-2 rounded-full bg-foreground" />}
+            </span>
           </button>
         ))}
       </div>
@@ -3358,11 +3348,8 @@ export default function CreateActivityPage({
         <div className="space-y-6">
           <FormCard title="Schedule and pricing" icon="calendar_month">
 
-            {/* Mode toggle */}
-            {modeTiles}
-
             {/* Session duration */}
-            <div className="border-t border-dashed border-border mt-5 pt-5">
+            <div className="mt-5">
               <SectionHeader icon="timelapse" title="Session duration" subtitle="How long each class runs and the total program length" />
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3417,6 +3404,18 @@ export default function CreateActivityPage({
             {/* General availability */}
             <div className="border-t border-dashed border-border mt-5 pt-5">
               <SectionHeader icon="schedule" title="General availability" subtitle="Set which days and times this class meets" />
+              <div className="mb-4">
+                <Field label="Frequency">
+                  <Select value={classFrequency} onValueChange={(v) => setClassFrequency(v as ClassFrequency)}>
+                    <SelectTrigger className="w-full text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CLASS_FREQUENCY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
               <div className="space-y-0">
                 {DAY_LABELS.map(([dayKey, dayLabelFull]) => {
                   const day = classWeekly[dayKey];
@@ -3476,14 +3475,11 @@ export default function CreateActivityPage({
       );
     }
 
-    /* ── Program model: single card with date-based sessions ── */
+    /* ── Program model ── */
     return (
       <>
         <FormCard title="Schedule & pricing" icon="calendar_month">
-          <div className="space-y-5">
-            {modeTiles}
-            {renderUnifiedSessions()}
-          </div>
+          {renderUnifiedSessions()}
         </FormCard>
         {additionalDetails}
       </>
