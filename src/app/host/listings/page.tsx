@@ -108,18 +108,19 @@ export default function HostListingsPage() {
 
   /* ── status change ── */
   const handleStatusChange = async (id: string, newStatus: "active" | "inactive") => {
+    const isPublished = newStatus === "active";
     setListings((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l))
+      prev.map((l) => (l.id === id ? { ...l, status: newStatus, is_published: isPublished } : l))
     );
     const { error } = await supabase
       .from("camps")
-      .update({ status: newStatus })
+      .update({ status: newStatus, is_published: isPublished, is_active: isPublished })
       .eq("id", id);
     if (error) {
       setListings((prev) =>
         prev.map((l) =>
           l.id === id
-            ? { ...l, status: newStatus === "active" ? "inactive" : "active" }
+            ? { ...l, status: newStatus === "active" ? "inactive" : "active", is_published: !isPublished }
             : l
         )
       );

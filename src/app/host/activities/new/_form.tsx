@@ -16,6 +16,13 @@ import { AddressInput } from "@/components/ui/AddressInput";
 import { LocationPicker } from "@/components/ui/LocationPicker";
 import { FormCard } from "@/components/ui/form-card";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import {
   Select,
@@ -179,7 +186,7 @@ type CampMeta = {
       enabled?: boolean;
       percent?: string | null;
     };
-    customAddOns?: Array<{ id: string; name: string; price: string }>;
+    customAddOns?: Array<{ id: string; name: string; price: string; priceType: "fixed" | "percent"; itemType: "fee" | "discount"; enabled: boolean }>;
   };
   pricing?: {
     price_cents?: number | null;
@@ -1016,12 +1023,14 @@ function ExpandableCheckboxCard({
   title,
   description,
   children,
+  onRemove,
 }: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   title: string;
-  description: string;
-  children: React.ReactNode;
+  description?: string;
+  children?: React.ReactNode;
+  onRemove?: () => void;
 }) {
   return (
     <div className="rounded-xl bg-muted/40 border border-border">
@@ -1035,20 +1044,30 @@ function ExpandableCheckboxCard({
       >
         <div className="min-w-0">
           <div className="text-sm font-medium text-foreground">{title}</div>
-          <div className="mt-0.5 text-xs text-muted-foreground">{description}</div>
+          {description && <div className="mt-0.5 text-xs text-muted-foreground">{description}</div>}
         </div>
-        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           <ToggleSwitch
             checked={checked}
             onChange={onCheckedChange}
             variant="switch-only"
             srLabel={title}
           />
+          {onRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors"
+              aria-label="Remove"
+            >
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 16, lineHeight: 1 }}>close</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Expanded content */}
-      {checked && (
+      {checked && children && (
         <div className="px-4 pb-4 pt-0">
           <div className="space-y-4">{children}</div>
         </div>
@@ -1415,7 +1434,9 @@ export default function CreateActivityPage({
   const [extendedDayStart, setExtendedDayStart] = useState("");
   const [extendedDayEnd, setExtendedDayEnd] = useState("");
 
-  const [customAddOns, setCustomAddOns] = useState<Array<{ id: string; name: string; price: string }>>([]);
+  const [customAddOns, setCustomAddOns] = useState<Array<{ id: string; name: string; price: string; priceType: "fixed" | "percent"; itemType: "fee" | "discount"; enabled: boolean }>>([]);
+  const [addOnModalOpen, setAddOnModalOpen] = useState(false);
+  const [addOnDraft, setAddOnDraft] = useState<{ name: string; itemType: "fee" | "discount"; price: string; priceType: "fixed" | "percent" }>({ name: "", itemType: "fee", price: "", priceType: "fixed" });
 
   /* Sibling discount */
   const [offerSiblingDiscount, setOfferSiblingDiscount] = useState(false);
@@ -1689,7 +1710,16 @@ export default function CreateActivityPage({
       setExtendedDayPrice(ext.price ?? "");
       setExtendedDayStart(ext.start ?? "");
       setExtendedDayEnd(ext.end ?? "");
-      setCustomAddOns(Array.isArray(adv.customAddOns) ? adv.customAddOns : []);
+      setCustomAddOns(Array.isArray(adv.customAddOns)
+        ? adv.customAddOns.map((a: any) => ({
+            id: a.id ?? crypto.randomUUID(),
+            name: a.name ?? "",
+            price: a.price ?? "",
+            priceType: a.priceType ?? "fixed",
+            itemType: a.itemType ?? "fee",
+            enabled: a.enabled ?? true,
+          }))
+        : []);
 
       const msd = adv.multiSessionDiscount || {};
       setOfferMultiSessionDiscount(Boolean(msd.enabled));
@@ -1997,6 +2027,8 @@ export default function CreateActivityPage({
       end_local: endLocal,
       start_time: startTimeISO,
       end_time: endTimeISO,
+      min_age: min ?? null,
+      max_age: max ?? null,
     };
 
     // Use draftId (may have been created by auto-save) or fall back to activityId
@@ -2234,6 +2266,8 @@ export default function CreateActivityPage({
       end_local: null,
       start_time: null,
       end_time: null,
+      min_age: min ?? null,
+      max_age: max ?? null,
     };
   };
 
@@ -2438,28 +2472,6 @@ export default function CreateActivityPage({
             />
           </Field>
 
-          {/* Visibility */}
-          <Field label="Visibility">
-            <Select value={listingStatus} onValueChange={(v) => setListingStatus(v as ListingStatus)}>
-              <SelectTrigger className="w-full text-sm">
-                <SelectValue>
-                  {{ active: "Live", draft: "Draft", unlisted: "Unlisted" }[listingStatus]}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active" textValue="Live">
-                  <div><div className="font-medium">Live</div><div className="text-xs text-muted-foreground">Visible and open for bookings</div></div>
-                </SelectItem>
-                <SelectItem value="draft" textValue="Draft">
-                  <div><div className="font-medium">Draft</div><div className="text-xs text-muted-foreground">Not visible to families yet</div></div>
-                </SelectItem>
-                <SelectItem value="unlisted" textValue="Unlisted">
-                  <div><div className="font-medium">Unlisted</div><div className="text-xs text-muted-foreground">Accessible only by direct link</div></div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-
           {/* Category */}
           <Field label="Category">
             <Select value={categories[0] ?? ""} onValueChange={(v) => setCategories(v ? [v] : [])}>
@@ -2628,7 +2640,7 @@ export default function CreateActivityPage({
                 </button>
                 {campSessions.length > 1 && (
                   <button type="button"
-                    onClick={() => { if (window.confirm("Remove this session?")) removeCampSession(session.id); }}
+                    onClick={() => removeCampSession(session.id)}
                     className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] text-destructive hover:bg-destructive/5 transition-colors">
                     <IconTrash />Remove
                   </button>
@@ -3223,113 +3235,194 @@ export default function CreateActivityPage({
     );
 
     const additionalDetails = (
-      <FormCard title="Additional details" icon="tune">
-        <div className="space-y-6">
+      <FormCard title="Options" icon="bento">
+        <div className="space-y-3">
 
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-foreground">Add-ons</p>
+          {activityKind !== "class" && (
+            <>
+              <ExpandableCheckboxCard
+                checked={offerEarlyDropoff}
+                onCheckedChange={setOfferEarlyDropoff}
+                title="Early drop-off"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <MoneyInput label="Price per day" value={earlyDropoffPrice} onChange={setEarlyDropoffPrice} />
+                  <Field label="End time"><TimeSelect value={earlyDropoffStart} onChange={setEarlyDropoffStart} /></Field>
+                </div>
+              </ExpandableCheckboxCard>
 
-            {activityKind !== "class" && (
-              <>
-                <ExpandableCheckboxCard
-                  checked={offerEarlyDropoff}
-                  onCheckedChange={setOfferEarlyDropoff}
-                  title="Early drop-off"
-                  description="Allow families to drop off their child before the activity starts."
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <MoneyInput label="Price per day" value={earlyDropoffPrice} onChange={setEarlyDropoffPrice} />
-                    <Field label="End time"><TimeSelect value={earlyDropoffStart} onChange={setEarlyDropoffStart} /></Field>
-                  </div>
-                </ExpandableCheckboxCard>
+              <ExpandableCheckboxCard
+                checked={offerExtendedDay}
+                onCheckedChange={setOfferExtendedDay}
+                title="Extended day"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <MoneyInput label="Price per day" value={extendedDayPrice} onChange={setExtendedDayPrice} />
+                  <Field label="Ends at"><TimeSelect value={extendedDayEnd} onChange={setExtendedDayEnd} /></Field>
+                </div>
+              </ExpandableCheckboxCard>
+            </>
+          )}
 
-                <ExpandableCheckboxCard
-                  checked={offerExtendedDay}
-                  onCheckedChange={setOfferExtendedDay}
-                  title="Extended day"
-                  description="Let families pick up their child after the activity ends."
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <MoneyInput label="Price per day" value={extendedDayPrice} onChange={setExtendedDayPrice} />
-                    <Field label="Ends at"><TimeSelect value={extendedDayEnd} onChange={setExtendedDayEnd} /></Field>
-                  </div>
-                </ExpandableCheckboxCard>
-              </>
-            )}
-
-            {customAddOns.length > 0 && (
-              <div className="space-y-2">
-                {customAddOns.map((addon, i) => (
-                  <AddOnRow
-                    key={addon.id}
-                    name={addon.name}
-                    price={addon.price}
-                    onNameChange={(v) => setCustomAddOns((prev) => prev.map((a, j) => j === i ? { ...a, name: v } : a))}
-                    onPriceChange={(v) => setCustomAddOns((prev) => prev.map((a, j) => j === i ? { ...a, price: v } : a))}
-                    onRemove={() => setCustomAddOns((prev) => prev.filter((_, j) => j !== i))}
-                  />
-                ))}
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setCustomAddOns((prev) => [...prev, { id: crypto.randomUUID(), name: "", price: "" }])}
-              className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>add_circle</span>
-              Add a custom fee
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-foreground">Discounts</p>
-
-            <ExpandableCheckboxCard
-              checked={offerSiblingDiscount}
-              onCheckedChange={(checked) => {
-                setOfferSiblingDiscount(checked);
-                if (!checked) { setSiblingDiscountType("none"); setSiblingDiscountValue(""); return; }
-                if (siblingDiscountType === "none") setSiblingDiscountType("percent");
-              }}
-              title="Sibling discount"
-              description="Offer a discount when families register more than one child."
-            >
-              <div className="flex gap-2">
-                <ChoiceChip selected={siblingDiscountType === "percent"} onClick={() => setSiblingDiscountType("percent")}>Percentage</ChoiceChip>
-                <ChoiceChip selected={siblingDiscountType === "amount"} onClick={() => setSiblingDiscountType("amount")}>Fixed amount</ChoiceChip>
-              </div>
+          <ExpandableCheckboxCard
+            checked={offerSiblingDiscount}
+            onCheckedChange={(checked) => {
+              setOfferSiblingDiscount(checked);
+              if (!checked) { setSiblingDiscountType("none"); setSiblingDiscountValue(""); return; }
+              if (siblingDiscountType === "none") setSiblingDiscountType("percent");
+            }}
+            title="Sibling discount"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Type">
+                <Select value={siblingDiscountType === "none" ? "percent" : siblingDiscountType} onValueChange={(v) => setSiblingDiscountType(v as "percent" | "amount")}>
+                  <SelectTrigger className="w-full text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percent">Percentage</SelectItem>
+                    <SelectItem value="amount">Fixed amount</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
               {siblingDiscountType === "amount" ? (
-                <MoneyInput label="Discount per additional child" value={siblingDiscountValue} onChange={setSiblingDiscountValue} />
+                <MoneyInput label="Amount" value={siblingDiscountValue} onChange={setSiblingDiscountValue} />
               ) : (
-                <Field label="Discount percentage">
+                <Field label="Percentage">
                   <div className="relative">
                     <Input type="number" min={0} max={100} value={siblingDiscountValue} onChange={(e) => setSiblingDiscountValue(e.target.value)} className="pr-8" />
                     <span className="pointer-events-none absolute right-4 bottom-[9px] text-sm text-muted-foreground">%</span>
                   </div>
                 </Field>
               )}
-            </ExpandableCheckboxCard>
+            </div>
+          </ExpandableCheckboxCard>
 
-            {!isOngoing && campSessions.length >= 2 && (
-              <ExpandableCheckboxCard
-                checked={offerMultiSessionDiscount}
-                onCheckedChange={(checked) => { setOfferMultiSessionDiscount(checked); if (!checked) setMultiSessionDiscountPercent(""); }}
-                title="Multi-session discount"
-                description="Offer a discount when a family books 2 or more sessions."
-              >
-                <Field label="Discount percentage">
-                  <div className="relative">
-                    <Input type="number" min={1} max={100} value={multiSessionDiscountPercent} onChange={(e) => setMultiSessionDiscountPercent(e.target.value)} className="pr-8" />
-                    <span className="pointer-events-none absolute right-4 bottom-[9px] text-sm text-muted-foreground">%</span>
-                  </div>
-                </Field>
-              </ExpandableCheckboxCard>
-            )}
-          </div>
+          {!isOngoing && campSessions.length >= 2 && (
+            <ExpandableCheckboxCard
+              checked={offerMultiSessionDiscount}
+              onCheckedChange={(checked) => { setOfferMultiSessionDiscount(checked); if (!checked) setMultiSessionDiscountPercent(""); }}
+              title="Multi-session discount"
+            >
+              <Field label="Discount percentage">
+                <div className="relative">
+                  <Input type="number" min={1} max={100} value={multiSessionDiscountPercent} onChange={(e) => setMultiSessionDiscountPercent(e.target.value)} className="pr-8" />
+                  <span className="pointer-events-none absolute right-4 bottom-[9px] text-sm text-muted-foreground">%</span>
+                </div>
+              </Field>
+            </ExpandableCheckboxCard>
+          )}
+
+          {customAddOns.map((addon) => (
+            <ExpandableCheckboxCard
+              key={addon.id}
+              checked={addon.enabled}
+              onCheckedChange={(v) => setCustomAddOns((prev) => prev.map((a) => a.id === addon.id ? { ...a, enabled: v } : a))}
+              title={addon.name || "Untitled"}
+              onRemove={() => setCustomAddOns((prev) => prev.filter((a) => a.id !== addon.id))}
+            >
+              <MoneyInput
+                label="Amount"
+                value={addon.price}
+                onChange={(v) => setCustomAddOns((prev) => prev.map((a) => a.id === addon.id ? { ...a, price: v } : a))}
+              />
+            </ExpandableCheckboxCard>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => {
+              setAddOnDraft({ name: "", itemType: "fee", price: "", priceType: "fixed" });
+              setAddOnModalOpen(true);
+            }}
+            className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>add_circle</span>
+            Add custom fee or discount
+          </button>
 
         </div>
       </FormCard>
+    );
+
+    /* ── Add custom fee/discount modal ── */
+    const addOnModal = (
+      <Dialog open={addOnModalOpen} onOpenChange={setAddOnModalOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Add fee or discount</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <Field label="Name">
+              <Input
+                value={addOnDraft.name}
+                onChange={(e) => setAddOnDraft((d) => ({ ...d, name: e.target.value }))}
+                placeholder="e.g. Materials fee"
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Type">
+                <Select
+                  value={`${addOnDraft.itemType}-${addOnDraft.priceType}`}
+                  onValueChange={(v) => {
+                    const [itemType, priceType] = v.split("-") as ["fee" | "discount", "fixed" | "percent"];
+                    setAddOnDraft((d) => ({ ...d, itemType, priceType }));
+                  }}
+                >
+                  <SelectTrigger className="w-full text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fee-fixed">Fee ($)</SelectItem>
+                    <SelectItem value="discount-fixed">Discount ($)</SelectItem>
+                    <SelectItem value="discount-percent">Discount (%)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              {addOnDraft.priceType === "percent" ? (
+                <Field label="Amount">
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={addOnDraft.price}
+                      onChange={(e) => setAddOnDraft((d) => ({ ...d, price: e.target.value }))}
+                      className="pr-8"
+                    />
+                    <span className="pointer-events-none absolute right-4 bottom-[9px] text-sm text-muted-foreground">%</span>
+                  </div>
+                </Field>
+              ) : (
+                <MoneyInput
+                  label="Amount"
+                  value={addOnDraft.price}
+                  onChange={(v) => setAddOnDraft((d) => ({ ...d, price: v }))}
+                />
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOnModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                if (!addOnDraft.name.trim()) return;
+                setCustomAddOns((prev) => [...prev, {
+                  id: crypto.randomUUID(),
+                  name: addOnDraft.name.trim(),
+                  price: addOnDraft.price,
+                  priceType: addOnDraft.priceType,
+                  itemType: addOnDraft.itemType,
+                  enabled: true,
+                }]);
+                setAddOnModalOpen(false);
+              }}
+            >
+              Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
 
     /* ── Class model: one card with internal dashed sections ── */
@@ -3471,6 +3564,7 @@ export default function CreateActivityPage({
           </FormCard>
 
           {additionalDetails}
+          {addOnModal}
         </div>
       );
     }
@@ -3482,6 +3576,7 @@ export default function CreateActivityPage({
           {renderUnifiedSessions()}
         </FormCard>
         {additionalDetails}
+        {addOnModal}
       </>
     );
   };
@@ -3794,6 +3889,29 @@ export default function CreateActivityPage({
           </div>
         </div>
 
+        {/* ── Visibility toggle ──────────────────────────────────── */}
+        <div className="inline-flex rounded-lg border border-input bg-muted/30 p-0.5 gap-0.5">
+          {([
+            { value: "active",   label: "Active"  },
+            { value: "draft",    label: "Draft"   },
+            { value: "unlisted", label: "Private" },
+          ] as const).map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setListingStatus(value)}
+              className={cn(
+                "rounded-md px-4 py-1.5 text-sm font-medium transition-all",
+                listingStatus === value
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Error banner */}
         {stepError && (
           <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
@@ -3902,7 +4020,6 @@ export default function CreateActivityPage({
           {formContent}
         </div>
       </main>
-
     </>
   );
 }

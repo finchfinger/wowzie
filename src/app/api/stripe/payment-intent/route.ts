@@ -5,6 +5,78 @@ import { resend, FROM_EMAIL } from "@/lib/resend";
 
 export const runtime = "nodejs";
 
+/* ── Types ── */
+type LineItem = {
+  label: string;
+  cents: number; // positive = fee, negative = discount
+  note?: string;
+};
+
+/* ── Price computation ── */
+function computeBreakdown(
+  priceCents: number,
+  sessions: number,
+  guests: number,
+  meta: any,
+): { totalCents: number; breakdown: LineItem[] } {
+  const subtotal = priceCents * sessions * guests;
+  const breakdown: LineItem[] = [{ label: "Base price", cents: subtotal }];
+  let total = subtotal;
+
+  const adv = meta?.advanced ?? {};
+
+  // Custom fees (mandatory, per child)
+  for (const addon of (adv.customAddOns ?? []) as any[]) {
+    if (!addon.enabled || !addon.name?.trim()) continue;
+    const amount = parseFloat(addon.price ?? "0");
+    if (!amount || amount <= 0) continue;
+    let delta: number;
+    if (addon.priceType === "percent") {
+      delta = Math.round(subtotal * amount / 100);
+    } else {
+      delta = Math.round(amount * 100) * guests;
+    }
+    if (addon.itemType === "discount") delta = -delta;
+    breakdown.push({
+      label: addon.name,
+      cents: delta,
+      note: addon.priceType === "percent" ? `${amount}%` : undefined,
+    });
+    total += delta;
+  }
+
+  // Sibling discount — auto when guests > 1
+  const sib = adv.siblingDiscount ?? {};
+  if (sib.enabled && guests > 1) {
+    const extraKids = guests - 1;
+    const val = parseFloat(sib.value ?? "0");
+    let discountCents: number;
+    if (sib.type === "percent" && val > 0) {
+      discountCents = Math.round(priceCents * sessions * extraKids * (val / 100));
+      breakdown.push({ label: "Sibling discount", cents: -discountCents, note: `${val}% off additional children` });
+    } else if (sib.type === "amount" && val > 0) {
+      discountCents = Math.round(val * 100) * extraKids * sessions;
+      breakdown.push({ label: "Sibling discount", cents: -discountCents });
+    } else {
+      discountCents = 0;
+    }
+    total -= discountCents;
+  }
+
+  // Multi-session discount — auto when sessions >= 2
+  const msd = adv.multiSessionDiscount ?? {};
+  if (msd.enabled && sessions >= 2) {
+    const pct = parseFloat(msd.percent ?? "0");
+    if (pct > 0) {
+      const discountCents = Math.round(subtotal * pct / 100);
+      breakdown.push({ label: "Multi-session discount", cents: -discountCents, note: `${pct}% off` });
+      total -= discountCents;
+    }
+  }
+
+  return { totalCents: Math.max(0, total), breakdown };
+}
+
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -34,28 +106,67 @@ export async function POST(req: NextRequest) {
     }
 
     const sessions = Math.max(sessionCount ?? 1, 1);
-    const totalCents = priceCents * sessions * guests;
     const supabase = getSupabase();
 
     /* ── Capacity check ── */
     const { data: campData } = await supabase
-      .from("camps").select("capacity, name").eq("id", campId).single();
+      .from("camps").select("capacity, name, meta").eq("id", campId).single();
 
-    const campCapacity = typeof campData?.capacity === "number" && campData.capacity > 0
-      ? campData.capacity : null;
+    const campMeta = (campData?.meta ?? {}) as Record<string, any>;
 
-    if (campCapacity !== null) {
-      const { data: existingBookings } = await supabase
-        .from("bookings").select("guests_count").eq("camp_id", campId)
-        .not("status", "in", '("cancelled","refunded")');
+    /* ── Compute real total with fees + discounts ── */
+    const { totalCents, breakdown } = computeBreakdown(priceCents, sessions, guests, campMeta);
+    const metaSessions: any[] = Array.isArray(campMeta.campSessions) ? campMeta.campSessions : [];
 
-      const spotsTaken = (existingBookings ?? []).reduce((sum, b) => sum + (b.guests_count ?? 1), 0);
-      if (spotsTaken + guests > campCapacity) {
-        const spotsLeft = Math.max(0, campCapacity - spotsTaken);
-        return NextResponse.json({
-          error: spotsLeft === 0 ? "This camp is fully booked." : `Only ${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} remaining.`,
-          spotsLeft,
-        }, { status: 409 });
+    if (sessionIds && sessionIds.length > 0 && metaSessions.length > 0) {
+      /* Per-session capacity check — new model */
+      for (const sessionId of sessionIds) {
+        const session = metaSessions.find((s: any) => s.id === sessionId);
+        if (!session) continue;
+
+        // Use the first schedule option's capacity as the session cap
+        const rawCap = session.scheduleOptions?.[0]?.capacity ?? session.capacity ?? "";
+        const sessionCap = parseInt(rawCap, 10);
+        if (!sessionCap || sessionCap <= 0) continue;
+
+        // Count guests already booked into this specific session
+        const { data: sessionBookings } = await supabase
+          .from("bookings")
+          .select("guests_count")
+          .eq("camp_id", campId)
+          .contains("selected_sessions", [sessionId])
+          .not("status", "in", '("cancelled","refunded")');
+
+        const taken = (sessionBookings ?? []).reduce((sum: number, b: any) => sum + (b.guests_count ?? 1), 0);
+
+        if (taken + guests > sessionCap) {
+          const spotsLeft = Math.max(0, sessionCap - taken);
+          return NextResponse.json({
+            error: spotsLeft === 0
+              ? "This session is fully booked."
+              : `Only ${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} remaining in this session.`,
+            spotsLeft,
+          }, { status: 409 });
+        }
+      }
+    } else {
+      /* Global capacity check — legacy / class model fallback */
+      const campCapacity = typeof campData?.capacity === "number" && campData.capacity > 0
+        ? campData.capacity : null;
+
+      if (campCapacity !== null) {
+        const { data: existingBookings } = await supabase
+          .from("bookings").select("guests_count").eq("camp_id", campId)
+          .not("status", "in", '("cancelled","refunded")');
+
+        const spotsTaken = (existingBookings ?? []).reduce((sum: number, b: any) => sum + (b.guests_count ?? 1), 0);
+        if (spotsTaken + guests > campCapacity) {
+          const spotsLeft = Math.max(0, campCapacity - spotsTaken);
+          return NextResponse.json({
+            error: spotsLeft === 0 ? "This camp is fully booked." : `Only ${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} remaining.`,
+            spotsLeft,
+          }, { status: 409 });
+        }
       }
     }
 
@@ -152,7 +263,7 @@ export async function POST(req: NextRequest) {
       ...transferData,
     });
 
-    return NextResponse.json({ clientSecret: paymentIntent.client_secret, bookingId: booking.id });
+    return NextResponse.json({ clientSecret: paymentIntent.client_secret, bookingId: booking.id, totalCents, breakdown });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unexpected error.";
     return NextResponse.json({ error: message }, { status: 500 });

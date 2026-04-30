@@ -97,10 +97,11 @@ function formatDateShort(iso: string) {
 
 /* ── Inner payment form (needs stripe/elements context) ── */
 function PaymentForm({
-  camp, guests, setGuests, selectedSessions, sessionCount, totalCents, bookingId, clientSecret, email, setEmail, messageToHost, setMessageToHost, preferredSlot,
+  camp, guests, setGuests, selectedSessions, sessionCount, totalCents, breakdown, bookingId, clientSecret, email, setEmail, messageToHost, setMessageToHost, preferredSlot,
 }: {
   camp: CampDetail; guests: number; setGuests: (n: number) => void;
   selectedSessions: CampSession[]; sessionCount: number; totalCents: number;
+  breakdown: Array<{ label: string; cents: number; note?: string }>;
   bookingId: string; clientSecret: string; email: string; setEmail: (s: string) => void;
   messageToHost: string; setMessageToHost: (s: string) => void;
   preferredSlot: TimeSlot | null;
@@ -298,14 +299,25 @@ function PaymentForm({
                 </dd>
               </div>
 
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">
-                  {formatMoney(camp.price_cents)}
-                  {sessionCount > 1 && ` × ${sessionCount} sessions`}
-                  {guests > 1 && ` × ${guests} campers`}
-                </dt>
-                <dd>{formatMoney(totalCents)}</dd>
-              </div>
+              {breakdown.length > 0 ? (
+                breakdown.map((item, i) => (
+                  <div key={i} className="flex justify-between">
+                    <dt className={item.cents < 0 ? "text-green-700" : "text-muted-foreground"}>
+                      {item.label}{item.note ? ` (${item.note})` : ""}
+                    </dt>
+                    <dd className={item.cents < 0 ? "text-green-700" : ""}>{item.cents < 0 ? `-${formatMoney(Math.abs(item.cents))}` : formatMoney(item.cents)}</dd>
+                  </div>
+                ))
+              ) : (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">
+                    {formatMoney(camp.price_cents)}
+                    {sessionCount > 1 && ` × ${sessionCount} sessions`}
+                    {guests > 1 && ` × ${guests} campers`}
+                  </dt>
+                  <dd>{formatMoney(totalCents)}</dd>
+                </div>
+              )}
               <div className="flex justify-between border-t border-border pt-2 font-semibold">
                 <dt>Total</dt>
                 <dd>{formatMoney(totalCents)}</dd>
@@ -357,6 +369,8 @@ function CheckoutContent() {
   // Payment Intent state
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [serverTotalCents, setServerTotalCents] = useState<number | null>(null);
+  const [breakdown, setBreakdown] = useState<Array<{ label: string; cents: number; note?: string }>>([]);
   const [piError, setPiError] = useState<string | null>(null);
   const [piLoading, setPiLoading] = useState(false);
 
@@ -411,7 +425,8 @@ function CheckoutContent() {
   }, [slotParam, timeSlots]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sessionCount = Math.max(selectedSessions.length, 1);
-  const totalCents = (camp?.price_cents ?? 0) * sessionCount * guests;
+  // Use server-computed total once PI is created; fall back to naive estimate while loading
+  const totalCents = serverTotalCents ?? (camp?.price_cents ?? 0) * sessionCount * guests;
 
   // Create PaymentIntent once camp + user + slot (if needed) are ready
   useEffect(() => {
@@ -444,6 +459,8 @@ function CheckoutContent() {
         }
         setClientSecret(json.clientSecret);
         setBookingId(json.bookingId);
+        if (json.totalCents != null) setServerTotalCents(json.totalCents);
+        if (Array.isArray(json.breakdown)) setBreakdown(json.breakdown);
       } catch (err: unknown) {
         setPiError(err instanceof Error ? err.message : "Could not start checkout.");
       } finally {
@@ -521,6 +538,7 @@ function CheckoutContent() {
                   selectedSessions={selectedSessions}
                   sessionCount={sessionCount}
                   totalCents={totalCents}
+                  breakdown={breakdown}
                   bookingId={bookingId!}
                   clientSecret={clientSecret}
                   email={email}

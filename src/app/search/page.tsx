@@ -77,7 +77,9 @@ const SELECT_COLUMNS = `
   start_time,
   end_time,
   created_at,
-  is_promoted
+  is_promoted,
+  min_age,
+  max_age
 `;
 
 /** Floats up to 3 promoted listings to the top, preserving organic order otherwise */
@@ -124,9 +126,6 @@ const TIME_OF_DAY = [
   { value: "evening",   label: "Evening" },
 ];
 
-const AGE_BUCKET_MAP: Record<string, string> = {
-  "3_5": "3-5", "6_8": "6-8", "9_12": "9-12", "13_plus": "13+",
-};
 const AGE_RANGE_MAP: Record<string, [number, number]> = {
   "3_5": [3, 5], "6_8": [6, 8], "9_12": [9, 12], "13_plus": [13, 99],
 };
@@ -188,21 +187,6 @@ function formatTimeRange(start: string, end?: string | null): string {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-function campMatchesAge(c: CampRow, ageVal: string): boolean {
-  if (!ageVal || ageVal === "any") return true;
-  const buckets = (c.meta?.age_buckets as string[] | undefined) ?? [];
-  const minAge = c.meta?.min_age as number | undefined;
-  const maxAge = c.meta?.max_age as number | undefined;
-  if (!buckets.length && minAge == null && maxAge == null) return true;
-  if (buckets.includes("all")) return true;
-  const targetBucket = AGE_BUCKET_MAP[ageVal];
-  if (targetBucket && buckets.includes(targetBucket)) return true;
-  if (minAge != null || maxAge != null) {
-    const [lo, hi] = AGE_RANGE_MAP[ageVal] ?? [0, 99];
-    return (minAge ?? 0) <= hi && (maxAge ?? 99) >= lo;
-  }
-  return false;
-}
 
 function dedupeByProgram(rows: CampRow[]) {
   const seen = new Set<string>();
@@ -521,9 +505,9 @@ function SearchContent() {
   const dbMaxCents = initialMax != null ? initialMax * 100 : null;
 
   const depKey = useMemo(
-    () => JSON.stringify({ initialQ, initialCategory, tags, listingType, seriesWeeks, dbDays, dbTod, featured, dbMaxCents, programId, groupMode }),
+    () => JSON.stringify({ initialQ, initialCategory, tags, listingType, seriesWeeks, dbDays, dbTod, featured, dbMaxCents, programId, groupMode, initialAge }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [initialQ, initialCategory, JSON.stringify(tags), listingType, seriesWeeks, JSON.stringify(dbDays), dbTod, featured, dbMaxCents, programId, groupMode],
+    [initialQ, initialCategory, JSON.stringify(tags), listingType, seriesWeeks, JSON.stringify(dbDays), dbTod, featured, dbMaxCents, programId, groupMode, initialAge],
   );
 
   useEffect(() => {
@@ -546,6 +530,14 @@ function SearchContent() {
       if (dbTod)            query = query.eq("time_of_day", dbTod);
       if (tags.length > 0)  query = query.overlaps("categories", tags);
       if (dbMaxCents != null) query = query.lte("price_cents", dbMaxCents);
+      if (initialAge) {
+        const [lo, hi] = AGE_RANGE_MAP[initialAge] ?? [];
+        if (lo != null) {
+          // Include listings with no age restriction (null) OR whose range overlaps the child's age
+          query = query.or(`min_age.is.null,min_age.lte.${hi ?? 99}`);
+          query = query.or(`max_age.is.null,max_age.gte.${lo}`);
+        }
+      }
 
       const { data, error: dbError } = await query;
       if (dbError) { setError("Sorry, we couldn't load results."); setResults([]); }
@@ -585,7 +577,7 @@ function SearchContent() {
 
   // ── Client-side filters ──
   const displayedResults = useMemo(() => {
-    let filtered = results.filter((c) => campMatchesAge(c, localAge));
+    let filtered = results;
 
     // Distance filter (auto-expanding radius)
     if (locCoords) {
