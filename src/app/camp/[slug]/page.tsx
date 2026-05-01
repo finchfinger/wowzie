@@ -775,33 +775,86 @@ export default function CampDetailPage() {
             )}
 
             {/* ── External partner CTA ── */}
-            {camp.external_url && (
-              <div className="rounded-card bg-card overflow-hidden">
-                <div className="px-5 py-3 border-b border-border">
-                  <p className="text-sm font-semibold text-foreground">How to register</p>
+            {camp.external_url && (() => {
+              const selectedSession = campSessions?.find(s => selectedSessionIds.has(s.id)) ?? null;
+              const sessionPriceCents = (selectedSession as any)?.priceCents as number | undefined;
+              const displayPrice = sessionPriceCents
+                ? `$${Math.round(sessionPriceCents / 100)}`
+                : priceDisplay;
+              return (
+                <div className="rounded-card bg-card overflow-hidden">
+                  <div className="px-5 py-3 border-b border-border">
+                    <p className="text-sm font-semibold text-foreground">How to register</p>
+                  </div>
+                  <div className="px-5 py-4 space-y-4">
+
+                    {/* Session/option picker */}
+                    {campSessions && campSessions.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-0.5">Choose your program</p>
+                        {campSessions.map((session) => {
+                          const isSelected = selectedSessionIds.has(session.id);
+                          const sPriceCents = (session as any).priceCents as number | undefined;
+                          return (
+                            <button
+                              key={session.id}
+                              type="button"
+                              onClick={() => setSelectedSessionIds(new Set([session.id]))}
+                              className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${isSelected ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/30 hover:bg-muted/40"}`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{session.label}</p>
+                                  {session.startTime && session.endTime && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
+                                    </p>
+                                  )}
+                                </div>
+                                {sPriceCents != null && (
+                                  <p className="shrink-0 text-sm font-semibold text-foreground">
+                                    ${Math.round(sPriceCents / 100)}<span className="text-xs font-normal text-muted-foreground">/wk</span>
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Fallback price when no sessions */}
+                    {(!campSessions || campSessions.length === 0) && displayPrice && (
+                      <div>
+                        <p className="text-xl font-bold text-foreground">{displayPrice}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">per week</p>
+                      </div>
+                    )}
+
+                    {/* Selected price summary */}
+                    {selectedSession && displayPrice && (
+                      <div className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-3">
+                        <p className="text-sm text-muted-foreground">{selectedSession.label}</p>
+                        <p className="text-sm font-semibold text-foreground">{displayPrice}<span className="text-xs font-normal text-muted-foreground">/wk</span></p>
+                      </div>
+                    )}
+
+                    <a
+                      href={camp.external_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                    >
+                      Book on their website
+                      <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>open_in_new</span>
+                    </a>
+                    <p className="text-[11px] text-muted-foreground text-center">
+                      Registration is managed directly by {name}
+                    </p>
+                  </div>
                 </div>
-                <div className="px-5 py-4 space-y-4">
-                  {priceDisplay && (
-                    <div>
-                      <p className="text-xl font-bold text-foreground">{priceDisplay}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">per week</p>
-                    </div>
-                  )}
-                  <a
-                    href={camp.external_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-                  >
-                    Book on their website
-                    <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>open_in_new</span>
-                  </a>
-                  <p className="text-[11px] text-muted-foreground text-center">
-                    Registration is managed directly by {name}
-                  </p>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* ── Reservation card ── */}
             {!camp.external_url && (
