@@ -17,7 +17,7 @@ const SELECT_COLUMNS = `
   price_cents, status, meta, category, categories,
   featured, listing_type, format, time_of_day,
   series_weeks, schedule_days, start_time, end_time,
-  created_at, is_promoted, min_age, max_age
+  created_at, is_promoted, min_age, max_age, external_url
 `;
 
 /** Age param format: "3_5" | "6_8" | "9_12" | "13_plus" → [lo, hi] */

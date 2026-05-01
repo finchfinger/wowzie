@@ -24,6 +24,9 @@ export type Camp = {
   schedule_days?: string[] | null;
 
   meta?: Record<string, unknown> | null;
+
+  /** When set, card links directly to this URL instead of the Wowzi detail page */
+  external_url?: string | null;
 };
 
 type CampCardProps = {
@@ -138,10 +141,17 @@ export function CampCard({
     favoriteHook.toggleFavorite();
   };
 
+  const isExternal = Boolean(camp.external_url);
+  const cardHref = isExternal ? camp.external_url! : `/camp/${slug}`;
+  const linkProps = isExternal
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
+
   return (
     <article className="group relative">
       <Link
-        href={`/camp/${slug}`}
+        href={cardHref}
+        {...linkProps}
         className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2"
         aria-label={`View ${name}`}
       >
@@ -153,6 +163,12 @@ export function CampCard({
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
+          {isExternal && (
+            <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 11 }}>open_in_new</span>
+              External site
+            </div>
+          )}
         </div>
 
         <div className="pt-4 space-y-1">
