@@ -15,6 +15,11 @@ export type HostCardProps = {
   onMessage?: () => void;
   /** Called when the "Edit listing" button is clicked */
   onEdit?: () => void;
+  /**
+   * When set (external/partner listing), replaces "Send a message" with
+   * a "Visit website" link pointing to this URL.
+   */
+  externalUrl?: string | null;
 };
 
 export function HostCard({
@@ -23,6 +28,7 @@ export function HostCard({
   isOwner = false,
   onMessage,
   onEdit,
+  externalUrl,
 }: HostCardProps) {
   const initial = (hostName || "?").charAt(0).toUpperCase();
 
@@ -65,6 +71,16 @@ export function HostCard({
           <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>edit</span>
           Edit listing
         </button>
+      ) : externalUrl ? (
+        <a
+          href={externalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+        >
+          <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>open_in_new</span>
+          Visit website
+        </a>
       ) : (
         <button
           type="button"

@@ -381,7 +381,8 @@ export default function CampDetailPage() {
     : null;
 
   // Host
-  const hostName = hostProfile?.preferred_first_name || hostProfile?.legal_name || (meta?.host_name as string | undefined) || "Wowzi Host";
+  const orgName = meta?.organizationName as string | undefined;
+  const hostName = orgName || hostProfile?.preferred_first_name || hostProfile?.legal_name || (meta?.host_name as string | undefined) || "Wowzi Host";
   const hostInitial = hostName.charAt(0).toUpperCase();
 
   // Dates
@@ -707,6 +708,7 @@ export default function CampDetailPage() {
               isOwner={isHost}
               onMessage={handleSendMessage}
               onEdit={() => router.push(`/host/activities/${id}/edit`)}
+              externalUrl={camp.external_url ?? null}
             />
 
             {/* Tags */}
