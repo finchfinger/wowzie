@@ -29,6 +29,7 @@ type FullCamp = Camp & {
   capacity?: number | null;
   start_time?: string | null;
   end_time?: string | null;
+  external_url?: string | null;
 };
 
 type UserBooking = { id: string; status: string };
@@ -240,8 +241,6 @@ export default function CampDetailPage() {
         .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, is_published, external_url")
         .eq("slug", slug).maybeSingle();
       if (error || !data) { setCampError("We couldn't load this camp."); setLoadingCamp(false); return; }
-      // External/partner listings — send the visitor straight to the camp's own site
-      if ((data as any).external_url) { window.location.replace((data as any).external_url); return; }
       setCamp(data as FullCamp);
       setLoadingCamp(false);
 
@@ -775,7 +774,37 @@ export default function CampDetailPage() {
               </div>
             )}
 
+            {/* ── External partner CTA ── */}
+            {camp.external_url && (
+              <div className="rounded-card bg-card overflow-hidden">
+                <div className="px-5 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">How to register</p>
+                </div>
+                <div className="px-5 py-4 space-y-4">
+                  {priceDisplay && (
+                    <div>
+                      <p className="text-xl font-bold text-foreground">{priceDisplay}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">per week</p>
+                    </div>
+                  )}
+                  <a
+                    href={camp.external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                  >
+                    Book on their website
+                    <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>open_in_new</span>
+                  </a>
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    Registration is managed directly by {name}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* ── Reservation card ── */}
+            {!camp.external_url && (
             <div className="rounded-card bg-card overflow-hidden">
               {/* Header */}
               <div className="px-5 py-3 border-b border-border">
@@ -1398,6 +1427,7 @@ export default function CampDetailPage() {
                 )}
               </div>
             </div>
+            )}
 
             {/* Class schedule details */}
             {classSchedule?.frequency && (
