@@ -225,7 +225,10 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
   const price = typeof camp.price_cents === "number" && camp.price_cents > 0
     ? `$${Math.round(camp.price_cents / 100)}` : null;
   const priceUnit = getPriceUnit(camp);
-  const dateStr = camp.start_time ? formatDateRange(camp.start_time, camp.end_time) : null;
+  const dateStr = camp.start_time
+    ? formatDateRange(camp.start_time, camp.end_time)
+    : (camp.meta?.dateLabel as string | undefined)
+    ?? ((camp as any).session_start ? formatDateRange((camp as any).session_start, (camp as any).session_end) : null);
   const timeStr = camp.start_time ? formatTimeRange(camp.start_time, camp.end_time) : null;
   const locationStr = (camp.meta?.locationName as string | undefined)
     || (camp as unknown as { location?: string }).location || null;
