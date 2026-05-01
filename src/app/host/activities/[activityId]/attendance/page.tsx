@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useActivity, type Activity } from "@/lib/activity-context";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,7 @@ type AttendanceRecord = {
 
 type RosterEntry = {
   bookingId: string;
+  parentUserId: string;
   parentName: string;
   childId: string | null;
   childName: string;
@@ -165,6 +165,207 @@ function MiniCalendar({ campDays, datesWithData, selectedDate, onSelect, todaySt
 }
 
 /* ------------------------------------------------------------------ */
+/* MessageDrawer                                                       */
+/* ------------------------------------------------------------------ */
+
+type MessageTarget =
+  | { type: "single"; childName: string; parentName: string; parentUserId: string }
+  | { type: "group"; activityName: string; activityImage: string | null; recipients: { childName: string; parentName: string; parentUserId: string; excluded: boolean }[] };
+
+function RecipientPill({
+  childName, parentName, excluded, onToggle,
+}: {
+  childName: string; parentName: string; excluded: boolean; onToggle: () => void;
+}) {
+  const [showTip, setShowTip] = useState(false);
+  return (
+    <div className="relative inline-flex">
+      <button
+        type="button"
+        onMouseEnter={() => setShowTip(true)}
+        onMouseLeave={() => setShowTip(false)}
+        onClick={onToggle}
+        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+          excluded
+            ? "bg-muted/40 text-muted-foreground line-through opacity-50"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        {childName}
+        <span className={`text-[10px] ${excluded ? "text-muted-foreground" : "text-primary/60"}`}>
+          {excluded ? "+" : "×"}
+        </span>
+      </button>
+      {showTip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 whitespace-nowrap rounded-lg bg-foreground px-2.5 py-1 text-[11px] text-background shadow-md pointer-events-none">
+          {parentName}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-foreground" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MessageDrawer({
+  target, onClose,
+}: {
+  target: MessageTarget; onClose: () => void;
+}) {
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [recipients, setRecipients] = useState(() =>
+    target.type === "group" ? target.recipients.map(r => ({ ...r })) : []
+  );
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const MAX = 320;
+
+  useEffect(() => { textareaRef.current?.focus(); }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [onClose]);
+
+  const activeCount = target.type === "group"
+    ? recipients.filter(r => !r.excluded).length
+    : 1;
+
+  const handleSend = async () => {
+    if (!message.trim() || sending) return;
+    setSending(true);
+    try {
+      const targets = target.type === "single"
+        ? [target.parentUserId]
+        : recipients.filter(r => !r.excluded).map(r => r.parentUserId);
+
+      // Dedupe in case a parent has multiple kids in the same camp
+      const unique = [...new Set(targets)];
+
+      await Promise.all(
+        unique.map(to_profile_id =>
+          supabase.functions.invoke("send-message", {
+            body: { to_profile_id, body: message.trim() },
+          })
+        )
+      );
+
+      setSent(true);
+      setTimeout(onClose, 1200);
+    } catch (e) {
+      console.error("[attendance] message send failed:", e);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const toggleRecipient = (i: number) => {
+    setRecipients(prev => prev.map((r, idx) => idx === i ? { ...r, excluded: !r.excluded } : r));
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px]" onClick={onClose} />
+
+      {/* Drawer */}
+      <div className="fixed top-0 right-0 bottom-0 z-50 flex flex-col bg-background shadow-2xl w-full max-w-[min(400px,33vw)] min-w-[320px] border-l border-border animate-in slide-in-from-right duration-200">
+
+        {/* Header */}
+        <div className="flex items-start gap-3 px-5 pt-5 pb-4 border-b border-border/60">
+          {target.type === "single" ? (
+            <>
+              <div className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-sm font-bold ${avatarColor(target.childName)}`}>
+                {target.childName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{target.childName}</p>
+                <p className="text-xs text-muted-foreground">Messaging {target.parentName}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              {target.activityImage ? (
+                <img src={target.activityImage} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+              ) : (
+                <div className="h-10 w-10 shrink-0 rounded-lg bg-muted flex items-center justify-center">
+                  <span className="material-symbols-rounded text-muted-foreground select-none" style={{ fontSize: 18 }}>group</span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{target.activityName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {activeCount} {activeCount === 1 ? "family" : "families"}
+                </p>
+              </div>
+            </>
+          )}
+          <button type="button" onClick={onClose} className="shrink-0 h-7 w-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>close</span>
+          </button>
+        </div>
+
+        {/* Recipients (group only) */}
+        {target.type === "group" && (
+          <div className="px-5 py-3 border-b border-border/60">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Sending to</p>
+            <div className="flex flex-wrap gap-1.5">
+              {recipients.map((r, i) => (
+                <RecipientPill
+                  key={i}
+                  childName={r.childName}
+                  parentName={r.parentName}
+                  excluded={r.excluded}
+                  onToggle={() => toggleRecipient(i)}
+                />
+              ))}
+            </div>
+            {activeCount === 0 && (
+              <p className="text-xs text-muted-foreground mt-2">Select at least one family to send.</p>
+            )}
+          </div>
+        )}
+
+        {/* Message area */}
+        <div className="flex-1 px-5 py-4">
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={e => setMessage(e.target.value.slice(0, MAX))}
+            placeholder={target.type === "group" ? "Type a message to all families…" : "Type a message…"}
+            rows={5}
+            className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          />
+          <p className="text-[11px] text-muted-foreground mt-1.5 text-right">{message.length} / {MAX}</p>
+        </div>
+
+        {/* Send button */}
+        <div className="px-5 pb-6">
+          {sent ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-50 py-3 text-sm font-medium text-emerald-700">
+              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>check_circle</span>
+              Sent!
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleSend()}
+              disabled={!message.trim() || sending || activeCount === 0}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {sending ? "Sending…" : target.type === "group" ? `Send to ${activeCount}` : "Send"}
+              {!sending && <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>send</span>}
+            </button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* ActionsMenu (local)                                                */
 /* ------------------------------------------------------------------ */
 
@@ -228,6 +429,7 @@ function AttendanceTab({ activity }: { activity: Activity }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
+  const [messageTarget, setMessageTarget] = useState<MessageTarget | null>(null);
 
   const markBusy = (k: string) => setBusyKeys(prev => new Set([...prev, k]));
   const clearBusy = (k: string) => setBusyKeys(prev => { const s = new Set(prev); s.delete(k); return s; });
@@ -268,11 +470,11 @@ function AttendanceTab({ activity }: { activity: Activity }) {
         const parentName = p?.preferred_first_name ? `${p.preferred_first_name} ${p.legal_name ?? ""}`.trim() : p?.legal_name ?? booking.contact_email ?? "Parent";
         const kids = ((children ?? []) as any[]).filter((c: any) => c.parent_id === booking.user_id);
         for (const child of kids) {
-          entries.push({ bookingId: booking.id, parentName, childId: child.id, childName: child.preferred_name || child.legal_name || "Child", emoji: child.avatar_emoji ?? null, attendanceRecord: attMap.get(`${booking.id}-${child.id}`) ?? null });
+          entries.push({ bookingId: booking.id, parentUserId: booking.user_id, parentName, childId: child.id, childName: child.preferred_name || child.legal_name || "Child", emoji: child.avatar_emoji ?? null, attendanceRecord: attMap.get(`${booking.id}-${child.id}`) ?? null });
         }
         const anonymous = (booking.guests_count ?? 0) - kids.length;
         for (let i = 0; i < anonymous; i++) {
-          entries.push({ bookingId: booking.id, parentName, childId: null, childName: `${parentName}'s child`, emoji: null, attendanceRecord: attMap.get(`${booking.id}-null`) ?? null });
+          entries.push({ bookingId: booking.id, parentUserId: booking.user_id, parentName, childId: null, childName: `${parentName}'s child`, emoji: null, attendanceRecord: attMap.get(`${booking.id}-null`) ?? null });
         }
       }
       setRoster(entries);
@@ -364,13 +566,36 @@ function AttendanceTab({ activity }: { activity: Activity }) {
   const pct = roster.length > 0 ? Math.round((checkedInCount / roster.length) * 100) : 0;
 
   return (
+    <>
     <div className="bg-white rounded-card">
       <div className="px-6 pt-6 pb-4 border-b border-border/40 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-foreground">Attendance</h2>
-          {!rosterLoading && roster.length > 0 && (
-            <span className="text-xs text-muted-foreground tabular-nums">{checkedInCount} / {roster.length} checked in</span>
-          )}
+          <div className="flex items-center gap-3">
+            {!rosterLoading && roster.length > 0 && (
+              <span className="text-xs text-muted-foreground tabular-nums">{checkedInCount} / {roster.length} checked in</span>
+            )}
+            {roster.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMessageTarget({
+                  type: "group",
+                  activityName: activity.name,
+                  activityImage: activity.image_url ?? activity.hero_image_url ?? null,
+                  recipients: roster.map(r => ({
+                    childName: r.childName,
+                    parentName: r.parentName,
+                    parentUserId: r.parentUserId,
+                    excluded: false,
+                  })),
+                })}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 transition-colors"
+              >
+                <span className="material-symbols-rounded select-none" style={{ fontSize: 15 }}>send</span>
+                Send update
+              </button>
+            )}
+          </div>
         </div>
         {!rosterLoading && roster.length > 0 && (
           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -429,6 +654,7 @@ function AttendanceTab({ activity }: { activity: Activity }) {
                   {isIn && !isOut && <Button size="sm" disabled={busy} onClick={() => void handleCheckOut(entry)}>{busy ? "…" : "Check out"}</Button>}
                   {isIn && isOut && <span className="text-xs font-medium text-muted-foreground px-2">Done ✓</span>}
                   <ActionsMenu items={[
+                    { label: "Message parent", onSelect: () => setMessageTarget({ type: "single", childName: entry.childName, parentName: entry.parentName, parentUserId: entry.parentUserId }) },
                     { label: "Undo check-in", onSelect: () => void handleUndo(entry), disabled: !isIn || busy },
                     { label: "Undo check-out", onSelect: () => { if (!entry.attendanceRecord?.id) return; void supabase.from("attendance").update({ checked_out_at: null }).eq("id", entry.attendanceRecord.id).then(() => { setRoster(prev => prev.map(r => entryKey(r) === k ? { ...r, attendanceRecord: { ...r.attendanceRecord!, checked_out_at: null } } : r)); }); }, disabled: !isOut || busy },
                   ]} />
@@ -439,5 +665,11 @@ function AttendanceTab({ activity }: { activity: Activity }) {
         )}
       </div>
     </div>
+
+    {/* Message drawer */}
+    {messageTarget && (
+      <MessageDrawer target={messageTarget} onClose={() => setMessageTarget(null)} />
+    )}
+    </>
   );
 }

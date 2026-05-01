@@ -231,14 +231,6 @@ export default function HostHomePage() {
   return (
     <div className="space-y-8 max-w-2xl">
 
-      {/* ── Greeting ── */}
-      <div>
-        <h2 className="text-2xl font-semibold text-foreground tracking-tight">
-          {greeting()}{firstName ? `, ${firstName}` : ""}.
-        </h2>
-        <p className="text-sm text-muted-foreground mt-0.5">{fmtDay()}</p>
-      </div>
-
       {/* ── This week ── */}
       {upcomingCamps.length > 0 && (
         <section className="space-y-3">

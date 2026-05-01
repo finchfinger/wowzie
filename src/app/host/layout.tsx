@@ -136,7 +136,7 @@ export default function HostLayout({
 
   // Approved: dashboard with nav tabs
   const hostTabs = [
-    { id: "home",      label: "Home",       href: "/host/home" },
+    { id: "home",      label: "Overview",   href: "/host/home" },
     { id: "listings",  label: "Listings",   href: "/host/listings" },
     { id: "guests",    label: "Guests",     href: "/host/guests" },
     { id: "analytics", label: "Analytics",  href: "/host/analytics" },

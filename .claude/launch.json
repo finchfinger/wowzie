@@ -7,6 +7,13 @@
       "runtimeArgs": ["/Users/johnpaul/Desktop/camp-app/node_modules/.bin/next", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "mockup",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/johnpaul/Desktop/camp-app/public", "-l", "4567"],
+      "port": 4567,
+      "autoPort": true
     }
   ]
 }
