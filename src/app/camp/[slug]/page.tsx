@@ -763,10 +763,16 @@ export default function CampDetailPage() {
                   <div className="flex items-start gap-2.5">
                     {isVirtual ? <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>wifi</span> : <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>location_on</span>}
                     <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {locationVenueName || (isVirtual ? "Online event" : "In person")}
-                      </p>
-                      {locationLine && <p className="text-xs text-muted-foreground mt-0.5">{locationLine}</p>}
+                      {locationVenueName ? (
+                        <>
+                          <p className="text-sm font-semibold text-foreground">{locationVenueName}</p>
+                          {locationLine && <p className="text-xs text-muted-foreground mt-0.5">{locationLine}</p>}
+                        </>
+                      ) : (
+                        <p className="text-sm font-semibold text-foreground">
+                          {isVirtual ? "Online event" : locationLine}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
