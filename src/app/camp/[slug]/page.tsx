@@ -23,6 +23,7 @@ import { AuthModal } from "@/components/auth/AuthModal";
 /* ── Types ── */
 
 type FullCamp = Camp & {
+  location?: string | null;
   location_city?: string | null;
   location_neighborhood?: string | null;
   host_id?: string | null;
@@ -238,7 +239,7 @@ export default function CampDetailPage() {
       setLoadingCamp(true);
       setCampError(null);
       const { data, error } = await supabase.from("camps")
-        .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, is_published, external_url")
+        .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, is_published, external_url, location")
         .eq("slug", slug).maybeSingle();
       if (error || !data) { setCampError("We couldn't load this camp."); setLoadingCamp(false); return; }
       setCamp(data as FullCamp);
@@ -404,7 +405,9 @@ export default function CampDetailPage() {
   // Location
   const isVirtual = meta?.isVirtual as boolean | undefined;
   const locationVenueName = (meta?.locationName as string | undefined) || null;
-  const locationCityState = [location_neighborhood, location_city].filter(Boolean).join(", ");
+  const locationCityState = [location_neighborhood, location_city].filter(Boolean).join(", ")
+    || (camp as any).location as string | null
+    || null;
   const locationLine = isVirtual ? "Online event" : locationCityState;
 
   // Meta fields
