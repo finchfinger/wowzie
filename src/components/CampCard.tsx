@@ -25,6 +25,11 @@ export type Camp = {
 
   meta?: Record<string, unknown> | null;
 
+  start_time?: string | null;
+  end_time?: string | null;
+  session_start?: string | null;
+  session_end?: string | null;
+
   /** When set, card links directly to this URL instead of the Wowzi detail page */
   external_url?: string | null;
 };
@@ -110,10 +115,31 @@ export function CampCard({
   const price = useMemo(() => resolvePrice(camp), [camp]);
   const unit = useMemo(() => getPriceUnit(camp), [camp]);
 
-  const dateLabel: string | null =
-    typeof meta?.dateLabel === "string" && (meta.dateLabel as string).trim()
-      ? (meta.dateLabel as string).trim()
-      : null;
+  const dateLabel: string | null = (() => {
+    // 1. Explicit label in meta (highest priority)
+    if (typeof meta?.dateLabel === "string" && (meta.dateLabel as string).trim())
+      return (meta.dateLabel as string).trim();
+
+    // 2. Derive from start_time / end_time
+    const fmtDate = (iso: string) => {
+      const d = new Date(iso.includes("T") ? iso : iso + "T12:00:00");
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    };
+    if (camp.start_time) {
+      const s = fmtDate(camp.start_time);
+      const e = camp.end_time ? fmtDate(camp.end_time) : null;
+      return e && e !== s ? `${s} – ${e}` : s;
+    }
+
+    // 3. Derive from session_start / session_end
+    if (camp.session_start) {
+      const s = fmtDate(camp.session_start);
+      const e = camp.session_end ? fmtDate(camp.session_end) : null;
+      return e && e !== s ? `${s} – ${e}` : s;
+    }
+
+    return null;
+  })();
 
   const { user } = useAuth();
   const favoriteHook = useCampFavorite(id);

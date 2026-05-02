@@ -74,6 +74,9 @@ const CAMP_CARD_COLUMNS = `
   listing_type,
   schedule_days,
   start_time,
+  end_time,
+  session_start,
+  session_end,
   created_at,
   featured,
   meta,
@@ -84,6 +87,9 @@ const CAMP_CARD_COLUMNS = `
 type CampRow = Camp & {
   program_id?: string | null;
   start_time?: string | null;
+  end_time?: string | null;
+  session_start?: string | null;
+  session_end?: string | null;
   created_at?: string | null;
   featured?: boolean | null;
   category?: string | null;
