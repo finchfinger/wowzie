@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 
 export type HostCardProps = {
   /** The host's display name */
@@ -20,6 +21,8 @@ export type HostCardProps = {
    * a "Visit website" link pointing to this URL.
    */
   externalUrl?: string | null;
+  /** When set, the org name links to /org/[orgSlug] */
+  orgSlug?: string | null;
 };
 
 export function HostCard({
@@ -29,6 +32,7 @@ export function HostCard({
   onMessage,
   onEdit,
   externalUrl,
+  orgSlug,
 }: HostCardProps) {
   const initial = (hostName || "?").charAt(0).toUpperCase();
 
@@ -50,14 +54,23 @@ export function HostCard({
         )}
         <div className="min-w-0">
           <p className="text-[10px] text-muted-foreground">Presented by</p>
-          <p className="text-sm font-medium text-foreground truncate">
-            {hostName}
-            {isOwner && (
-              <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
-                (that&apos;s you!)
-              </span>
-            )}
-          </p>
+          {orgSlug ? (
+            <Link
+              href={`/org/${orgSlug}`}
+              className="text-sm font-medium text-foreground truncate hover:underline"
+            >
+              {hostName}
+            </Link>
+          ) : (
+            <p className="text-sm font-medium text-foreground truncate">
+              {hostName}
+              {isOwner && (
+                <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+                  (that&apos;s you!)
+                </span>
+              )}
+            </p>
+          )}
         </div>
       </div>
 
