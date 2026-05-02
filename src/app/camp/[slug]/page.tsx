@@ -1618,25 +1618,16 @@ export default function CampDetailPage() {
               </div>
             )}
 
-            {/* Cancellation + Accessibility */}
-            <div className="divide-y divide-border py-2">
-              {cancellationPolicy && (
-                <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                  <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>calendar_month</span>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Cancellation policy</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{cancellationPolicy}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>group</span>
+            {/* Cancellation policy */}
+            {cancellationPolicy && (
+              <div className="flex items-start gap-3 py-2">
+                <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>calendar_month</span>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Accessibility</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Please contact the host in advance to discuss accommodations.</p>
+                  <p className="text-sm font-semibold text-foreground">Cancellation policy</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{cancellationPolicy}</p>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Report */}
             <button
