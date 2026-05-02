@@ -1629,18 +1629,6 @@ export default function CampDetailPage() {
               </div>
             )}
 
-            {/* Report */}
-            <button
-              type="button"
-              onClick={() => {
-                const subject = encodeURIComponent(`Report: ${name ?? "activity"}`);
-                const body = encodeURIComponent(`I'd like to report an issue with this listing:\n\n${typeof window !== "undefined" ? window.location.href : ""}`);
-                window.location.href = `mailto:hey@heywowzie.com?subject=${subject}&body=${body}`;
-              }}
-              className="rounded-xl px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              Report this event
-            </button>
           </div>
         </div>
           </div>
