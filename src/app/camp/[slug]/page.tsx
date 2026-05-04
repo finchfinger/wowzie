@@ -230,6 +230,9 @@ export default function CampDetailPage() {
   const [authReason, setAuthReason] = useState<"favorite" | "message" | "booking" | "default">("default");
   const [pendingMessage, setPendingMessage] = useState(false);
   const [joiningWaitlist, setJoiningWaitlist] = useState(false);
+  const [isGoing, setIsGoing] = useState(false);
+  const [goingLoading, setGoingLoading] = useState(false);
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
 
   const { isFavorite, favoriteLoading, toggleFavorite } = useCampFavorite(camp?.id ?? null);
 
@@ -261,7 +264,7 @@ export default function CampDetailPage() {
     if (!camp?.id) return;
     const loadBookingInfo = async () => {
       // Run all independent queries in parallel
-      const [confirmedRes, bookingRes, reviewsRes, alreadyReviewedRes] = await Promise.all([
+      const [confirmedRes, bookingRes, reviewsRes, alreadyReviewedRes, externalRsvpRes] = await Promise.all([
         supabase
           .from("bookings").select("*", { count: "exact", head: true })
           .eq("camp_id", camp.id).eq("status", "confirmed"),
@@ -278,10 +281,23 @@ export default function CampDetailPage() {
           ? supabase.from("reviews").select("id", { count: "exact", head: true })
               .eq("camp_id", camp.id).eq("reviewer_id", user.id)
           : Promise.resolve({ count: 0, error: null }),
+        user?.id
+          ? supabase.from("external_rsvps").select("id", { count: "exact", head: true })
+              .eq("camp_id", camp.id).eq("user_id", user.id)
+          : Promise.resolve({ count: 0, error: null }),
       ]);
 
       if (!confirmedRes.error) setConfirmedCount(confirmedRes.count ?? null);
       setBooking(bookingRes.data ? (bookingRes.data as UserBooking) : null);
+      setIsGoing((externalRsvpRes.count ?? 0) > 0);
+
+      // Load waitlist position if user is already waitlisted
+      if (bookingRes.data && (bookingRes.data as UserBooking).status === "waitlisted") {
+        const { count: wCount } = await supabase
+          .from("bookings").select("*", { count: "exact", head: true })
+          .eq("camp_id", camp.id).eq("status", "waitlisted");
+        setWaitlistPosition(wCount ?? null);
+      }
 
       // Reviewer profiles still depend on reviews result — one extra hop, unavoidable
       try {
@@ -569,6 +585,33 @@ export default function CampDetailPage() {
     setPickDaysTemp(next);
   }
 
+  // "I'm going" toggle for external listings
+  const handleToggleGoing = async () => {
+    if (!user) {
+      setAuthReason("default");
+      setAuthOpen(true);
+      return;
+    }
+    setGoingLoading(true);
+    try {
+      if (isGoing) {
+        await supabase
+          .from("external_rsvps")
+          .delete()
+          .eq("camp_id", id)
+          .eq("user_id", user.id);
+        setIsGoing(false);
+      } else {
+        await supabase
+          .from("external_rsvps")
+          .insert({ camp_id: id, user_id: user.id });
+        setIsGoing(true);
+      }
+    } finally {
+      setGoingLoading(false);
+    }
+  };
+
   // Share
   function handleShare() {
     setShareOpen(true);
@@ -852,15 +895,38 @@ export default function CampDetailPage() {
                       </div>
                     )}
 
-                    <a
-                      href={camp.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-                    >
-                      Book on their website
-                      <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>open_in_new</span>
-                    </a>
+                    <div className="flex gap-3">
+                      <a
+                        href={camp.external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                      >
+                        Register on their website
+                        <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>open_in_new</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleToggleGoing}
+                        disabled={goingLoading}
+                        className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
+                          isGoing
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            : "border-border text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <span
+                          className="material-symbols-rounded select-none"
+                          style={{
+                            fontSize: 16,
+                            fontVariationSettings: isGoing ? "'FILL' 1" : "'FILL' 0",
+                          }}
+                        >
+                          {isGoing ? "check_circle" : "radio_button_unchecked"}
+                        </span>
+                        {isGoing ? "Going" : "I'm going"}
+                      </button>
+                    </div>
                     <p className="text-[11px] text-muted-foreground text-center">
                       Registration is managed directly by {name}
                     </p>
@@ -1406,8 +1472,13 @@ export default function CampDetailPage() {
                 )}
                 {statusVariant === "waitlisted" && (
                   <div className="space-y-3">
-                    <div className="rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700">
-                      🎟 You&apos;re on the waitlist! We&apos;ll email you if a spot opens up.
+                    <div className="rounded-xl bg-violet-50 border border-violet-100 px-4 py-3 space-y-0.5">
+                      <p className="text-sm font-semibold text-violet-800">You&apos;re on the waitlist</p>
+                      <p className="text-xs text-violet-600">
+                        {waitlistPosition != null
+                          ? `You're #${waitlistPosition} in line — we'll email you if a spot opens up.`
+                          : "We'll email you if a spot opens up."}
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -1417,6 +1488,7 @@ export default function CampDetailPage() {
                         if (!ok) return;
                         await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
                         setBooking(null);
+                        setWaitlistPosition(null);
                       }}
                       className="w-full rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
                     >
@@ -1452,6 +1524,11 @@ export default function CampDetailPage() {
                             const json = await res.json();
                             if (json.waitlisted) {
                               setBooking({ id: json.bookingId, status: "waitlisted" });
+                              // Fetch position — count all waitlisted for this camp
+                              const { count: wCount } = await supabase
+                                .from("bookings").select("*", { count: "exact", head: true })
+                                .eq("camp_id", id).eq("status", "waitlisted");
+                              setWaitlistPosition(wCount ?? null);
                             } else {
                               alert(json.error ?? "Something went wrong. Please try again.");
                             }
