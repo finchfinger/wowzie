@@ -88,25 +88,25 @@ export function CampListCard({ camp }: CampListCardProps) {
       aria-label={`View ${name}`}
     >
       {/* Thumbnail */}
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
+      <div className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-lg bg-muted">
         <Image
           src={image}
           alt={name}
           fill
-          sizes="64px"
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.05]"
+          sizes="104px"
+          className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         />
       </div>
 
       {/* Text */}
       <div className="min-w-0 flex-1">
         {metaLine && (
-          <p className="text-xs text-muted-foreground truncate mb-0.5">{metaLine}</p>
+          <p className="text-[13px] text-muted-foreground truncate mb-0.5">{metaLine}</p>
         )}
-        <p className="text-sm font-semibold text-foreground truncate leading-snug">{name}</p>
+        <p className="text-lg font-bold text-foreground leading-snug line-clamp-2">{name}</p>
         {price && (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            <span className="font-medium text-foreground">{price}</span> {unit}
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            <span className="font-bold text-foreground">{price}</span> {unit}
           </p>
         )}
       </div>
@@ -117,7 +117,7 @@ export function CampListCard({ camp }: CampListCardProps) {
 export function CampListCardSkeleton() {
   return (
     <div className="flex items-center gap-4 p-2">
-      <div className="h-16 w-16 shrink-0 rounded-lg bg-muted animate-pulse" />
+      <div className="h-[104px] w-[104px] shrink-0 rounded-lg bg-muted animate-pulse" />
       <div className="flex-1 space-y-2">
         <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
         <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
