@@ -29,7 +29,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      // Stale/invalid refresh token — clear the session so the user isn't stuck
+      if (event === "TOKEN_REFRESHED" && !session) {
+        supabase.auth.signOut().catch(() => null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       setUser(session?.user ?? null);
       setLoading(false);
     });

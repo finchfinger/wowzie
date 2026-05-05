@@ -840,9 +840,25 @@ export default function CampDetailPage() {
               return (
                 <div className="rounded-card bg-card overflow-hidden">
                   <div className="px-5 py-3 border-b border-border">
-                    <p className="text-sm font-semibold text-foreground">How to register</p>
+                    <p className="text-sm font-semibold text-foreground">Registration</p>
                   </div>
                   <div className="px-5 py-4 space-y-4">
+
+                    {/* External booking banner */}
+                    <div className="flex items-center justify-center gap-2 rounded-xl bg-lime-100 px-4 py-3">
+                      <span className="material-symbols-rounded select-none text-lime-700 shrink-0" style={{ fontSize: 18 }}>storefront</span>
+                      <p className="text-sm font-medium text-lime-800">
+                        Booking is handled on{" "}
+                        <a
+                          href={camp.external_url ?? "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-2"
+                        >
+                          {orgName ?? name}&apos;s website
+                        </a>
+                      </p>
+                    </div>
 
                     {/* Session/option picker */}
                     {campSessions && campSessions.length > 0 && (
@@ -895,41 +911,40 @@ export default function CampDetailPage() {
                       </div>
                     )}
 
+                    {/* Primary actions */}
                     <div className="flex gap-3">
                       <a
-                        href={camp.external_url}
+                        href={camp.external_url ?? "#"}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition-colors"
                       >
                         Register on their website
-                        <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>open_in_new</span>
                       </a>
                       <button
                         type="button"
                         onClick={handleToggleGoing}
                         disabled={goingLoading}
-                        className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
+                        className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
                           isGoing
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                            : "border-border text-foreground hover:bg-muted"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-muted text-muted-foreground hover:bg-muted/70"
                         }`}
                       >
-                        <span
-                          className="material-symbols-rounded select-none"
-                          style={{
-                            fontSize: 16,
-                            fontVariationSettings: isGoing ? "'FILL' 1" : "'FILL' 0",
-                          }}
-                        >
-                          {isGoing ? "check_circle" : "radio_button_unchecked"}
+                        <span className={isGoing ? "" : "underline underline-offset-2"}>
+                          {isGoing ? "Going ✓" : "I'm going"}
                         </span>
-                        {isGoing ? "Going" : "I'm going"}
                       </button>
                     </div>
-                    <p className="text-[11px] text-muted-foreground text-center">
-                      Registration is managed directly by {name}
-                    </p>
+
+                    {/* Soft secondary link */}
+                    <button
+                      type="button"
+                      className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Explore similar events
+                    </button>
+
                   </div>
                 </div>
               );
