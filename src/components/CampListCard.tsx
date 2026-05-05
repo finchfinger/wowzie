@@ -103,7 +103,7 @@ export function CampListCard({ camp }: CampListCardProps) {
         {metaLine && (
           <p className="text-[13px] text-muted-foreground truncate mb-0.5">{metaLine}</p>
         )}
-        <p className="text-lg font-bold text-foreground leading-snug line-clamp-2">{name}</p>
+        <p className="text-base font-bold text-foreground leading-snug line-clamp-2">{name}</p>
         {price && (
           <p className="text-[13px] text-muted-foreground mt-0.5">
             <span className="font-bold text-foreground">{price}</span> {unit}
