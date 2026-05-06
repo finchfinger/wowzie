@@ -84,11 +84,11 @@ export function CampListCard({ camp }: CampListCardProps) {
   return (
     <Link
       href={`/camp/${slug}`}
-      className="group flex items-center gap-4 rounded-xl p-2 -mx-2 hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
+      className="group flex items-center gap-4 rounded-xl overflow-hidden hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
       aria-label={`View ${name}`}
     >
       {/* Thumbnail */}
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
+      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-l-xl rounded-r-lg bg-muted">
         <Image
           src={image}
           alt={name}
@@ -99,7 +99,7 @@ export function CampListCard({ camp }: CampListCardProps) {
       </div>
 
       {/* Text */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 py-3 pr-4">
         {metaLine && (
           <p className="text-[13px] text-muted-foreground truncate mb-0.5">{metaLine}</p>
         )}
