@@ -84,7 +84,7 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
         )}
         <p
           className="font-bold text-foreground leading-snug line-clamp-2"
-          style={{ fontSize: 16, lineHeight: "22px" }}
+          style={{ fontSize: 15, lineHeight: "22px" }}
         >
           {name}
         </p>
@@ -93,7 +93,7 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
             className="text-muted-foreground"
             style={{ fontSize: 12, lineHeight: "16px" }}
           >
-            <span className="font-semibold text-foreground">{price}</span> {unit}
+            {price} {unit}
           </p>
         )}
       </div>
