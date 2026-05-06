@@ -84,7 +84,7 @@ export function CampListCard({ camp }: CampListCardProps) {
   return (
     <Link
       href={`/camp/${slug}`}
-      className="group flex items-center gap-4 rounded-xl overflow-hidden hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
+      className="group flex items-center gap-3 rounded-xl overflow-hidden hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
       aria-label={`View ${name}`}
     >
       {/* Thumbnail */}
