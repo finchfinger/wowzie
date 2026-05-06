@@ -45,16 +45,12 @@ const resolveMeta = (camp: Camp): string | null => {
   };
 
   let dateStr: string | null = null;
-  if (typeof camp.meta?.dateLabel === "string" && camp.meta.dateLabel.trim()) {
-    dateStr = camp.meta.dateLabel.trim();
-  } else if (camp.start_time) {
-    const s = fmtDate(camp.start_time);
-    const e = camp.end_time ? fmtDate(camp.end_time) : null;
-    dateStr = e && e !== s ? `${s} — ${e}` : s;
+  if (camp.start_time) {
+    dateStr = `Starts ${fmtDate(camp.start_time)}`;
   } else if (camp.session_start) {
-    const s = fmtDate(camp.session_start);
-    const e = camp.session_end ? fmtDate(camp.session_end) : null;
-    dateStr = e && e !== s ? `${s} — ${e}` : s;
+    dateStr = `Starts ${fmtDate(camp.session_start)}`;
+  } else if (typeof camp.meta?.dateLabel === "string" && camp.meta.dateLabel.trim()) {
+    dateStr = camp.meta.dateLabel.trim();
   }
 
   // Session count / type label from meta.campSessions or listing_type
