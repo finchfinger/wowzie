@@ -56,6 +56,16 @@ export const Default: Story = {
   args: { camp: VIOLIN },
 };
 
+/** ~196px — actual width in a 6-column homepage grid at 1440px */
+export const AtGridWidth: Story = {
+  args: { camp: VIOLIN },
+  render: () => (
+    <div style={{ width: 196 }}>
+      <CampVerticalCard camp={VIOLIN} />
+    </div>
+  ),
+};
+
 export const Camp_: Story = {
   args: { camp: CLIMBING },
 };
