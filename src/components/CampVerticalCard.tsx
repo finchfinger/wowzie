@@ -58,11 +58,11 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
   return (
     <Link
       href={`/camp/${slug}`}
-      className="group block focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-xl"
+      className="group block focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-lg"
       aria-label={`View ${name}`}
     >
       {/* Image */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
+      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted">
         <Image
           src={image}
           alt={name}
@@ -104,7 +104,7 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
 export function CampVerticalCardSkeleton() {
   return (
     <div>
-      <div className="aspect-square w-full rounded-xl bg-muted animate-pulse" />
+      <div className="aspect-square w-full rounded-lg bg-muted animate-pulse" />
       <div className="mt-2 space-y-2">
         <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
         <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
