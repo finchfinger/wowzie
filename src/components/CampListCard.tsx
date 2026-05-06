@@ -88,7 +88,7 @@ export function CampListCard({ camp }: CampListCardProps) {
       aria-label={`View ${name}`}
     >
       {/* Thumbnail */}
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-l-xl rounded-r-lg bg-muted">
+      <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-l-xl rounded-r-lg bg-muted">
         <Image
           src={image}
           alt={name}
@@ -103,7 +103,7 @@ export function CampListCard({ camp }: CampListCardProps) {
         {metaLine && (
           <p className="text-[13px] text-muted-foreground truncate mb-0.5">{metaLine}</p>
         )}
-        <p className="text-base font-bold text-foreground leading-snug line-clamp-2">{name}</p>
+        <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">{name}</p>
         {price && (
           <p className="text-[13px] text-muted-foreground mt-0.5">
             <span className="font-bold text-foreground">{price}</span> {unit}
@@ -117,7 +117,7 @@ export function CampListCard({ camp }: CampListCardProps) {
 export function CampListCardSkeleton() {
   return (
     <div className="flex items-center gap-4 p-2">
-      <div className="h-24 w-24 shrink-0 rounded-lg bg-muted animate-pulse" />
+      <div className="h-[88px] w-[88px] shrink-0 rounded-lg bg-muted animate-pulse" />
       <div className="flex-1 space-y-2">
         <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
         <div className="h-4 w-2/3 rounded bg-muted animate-pulse" />
