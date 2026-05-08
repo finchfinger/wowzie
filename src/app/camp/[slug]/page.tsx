@@ -711,30 +711,6 @@ export default function CampDetailPage() {
                 onClick={() => { setLightboxIdx(selectedIdx); setLightboxOpen(true); }}
                 priority
               />
-              <div className="absolute top-3 right-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white transition-colors"
-                  aria-label="Share"
-                >
-                  {shareCopied
-                    ? <span className="text-[10px] font-semibold text-foreground">✓</span>
-                    : <span className="material-symbols-rounded select-none text-foreground" style={{ fontSize: 16 }} aria-hidden>share</span>}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!user) { setAuthReason("favorite"); setAuthOpen(true); return; }
-                    toggleFavorite();
-                  }}
-                  disabled={favoriteLoading}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white transition-colors disabled:opacity-60"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <span className={`material-symbols-rounded select-none ${isFavorite ? "text-red-500" : "text-foreground"}`} style={{ fontSize: 16, fontVariationSettings: isFavorite ? "'FILL' 1" : "'FILL' 0" }} aria-hidden>favorite</span>
-                </button>
-              </div>
             </div>
 
             {/* Thumbnail strip */}
