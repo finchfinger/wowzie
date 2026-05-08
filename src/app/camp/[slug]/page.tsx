@@ -805,7 +805,6 @@ export default function CampDetailPage() {
               isVirtual={!!isVirtual}
               ageLabel={ageLabel}
               priceLabel={priceDisplay ?? undefined}
-              description={description ?? undefined}
             />
 
             {/* ── External partner CTA ── */}
