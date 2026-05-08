@@ -908,9 +908,7 @@ export default function CampDetailPage() {
                             : "bg-muted text-muted-foreground hover:bg-muted/70"
                         }`}
                       >
-                        <span className={isGoing ? "" : "underline underline-offset-2"}>
-                          {isGoing ? "Going ✓" : "I'm going"}
-                        </span>
+                        <span>{isGoing ? "Going ✓" : "I'm going"}</span>
                       </button>
                     </div>
 

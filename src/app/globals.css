@@ -67,7 +67,7 @@
   --space-section: 1.5rem; /* 24px = space-y-6 — between cards */
   --brand: #7B5CBF;
   --gold: #F5C840;
-  --background: #F1F4F9;
+  --background: #F1EDF6;
   --foreground: oklch(0.13 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.13 0 0);
