@@ -7,6 +7,7 @@ type CampDetailHeaderProps = {
   isFeatured?: boolean;
   activityKind?: string | null;
   isFavorite?: boolean;
+  favoriteDisabled?: boolean;
   onFavorite?: () => void;
   onMessage?: () => void;
   onShare?: () => void;
@@ -20,13 +21,14 @@ type CampDetailHeaderProps = {
   priceLabel?: string | null;
 };
 
-function IconButton({ icon, onClick, active, label, activeColor }: { icon: string; onClick?: () => void; active?: boolean; label: string; activeColor?: string }) {
+function IconButton({ icon, onClick, active, label, activeColor, disabled }: { icon: string; onClick?: () => void; active?: boolean; label: string; activeColor?: string; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex items-center justify-center transition-opacity hover:opacity-70"
+      disabled={disabled}
+      className="flex items-center justify-center transition-opacity hover:opacity-70 disabled:opacity-40 disabled:cursor-not-allowed"
       style={{ width: 32, height: 32, borderRadius: 4, background: "rgba(0,0,0,0.1)" }}
     >
       <span
@@ -51,6 +53,7 @@ export function CampDetailHeader({
   isFeatured,
   activityKind,
   isFavorite,
+  favoriteDisabled,
   onFavorite,
   onMessage,
   onShare,
@@ -75,7 +78,7 @@ export function CampDetailHeader({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <IconButton icon="favorite" onClick={onFavorite} active={isFavorite} activeColor="#ef4444" label={isFavorite ? "Remove from favorites" : "Add to favorites"} />
+          <IconButton icon="favorite" onClick={onFavorite} active={isFavorite} activeColor="#ef4444" disabled={favoriteDisabled} label={isFavorite ? "Remove from favorites" : "Add to favorites"} />
           <IconButton icon="conversation" onClick={onMessage} label="Message host" />
           <IconButton icon="arrow_circle_up" onClick={onShare} label="Share" />
         </div>

@@ -187,7 +187,7 @@ export default function CampDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const justFull = searchParams.get("full") === "1";
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [camp, setCamp] = useState<FullCamp | null>(null);
   const [loadingCamp, setLoadingCamp] = useState(true);
@@ -768,6 +768,7 @@ export default function CampDetailPage() {
               isFeatured={!!camp.featured}
               activityKind={activityKind}
               isFavorite={isFavorite}
+              favoriteDisabled={authLoading || favoriteLoading}
               onFavorite={() => {
                 if (!user) { setAuthReason("favorite"); setAuthOpen(true); return; }
                 toggleFavorite();
