@@ -20,7 +20,7 @@ type CampDetailHeaderProps = {
   priceLabel?: string | null;
 };
 
-function IconButton({ icon, onClick, active, label }: { icon: string; onClick?: () => void; active?: boolean; label: string }) {
+function IconButton({ icon, onClick, active, label, activeColor }: { icon: string; onClick?: () => void; active?: boolean; label: string; activeColor?: string }) {
   return (
     <button
       type="button"
@@ -31,7 +31,12 @@ function IconButton({ icon, onClick, active, label }: { icon: string; onClick?: 
     >
       <span
         className="material-symbols-rounded select-none"
-        style={{ fontSize: 18, lineHeight: 1, fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}
+        style={{
+          fontSize: 18,
+          lineHeight: 1,
+          fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0",
+          color: active && activeColor ? activeColor : undefined,
+        }}
         aria-hidden
       >
         {icon}
@@ -70,9 +75,9 @@ export function CampDetailHeader({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <IconButton icon="asterisk" onClick={onFavorite} active={isFavorite} label={isFavorite ? "Remove from favorites" : "Add to favorites"} />
-          <IconButton icon="tooltip" onClick={onMessage} label="Message host" />
-          <IconButton icon="graph_5" onClick={onShare} label="Share" />
+          <IconButton icon="favorite" onClick={onFavorite} active={isFavorite} activeColor="#ef4444" label={isFavorite ? "Remove from favorites" : "Add to favorites"} />
+          <IconButton icon="conversation" onClick={onMessage} label="Message host" />
+          <IconButton icon="arrow_circle_up" onClick={onShare} label="Share" />
         </div>
       </div>
 
