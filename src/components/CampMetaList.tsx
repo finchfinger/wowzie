@@ -10,14 +10,16 @@ export type CampMetaListItemProps = {
 export function CampMetaListItem({ icon, primary, description, href }: CampMetaListItemProps) {
   return (
     <div className="flex items-center" style={{ gap: 0 }}>
-      {/* Icon */}
-      <span
-        className="material-symbols-rounded select-none shrink-0"
-        style={{ fontSize: 20, lineHeight: 1, color: "rgba(0,0,0,0.8)" }}
-        aria-hidden
-      >
-        {icon}
-      </span>
+      {/* Icon — 40×40 container, no background */}
+      <div className="shrink-0 flex items-center justify-center" style={{ width: 40, height: 40 }}>
+        <span
+          className="material-symbols-rounded select-none"
+          style={{ fontSize: 20, lineHeight: 1, color: "rgba(0,0,0,0.8)" }}
+          aria-hidden
+        >
+          {icon}
+        </span>
+      </div>
 
       {/* Text */}
       <div>
