@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
-import { CampCard, CampCardSkeleton } from "@/components/CampCard";
+import { CampVerticalCard, CampVerticalCardSkeleton } from "@/components/CampVerticalCard";
 import type { Camp } from "@/components/CampCard";
 import { AddressInput } from "@/components/ui/AddressInput";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import type { DateRange } from "react-day-picker";
 
-const LIMIT = 25;
+const LIMIT = 24;
 
 const CATEGORY_LABELS: Record<string, string> = {
   arts:    "Art",
@@ -183,14 +183,14 @@ const FEATURED_HERO_CAMPS: Array<{ name: string; slug: string; image: string }> 
 ];
 
 const CATEGORY_CHIPS: Array<{ label: string; value: string }> = [
-  { label: "All", value: "all" },
-  { label: "Art", value: "art" },
-  { label: "Sports", value: "sports" },
-  { label: "STEM", value: "stem" },
-  { label: "Music", value: "music" },
-  { label: "Outdoor", value: "outdoor" },
+  { label: "All",      value: "all" },
+  { label: "Art",      value: "art" },
+  { label: "Sports",   value: "sports" },
+  { label: "STEM",     value: "stem" },
+  { label: "Music",    value: "music" },
+  { label: "Outdoor",  value: "outdoor" },
   { label: "Academic", value: "academic" },
-  { label: "Sleepover", value: "sleepover" },
+  { label: "Sleepover",value: "sleepover" },
 ];
 
 const campHasCategory = (c: CampRow, selectedValue: string) => {
@@ -224,12 +224,10 @@ const campMatchesAge = (c: CampRow, ageSelect: AgeSelect): boolean => {
   const buckets = (c.meta?.age_buckets as string[] | undefined) ?? [];
   const minAge = c.meta?.min_age as number | undefined;
   const maxAge = c.meta?.max_age as number | undefined;
-  // No age data → include (don't penalise incomplete listings)
   if (!buckets.length && minAge == null && maxAge == null) return true;
   if (buckets.includes("all")) return true;
   const targetBucket = AGE_BUCKET_MAP[ageSelect];
   if (targetBucket && buckets.includes(targetBucket)) return true;
-  // Fall back to numeric range overlap
   if (minAge != null || maxAge != null) {
     const [lo, hi] = AGE_RANGE_MAP[ageSelect] ?? [0, 99];
     return (minAge ?? 0) <= hi && (maxAge ?? 99) >= lo;
@@ -240,9 +238,9 @@ const campMatchesAge = (c: CampRow, ageSelect: AgeSelect): boolean => {
 type SortMode = "popular" | "featured" | "new";
 
 const SORT_LABELS: Record<SortMode, string> = {
-  popular: "Popular",
+  popular:  "Popular",
   featured: "Featured",
-  new: "New and noteworthy",
+  new:      "New and noteworthy",
 };
 
 /* ---------- date helpers ---------- */
@@ -257,7 +255,7 @@ const formatDatesLabel = (start: string, end: string) => {
   if (!start && !end) return "Dates";
   if (start && !end) return formatDisplayDate(start);
   if (!start && end) return formatDisplayDate(end);
-  return `${formatDisplayDate(start)} \u2013 ${formatDisplayDate(end)}`;
+  return `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`;
 };
 
 const toISODate = (d: Date) => {
@@ -274,15 +272,6 @@ const fromISODate = (iso: string) => {
 
 /* ---------- age helpers ---------- */
 type AgeSelect = "" | "any" | "3_5" | "6_8" | "9_12" | "13_plus";
-
-const ageLabel = (v: AgeSelect) => {
-  if (!v) return "Ages";
-  if (v === "any") return "All ages";
-  if (v === "3_5") return "Ages 3 to 5";
-  if (v === "6_8") return "Ages 6 to 8";
-  if (v === "9_12") return "Ages 9 to 12";
-  return "Ages 13+";
-};
 
 export default function HomePage() {
   const router = useRouter();
@@ -306,7 +295,7 @@ export default function HomePage() {
   const searchWrapperRef = useRef<HTMLDivElement>(null);
 
   // Animated placeholder
-  const [animatedPlaceholder, setAnimatedPlaceholder] = useState(ANIMATED_TERMS[0]); // starts pre-filled
+  const [animatedPlaceholder, setAnimatedPlaceholder] = useState(ANIMATED_TERMS[0]);
 
   // Grid controls
   const [sortMode, setSortMode] = useState<SortMode>("popular");
@@ -377,7 +366,6 @@ export default function HomePage() {
         );
         setPool(deduped);
 
-        // Derive popular categories from the fetched pool — only show ones with camps
         const categoryCounts: Record<string, number> = {};
         for (const camp of (data || []) as CampRow[]) {
           const cat = (camp.category as string | undefined)?.toLowerCase();
@@ -419,9 +407,9 @@ export default function HomePage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Animated placeholder cycling through ANIMATED_TERMS
+  // Animated placeholder cycling
   useEffect(() => {
-    if (q) return; // Don't animate while user is typing
+    if (q) return;
     let termIdx = 0;
     let charIdx = 0;
     let deleting = false;
@@ -434,7 +422,7 @@ export default function HomePage() {
         setAnimatedPlaceholder(term.slice(0, charIdx));
         if (charIdx === term.length) {
           deleting = true;
-          timeoutId = setTimeout(tick, 1800); // pause at full word
+          timeoutId = setTimeout(tick, 1800);
         } else {
           timeoutId = setTimeout(tick, 60);
         }
@@ -444,7 +432,7 @@ export default function HomePage() {
         if (charIdx === 0) {
           deleting = false;
           termIdx = (termIdx + 1) % ANIMATED_TERMS.length;
-          timeoutId = setTimeout(tick, 400); // pause before next word
+          timeoutId = setTimeout(tick, 400);
         } else {
           timeoutId = setTimeout(tick, 35);
         }
@@ -607,7 +595,7 @@ export default function HomePage() {
               {searchFocused && !q && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-xl bg-white shadow-lg z-50 overflow-hidden py-2">
 
-                  {/* Popular categories — only shown if we have data */}
+                  {/* Popular categories */}
                   {popularCategories.length > 0 && (
                     <div className="px-4 py-2">
                       <p className="text-xs font-semibold text-muted-foreground mb-2">Browse by category</p>
@@ -669,7 +657,7 @@ export default function HomePage() {
               )}
               </div>
 
-              {/* Arrow submit button — mobile only, desktop has "Start exploring" below */}
+              {/* Arrow submit button — mobile only */}
               <button
                 type="submit"
                 aria-label="Start exploring"
@@ -706,13 +694,7 @@ export default function HomePage() {
                     style={{ background: "#fff", color: startDate || endDate ? "#1C1B1F" : "#49454F" }}
                     aria-label="Dates"
                   >
-                    <span
-                      className={
-                        startDate || endDate
-                          ? "text-foreground"
-                          : "text-muted-foreground"
-                      }
-                    >
+                    <span className={startDate || endDate ? "text-foreground" : "text-muted-foreground"}>
                       {formatDatesLabel(startDate, endDate)}
                     </span>
                   </button>
@@ -729,17 +711,11 @@ export default function HomePage() {
                       mode="range"
                       numberOfMonths={isMobile ? 1 : 2}
                       selected={selectedRange}
-                      defaultMonth={
-                        selectedRange?.from ?? todayRef.current
-                      }
+                      defaultMonth={selectedRange?.from ?? todayRef.current}
                       fromDate={todayRef.current}
                       onSelect={(range) => {
-                        const from = range?.from
-                          ? toISODate(range.from)
-                          : "";
-                        const to = range?.to
-                          ? toISODate(range.to)
-                          : "";
+                        const from = range?.from ? toISODate(range.from) : "";
+                        const to = range?.to ? toISODate(range.to) : "";
                         setStartDate(from);
                         setEndDate(to);
                       }}
@@ -748,25 +724,8 @@ export default function HomePage() {
                   </div>
 
                   <div className="mt-3 flex items-center justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setStartDate("");
-                        setEndDate("");
-                      }}
-                    >
-                      Clear
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      onClick={() => setDatesOpen(false)}
-                    >
-                      Done
-                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => { setStartDate(""); setEndDate(""); }}>Clear</Button>
+                    <Button type="button" variant="default" size="sm" onClick={() => setDatesOpen(false)}>Done</Button>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -788,7 +747,7 @@ export default function HomePage() {
               </select>
             </div>
 
-            {/* Desktop: standalone submit button below sub-fields */}
+            {/* Desktop submit */}
             <div className="hidden sm:flex flex-wrap gap-3">
               <Button type="submit" variant="default" className="h-12 px-6 rounded-full text-foreground" style={{ background: "#E3FA4F" }}>
                 Start exploring
@@ -831,9 +790,7 @@ export default function HomePage() {
                 )}
               </a>
             ) : heroCamps.length > 1 ? (
-              <div
-                className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm"
-              >
+              <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm">
                 <span className="text-xs font-semibold text-foreground leading-none">{heroCamps[heroIndex]?.name}</span>
                 <span className="flex gap-0.5 ml-1">
                   {heroCamps.map((_, i) => (
@@ -854,18 +811,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {error && (
-        <p className="text-destructive text-sm">{error}</p>
-      )}
+      {error && <p className="text-destructive text-sm">{error}</p>}
 
       {/* GRID CONTROLS + GRID */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 sm:justify-between">
           {/* Sort dropdown */}
-          <Select
-            value={sortMode}
-            onValueChange={(v) => setSortMode(v as SortMode)}
-          >
+          <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
             <SelectTrigger className="w-auto rounded-full text-sm font-medium" style={{ height: "32px", padding: "0 12px 0 16px", border: "1px solid #CAC4D0", background: "transparent", color: "#49454F" }} aria-label="Sort">
               <span>{SORT_LABELS[sortMode]}</span>
             </SelectTrigger>
@@ -876,28 +828,21 @@ export default function HomePage() {
             </SelectContent>
           </Select>
 
-          {/* Category — dropdown on mobile, chips on sm+ */}
+          {/* Category dropdown — mobile */}
           <div className="sm:hidden">
-            <Select
-              value={activeCategory}
-              onValueChange={(v) => setActiveCategory(v)}
-            >
+            <Select value={activeCategory} onValueChange={(v) => setActiveCategory(v)}>
               <SelectTrigger className="w-auto rounded-full text-sm font-medium" style={{ height: "32px", padding: "0 12px 0 16px", border: "1px solid #CAC4D0", background: "transparent", color: "#49454F" }} aria-label="Category">
-                <span>
-                  {CATEGORY_CHIPS.find((c) => c.value === activeCategory)?.label ?? "All"}
-                </span>
+                <span>{CATEGORY_CHIPS.find((c) => c.value === activeCategory)?.label ?? "All"}</span>
               </SelectTrigger>
               <SelectContent position="popper">
                 {CATEGORY_CHIPS.map((chip) => (
-                  <SelectItem key={chip.value} value={chip.value}>
-                    {chip.label}
-                  </SelectItem>
+                  <SelectItem key={chip.value} value={chip.value}>{chip.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Category chips — sm+ only, M3 filter chips */}
+          {/* Category chips — sm+ */}
           <div className="hidden sm:flex items-center gap-2 overflow-x-auto py-1 sm:justify-end">
             {CATEGORY_CHIPS.map((chip) => {
               const active = chip.value === activeCategory;
@@ -924,27 +869,26 @@ export default function HomePage() {
 
         {/* GRID */}
         {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-6">
             {Array.from({ length: LIMIT }).map((_, i) => (
-              <CampCardSkeleton key={i} />
+              <CampVerticalCardSkeleton key={i} />
             ))}
           </div>
         )}
 
         {!loading && !error && gridItems.length === 0 && (
-          <p className="text-muted-foreground text-sm">
-            No activities found yet.
-          </p>
+          <p className="text-muted-foreground text-sm">No activities found yet.</p>
         )}
 
         {!loading && !error && gridItems.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-6">
             {gridItems.slice(0, LIMIT).map((camp) => (
-              <CampCard key={camp.id} camp={camp} />
+              <CampVerticalCard key={camp.id} camp={camp} />
             ))}
           </div>
         )}
       </section>
+
           </div>
         </div>
       </div>

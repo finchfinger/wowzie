@@ -165,6 +165,7 @@
     width: 100%;
     max-width: 1440px;
     padding-inline: 80px;   /* desktop: 80px margins */
+    padding-top: 40px;
     margin-inline: auto;
     box-sizing: border-box;
     overflow-x: hidden;

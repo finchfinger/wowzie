@@ -13,24 +13,19 @@ type Story = StoryObj<typeof meta>;
 
 const ITEMS = [
   {
-    name: "Lincoln Park Zoo Conservation Camp",
-    slug: "lincoln-park-zoo-conservation-camp",
-    image: "https://images.unsplash.com/photo-1472289065668-ce650ac443d2?w=1200&q=80",
+    name: "Second City Comedy Camp",
+    slug: "second-city-comedy-camp",
+    image: "/images/w1.jpg",
   },
   {
     name: "Lillstreet Art Center Summer Camps",
     slug: "lillstreet-art-center-summer-camps",
-    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=800&q=80",
+    image: "/images/w2.jpg",
   },
   {
-    name: "Second City Comedy Camp",
-    slug: "second-city-comedy-camp",
-    image: "https://images.unsplash.com/photo-1503095396549-807759245b35?w=800&q=80",
-  },
-  {
-    name: "Chicago Rocks Youth Climbing Camp",
-    slug: "chicago-rocks-youth-climbing-camp",
-    image: "https://images.unsplash.com/photo-1522163182402-834f871fd851?w=800&q=80",
+    name: "Lincoln Park Zoo Conservation Camp",
+    slug: "lincoln-park-zoo-conservation-camp",
+    image: "/images/w3.jpg",
   },
 ];
 

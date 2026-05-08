@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCampFavorite } from "@/hooks/useCampFavorite";
 import type { Camp } from "@/components/CampCard";
 import { HostCard } from "@/components/HostCard";
+import { CampDetailHeader } from "@/components/CampDetailHeader";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ type FullCamp = Camp & {
   start_time?: string | null;
   end_time?: string | null;
   external_url?: string | null;
+  featured?: boolean | null;
 };
 
 type UserBooking = { id: string; status: string };
@@ -242,7 +244,7 @@ export default function CampDetailPage() {
       setLoadingCamp(true);
       setCampError(null);
       const { data, error } = await supabase.from("camps")
-        .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, is_published, external_url, location")
+        .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, is_published, external_url, location, featured")
         .eq("slug", slug).maybeSingle();
       if (error || !data) { setCampError("We couldn't load this camp."); setLoadingCamp(false); return; }
       setCamp(data as FullCamp);
@@ -348,7 +350,7 @@ export default function CampDetailPage() {
         <div className="page-container py-8">
           <div className="page-grid">
             <div className="span-10-center">
-              <div className="grid gap-8 lg:grid-cols-[380px_1fr] items-start animate-pulse">
+              <div className="grid gap-10 lg:grid-cols-[5fr_8fr] items-start animate-pulse">
                 <div className="aspect-square rounded-3xl bg-muted" />
                 <div className="space-y-4">
                   <div className="h-8 w-3/4 rounded-xl bg-muted" />
@@ -688,18 +690,18 @@ export default function CampDetailPage() {
 
   return (
     <main>
-      <div className="page-container py-8">
+      <div className="page-container pb-8">
         <div className="page-grid">
           <div className="span-10-center">
 
 
-        <div className="grid gap-10 lg:grid-cols-2 items-start">
+        <div className="grid gap-x-10 gap-y-6 lg:grid-cols-[5fr_8fr] items-start">
 
           {/* ── LEFT COLUMN ── */}
-          <div className="space-y-4 lg:sticky lg:top-6">
+          <div className="space-y-4">
 
             {/* Main image */}
-            <div className="relative overflow-hidden rounded-3xl bg-muted aspect-square">
+            <div className="relative overflow-hidden bg-muted aspect-square" style={{ borderRadius: 12 }}>
               <Image
                 src={images[selectedIdx]}
                 alt={name}
@@ -785,50 +787,26 @@ export default function CampDetailPage() {
           {/* ── RIGHT COLUMN ── */}
           <div className="space-y-5">
 
-            {/* Title */}
-            <h1 className="text-[32px] font-semibold tracking-tight text-foreground leading-tight">
-              {name}
-            </h1>
-
-            {/* Date + Location — horizontal */}
-            {(dateLabel || locationLine) && (
-              <div className="flex flex-wrap gap-x-8 gap-y-2">
-                {dateLabel && (
-                  <div className="flex items-start gap-2.5">
-                    <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>calendar_month</span>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{dateLabel}</p>
-                      {timeLabel && <p className="text-xs text-muted-foreground mt-0.5">{timeLabel}</p>}
-                    </div>
-                  </div>
-                )}
-                {(locationLine || locationVenueName) && (
-                  <div className="flex items-start gap-2.5">
-                    {isVirtual ? <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>wifi</span> : <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>location_on</span>}
-                    <div>
-                      {locationVenueName ? (
-                        <>
-                          <p className="text-sm font-semibold text-foreground">{locationVenueName}</p>
-                          {locationLine && <p className="text-xs text-muted-foreground mt-0.5">{locationLine}</p>}
-                        </>
-                      ) : (
-                        <p className="text-sm font-semibold text-foreground">
-                          {isVirtual ? "Online event" : locationLine}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Age label */}
-            {ageLabel && (
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>child_care</span>
-                {ageLabel}
-              </div>
-            )}
+            <CampDetailHeader
+              name={name}
+              isFeatured={!!camp.featured}
+              activityKind={activityKind}
+              isFavorite={isFavorite}
+              onFavorite={() => {
+                if (!user) { setAuthReason("favorite"); setAuthOpen(true); return; }
+                toggleFavorite();
+              }}
+              onMessage={handleSendMessage}
+              onShare={handleShare}
+              dateLabel={dateLabel}
+              timeLabel={timeLabel}
+              locationVenueName={locationVenueName}
+              locationLine={locationLine}
+              isVirtual={!!isVirtual}
+              ageLabel={ageLabel}
+              priceLabel={priceDisplay ?? undefined}
+              description={description ?? undefined}
+            />
 
             {/* ── External partner CTA ── */}
             {camp.external_url && (() => {

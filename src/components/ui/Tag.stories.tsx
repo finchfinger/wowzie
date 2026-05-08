@@ -15,15 +15,19 @@ type Story = StoryObj<typeof meta>;
 /* ── Stories ─────────────────────────────────────────────── */
 
 export const Default: Story = {
-  args: { label: "Summer camp" },
+  args: { label: "Camp" },
+};
+
+export const Class_: Story = {
+  args: { label: "Class" },
 };
 
 export const Removable: Story = {
-  args: { label: "Summer camp", onRemove: () => {} },
+  args: { label: "Camp", onRemove: () => {} },
 };
 
 export const Disabled: Story = {
-  args: { label: "Disabled", disabled: true },
+  args: { label: "Camp", disabled: true },
 };
 
 /* ── Tag list ────────────────────────────────────────────── */

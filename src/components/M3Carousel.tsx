@@ -17,11 +17,19 @@ type M3CarouselProps = {
   className?: string;
 };
 
+/**
+ * M3 multi-browse carousel.
+ *
+ * Shows up to 3 items with graduated flex weights (hero → medium → small peek),
+ * matching the Material Design 3 multi-browse layout. All items share the same
+ * 16dp corner radius (M3 extraLarge shape token). Clicking an inactive item
+ * rotates it to the hero position.
+ */
 export function M3Carousel({ items, autoAdvance = 6000, className = "" }: M3CarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // Auto-advance — reset on manual interaction
+  // Auto-advance
   useEffect(() => {
     if (!autoAdvance || items.length <= 1) return;
     const id = setInterval(() => {
@@ -32,19 +40,36 @@ export function M3Carousel({ items, autoAdvance = 6000, className = "" }: M3Caro
 
   if (!items.length) return null;
 
+  const visibleItems = items.slice(0, 3);
+
+  /**
+   * M3 multi-browse graduated weights.
+   * Position 0 (hero): 5 — Position 1 (medium): 1.6 — Position 2 (peek): 0.9
+   * Items rotate into the hero slot on click.
+   */
+  const WEIGHTS = [5, 1.6, 0.75];
+
+  // Map each visible item to its display position relative to activeIndex
   const getFlex = (i: number) => {
-    if (i === activeIndex) return "5 5 0%";
-    if (i === hoveredIndex) return "1.5 1.5 0%"; // expand on hover
-    return "1 1 0%";
+    const pos = (i - activeIndex + visibleItems.length) % visibleItems.length;
+    const weight = WEIGHTS[pos] ?? WEIGHTS[WEIGHTS.length - 1];
+    return `${weight} ${weight} 0%`;
   };
+
+  const getPosition = (i: number) =>
+    (i - activeIndex + visibleItems.length) % visibleItems.length;
 
   return (
     <div
-      className={`flex gap-2 overflow-hidden ${className}`}
-      style={{ height: "clamp(220px, 38vw, 420px)" }}
+      className={`flex overflow-hidden h-[320px] md:h-[400px] ${className}`}
+      style={{ gap: 2 }}
     >
-      {items.map((item, i) => {
+      {visibleItems.map((item, i) => {
         const isActive = i === activeIndex;
+        const pos = getPosition(i);
+        // Min-width: hero has no min, others get a sliver to stay visible
+        const minWidth = pos === 0 ? 0 : pos === 1 ? 80 : 44;
+
         return (
           <div
             key={`${item.slug}-${i}`}
@@ -54,9 +79,9 @@ export function M3Carousel({ items, autoAdvance = 6000, className = "" }: M3Caro
             className="relative overflow-hidden flex-shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             style={{
               flex: getFlex(i),
-              borderRadius: 20,
-              transition: "flex 0.3s cubic-bezier(0.2, 0, 0, 1)",
-              minWidth: isActive ? 0 : 48,
+              borderRadius: 8,
+              minWidth,
+              transition: "flex 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
             onClick={() => {
               if (!isActive) setActiveIndex(i);
@@ -72,32 +97,26 @@ export function M3Carousel({ items, autoAdvance = 6000, className = "" }: M3Caro
               alt={item.name}
               fill
               sizes="(max-width: 640px) 80vw, 60vw"
-              className="object-cover transition-transform duration-300"
-              style={{ transform: hoveredIndex === i ? "scale(1.05)" : "scale(1)" }}
+              className="object-cover"
               priority={i === 0}
             />
 
-            {/* Hover overlay on inactive items */}
-            {!isActive && (
-              <div
-                className="absolute inset-0 bg-black/20 transition-opacity duration-300"
-                style={{ opacity: hoveredIndex === i ? 0 : 0.35 }}
-              />
-            )}
 
-            {/* Camp name pill — active item only */}
+            {/* Camp name pill — hero item only */}
             {isActive && (
-              <div className="absolute bottom-3 left-3">
+              <div className="absolute" style={{ bottom: 10, left: 10 }}>
                 {item.slug ? (
                   <Link
                     href={`/camp/${item.slug}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-white transition-colors shadow-sm"
+                    className="inline-flex items-center bg-white font-medium hover:bg-white/90 transition-colors"
+                    style={{ fontSize: 11, height: 28, borderRadius: 4, color: "rgba(0,0,0,0.6)", paddingLeft: 10, paddingRight: 10 }}
                   >
                     {item.name}
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
+                  <span className="inline-flex items-center bg-white font-medium"
+                    style={{ fontSize: 11, height: 28, borderRadius: 4, color: "rgba(0,0,0,0.6)", paddingLeft: 10, paddingRight: 10 }}>
                     {item.name}
                   </span>
                 )}

@@ -73,7 +73,7 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
       </div>
 
       {/* Text */}
-      <div className="mt-2 space-y-0.5">
+      <div className="mt-2 flex flex-col gap-0.5">
         {dateStr && (
           <p
             className="text-muted-foreground truncate"
@@ -83,8 +83,8 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
           </p>
         )}
         <p
-          className="font-bold text-foreground leading-snug line-clamp-2"
-          style={{ fontSize: 15, lineHeight: "22px" }}
+          className="font-bold text-foreground line-clamp-2"
+          style={{ fontSize: 14, lineHeight: "20px" }}
         >
           {name}
         </p>
