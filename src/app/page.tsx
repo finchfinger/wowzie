@@ -869,7 +869,7 @@ export default function HomePage() {
 
         {/* GRID */}
         {loading && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-6">
             {Array.from({ length: LIMIT }).map((_, i) => (
               <CampVerticalCardSkeleton key={i} />
             ))}
@@ -881,7 +881,7 @@ export default function HomePage() {
         )}
 
         {!loading && !error && gridItems.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-6">
             {gridItems.slice(0, LIMIT).map((camp) => (
               <CampVerticalCard key={camp.id} camp={camp} />
             ))}
