@@ -22,23 +22,63 @@ type CampDetailHeaderProps = {
   priceLabel?: string | null;
 };
 
-function IconButton({ icon, onClick, active, label, activeColor, disabled }: { icon: string; onClick?: () => void; active?: boolean; label: string; activeColor?: string; disabled?: boolean }) {
+// ─── M3 Expressive Icon Button ─────────────────────────────────────────────
+
+type IconButtonProps = {
+  icon: string;
+  label: string;           // short label shown on hover, also used for aria-label
+  ariaLabel?: string;      // override aria-label (e.g. for toggle states)
+  onClick?: () => void;
+  active?: boolean;
+  activeColor?: string;    // icon + text color when active
+  activeBg?: string;       // container color when active
+  disabled?: boolean;
+};
+
+function IconButton({
+  icon,
+  label,
+  ariaLabel,
+  onClick,
+  active,
+  activeColor,
+  activeBg,
+  disabled,
+}: IconButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={ariaLabel ?? label}
       disabled={disabled}
-      className="flex items-center justify-center transition-opacity hover:opacity-70 disabled:opacity-40 disabled:cursor-not-allowed"
-      style={{ width: 32, height: 32, borderRadius: 4, background: "rgba(0,0,0,0.1)" }}
+      className="flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+      style={{
+        height: 40,
+        borderRadius: 999,
+        minWidth: 40,
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        background: active
+          ? (activeBg ?? "rgba(0,0,0,0.08)")
+          : "rgba(0,0,0,0.06)",
+        padding: "0 10px",
+        transition: "background 0.18s ease, padding 0.18s ease",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.padding = "0 16px";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.padding = "0 10px";
+      }}
     >
       <span
-        className="material-symbols-rounded select-none"
+        className="material-symbols-rounded select-none shrink-0"
         style={{
-          fontSize: 18,
+          fontSize: 22,
           lineHeight: 1,
           fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0",
-          color: active && activeColor ? activeColor : undefined,
+          color: active && activeColor ? activeColor : "rgba(0,0,0,0.65)",
+          transition: "color 0.18s ease, font-variation-settings 0.15s ease",
         }}
         aria-hidden
       >
@@ -47,6 +87,8 @@ function IconButton({ icon, onClick, active, label, activeColor, disabled }: { i
     </button>
   );
 }
+
+// ─── CampDetailHeader ──────────────────────────────────────────────────────
 
 export function CampDetailHeader({
   name,
@@ -71,6 +113,7 @@ export function CampDetailHeader({
     <div className="space-y-6">
       {/* Top row: badge + actions */}
       <div className="flex items-center justify-between gap-4">
+        {/* Chip */}
         <div className="flex items-center gap-2">
           {(() => {
             if (isFeatured) return <Tag label="Featured" style={{ background: "#E3FA4F", color: "#000" }} />;
@@ -80,10 +123,28 @@ export function CampDetailHeader({
           })()}
         </div>
 
+        {/* M3 Expressive icon buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <IconButton icon="favorite" onClick={onFavorite} active={isFavorite} activeColor="#ef4444" disabled={favoriteDisabled} label={isFavorite ? "Remove from favorites" : "Add to favorites"} />
-          <IconButton icon="conversation" onClick={onMessage} label="Message host" />
-          <IconButton icon="arrow_circle_up" onClick={onShare} label="Share" />
+          <IconButton
+            icon="favorite"
+            label="Favorite"
+            ariaLabel={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            onClick={onFavorite}
+            active={isFavorite}
+            activeColor="#e53935"
+            activeBg="rgba(229, 57, 53, 0.12)"
+            disabled={favoriteDisabled}
+          />
+          <IconButton
+            icon="conversation"
+            label="Message"
+            onClick={onMessage}
+          />
+          <IconButton
+            icon="arrow_circle_up"
+            label="Share"
+            onClick={onShare}
+          />
         </div>
       </div>
 
