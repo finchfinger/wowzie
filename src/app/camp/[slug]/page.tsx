@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AuthModal } from "@/components/auth/AuthModal";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
 import type { RegistrationStatus } from "@/components/RegistrationPanel";
+import { AttendanceCard } from "@/components/AttendanceCard";
 
 /* ── Types ── */
 
@@ -237,6 +238,8 @@ export default function CampDetailPage() {
   const [isGoing, setIsGoing] = useState(false);
   const [goingLoading, setGoingLoading] = useState(false);
   const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
+  const [friendsGoing, setFriendsGoing] = useState<{ id: string; name: string; avatarUrl?: string | null }[]>([]);
+  const [friendsGoingTotal, setFriendsGoingTotal] = useState(0);
 
   const { isFavorite, favoriteLoading, toggleFavorite } = useCampFavorite(camp?.id ?? null);
 
@@ -345,6 +348,41 @@ export default function CampDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Friends going — query connections who have confirmed bookings for this camp
+  useEffect(() => {
+    if (!user || !camp?.id) return;
+    const load = async () => {
+      // Get user's connections (following)
+      const { data: connections } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", user.id);
+      if (!connections?.length) return;
+
+      const connectionIds = connections.map((c) => c.following_id);
+
+      // Find which of those have confirmed bookings for this camp
+      const { data: bookings } = await supabase
+        .from("bookings")
+        .select("user_id, profiles(id, preferred_first_name, legal_name, avatar_url)")
+        .eq("camp_id", camp.id)
+        .eq("status", "confirmed")
+        .in("user_id", connectionIds);
+
+      if (!bookings?.length) return;
+
+      const friends = bookings.map((b: any) => ({
+        id: b.user_id,
+        name: b.profiles?.preferred_first_name || b.profiles?.legal_name || "Friend",
+        avatarUrl: b.profiles?.avatar_url ?? null,
+      }));
+
+      setFriendsGoing(friends);
+      setFriendsGoingTotal(friends.length);
+    };
+    void load();
+  }, [user, camp?.id]);
 
   if (loadingCamp) {
     return (
@@ -743,6 +781,12 @@ export default function CampDetailPage() {
               onEdit={() => router.push(`/host/activities/${id}/edit`)}
               externalUrl={camp.external_url ?? null}
               orgSlug={orgSlug ?? null}
+            />
+
+            {/* Friends going */}
+            <AttendanceCard
+              friends={friendsGoing}
+              totalGoing={friendsGoingTotal}
             />
 
             {/* Tags */}

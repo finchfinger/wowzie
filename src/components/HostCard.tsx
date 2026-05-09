@@ -1,27 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export type HostCardProps = {
-  /** The host's display name */
   hostName: string;
-  /** Optional profile photo URL; falls back to an initial monogram */
   hostAvatarUrl?: string | null;
-  /**
-   * When true the viewer IS the host — shows "Edit listing" instead of
-   * "Send a message", and appends a "(that's you!)" note to the name.
-   */
   isOwner?: boolean;
-  /** Called when the "Send a message" button is clicked */
   onMessage?: () => void;
-  /** Called when the "Edit listing" button is clicked */
   onEdit?: () => void;
-  /**
-   * When set (external/partner listing), replaces "Send a message" with
-   * a "Visit website" link pointing to this URL.
-   */
   externalUrl?: string | null;
-  /** When set, the org name links to /org/[orgSlug] */
   orgSlug?: string | null;
 };
 
@@ -36,74 +24,78 @@ export function HostCard({
 }: HostCardProps) {
   const initial = (hostName || "?").charAt(0).toUpperCase();
 
-  return (
-    <div className="flex items-center justify-between rounded-card bg-card px-4 py-3">
-      {/* Left: avatar + label + name */}
-      <div className="flex items-center gap-3 min-w-0">
-        {hostAvatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={hostAvatarUrl}
-            alt={hostName}
-            className="h-9 w-9 rounded-full object-cover shrink-0"
-          />
-        ) : (
-          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
-            {initial}
-          </div>
-        )}
-        <div className="min-w-0">
-          <p className="text-[10px] text-muted-foreground">Presented by</p>
-          {orgSlug ? (
-            <Link
-              href={`/org/${orgSlug}`}
-              className="text-sm font-medium text-foreground truncate hover:underline"
-            >
-              {hostName}
-            </Link>
-          ) : (
-            <p className="text-sm font-medium text-foreground truncate">
-              {hostName}
-              {isOwner && (
-                <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
-                  (that&apos;s you!)
-                </span>
-              )}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Right: context-sensitive action button */}
-      {isOwner ? (
-        <button
-          type="button"
-          onClick={onEdit}
-          className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-        >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>edit</span>
-          Edit listing
-        </button>
-      ) : externalUrl ? (
-        <a
-          href={externalUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-        >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>open_in_new</span>
-          Visit website
-        </a>
-      ) : (
-        <button
-          type="button"
-          onClick={onMessage}
-          className="ml-4 shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-        >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chat</span>
-          Send a message
-        </button>
+  const nameNode = orgSlug ? (
+    <Link
+      href={`/org/${orgSlug}`}
+      className="font-semibold text-foreground hover:underline decoration-dotted underline-offset-2"
+      style={{ fontSize: 15 }}
+    >
+      {hostName}
+    </Link>
+  ) : (
+    <span className="font-semibold text-foreground" style={{ fontSize: 15 }}>
+      {hostName}
+      {isOwner && (
+        <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">(that&apos;s you!)</span>
       )}
+    </span>
+  );
+
+  const actionNode = isOwner ? (
+    <button
+      type="button"
+      onClick={onEdit}
+      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+    >
+      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>edit</span>
+      Edit listing
+    </button>
+  ) : externalUrl ? (
+    <a
+      href={externalUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+    >
+      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>open_in_new</span>
+      Visit website
+    </a>
+  ) : (
+    <button
+      type="button"
+      onClick={onMessage}
+      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+    >
+      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chat</span>
+      Message
+    </button>
+  );
+
+  return (
+    <div className="space-y-3">
+      <p className="text-base font-semibold text-foreground">Hosted By</p>
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Square avatar */}
+          {hostAvatarUrl ? (
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden" style={{ borderRadius: 10 }}>
+              <Image src={hostAvatarUrl} alt={hostName} fill sizes="56px" className="object-cover" />
+            </div>
+          ) : (
+            <div
+              className="h-14 w-14 shrink-0 bg-primary/10 flex items-center justify-center text-lg font-semibold text-primary"
+              style={{ borderRadius: 10 }}
+            >
+              {initial}
+            </div>
+          )}
+
+          {nameNode}
+        </div>
+
+        {actionNode}
+      </div>
     </div>
   );
 }
