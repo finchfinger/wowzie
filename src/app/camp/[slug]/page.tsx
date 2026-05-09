@@ -771,7 +771,7 @@ export default function CampDetailPage() {
               activityKind={activityKind}
               chipLabel={category ?? camp.listing_type ?? undefined}
               isFavorite={isFavorite}
-              favoriteDisabled={authLoading || favoriteLoading}
+              favoriteDisabled={favoriteLoading}
               onFavorite={() => {
                 if (!user) { setAuthReason("favorite"); setAuthOpen(true); return; }
                 toggleFavorite();
