@@ -77,14 +77,14 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
         {dateStr && (
           <p
             className="text-muted-foreground truncate"
-            style={{ fontSize: 12, lineHeight: "16px" }}
+            style={{ fontSize: 10, lineHeight: "14px" }}
           >
             {dateStr}
           </p>
         )}
         <p
           className="font-bold text-foreground line-clamp-2"
-          style={{ fontSize: 14, lineHeight: "20px" }}
+          style={{ fontSize: 13, lineHeight: "18px" }}
         >
           {name}
         </p>
