@@ -59,8 +59,8 @@ function IconButton({
         border: "none",
         cursor: disabled ? "not-allowed" : "pointer",
         background: active
-          ? (activeBg ?? "rgba(0,0,0,0.08)")
-          : "rgba(0,0,0,0.06)",
+          ? (activeBg ?? "rgba(123,92,191,0.12)")
+          : "rgba(255,255,255,0.85)",
         padding: "0 10px",
         transition: "background 0.18s ease, padding 0.18s ease",
       }}
@@ -77,7 +77,7 @@ function IconButton({
           fontSize: 22,
           lineHeight: 1,
           fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0",
-          color: active && activeColor ? activeColor : "rgba(0,0,0,0.65)",
+          color: active && activeColor ? activeColor : "#4a3f6b",
           transition: "color 0.18s ease, font-variation-settings 0.15s ease",
         }}
         aria-hidden
@@ -131,8 +131,8 @@ export function CampDetailHeader({
             ariaLabel={isFavorite ? "Remove from favorites" : "Add to favorites"}
             onClick={onFavorite}
             active={isFavorite}
-            activeColor="#e53935"
-            activeBg="rgba(229, 57, 53, 0.12)"
+            activeColor="#e91e8c"
+            activeBg="rgba(233, 30, 140, 0.12)"
             disabled={favoriteDisabled}
           />
           <IconButton
