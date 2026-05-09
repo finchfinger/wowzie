@@ -386,12 +386,18 @@ export default function CampDetailPage() {
 
   const { id, name, description, image_urls, image_url, hero_image_url, price_cents, meta, location_city, location_neighborhood, host_id, capacity, start_time, end_time } = camp;
 
-  // Images
+  // Images — deduplicate across hero_image_url / image_urls / image_url
   const imageCandidates: string[] = [];
   if (hero_image_url) imageCandidates.push(hero_image_url);
   if (image_urls?.length) imageCandidates.push(...(image_urls.filter(Boolean) as string[]));
   if (image_url) imageCandidates.push(image_url);
-  const images = imageCandidates.length > 0 ? imageCandidates : ["https://placehold.co/800x800?text=No+photo"];
+  const seen = new Set<string>();
+  const images = imageCandidates.filter(url => {
+    if (seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
+  if (images.length === 0) images.push("https://placehold.co/800x800?text=No+photo");
 
   // Price
   const price = Number.isInteger(price_cents) ? `$${((price_cents || 0) / 100).toFixed(0)}` : null;
