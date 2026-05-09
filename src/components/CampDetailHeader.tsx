@@ -6,6 +6,7 @@ type CampDetailHeaderProps = {
   description?: string | null;
   isFeatured?: boolean;
   activityKind?: string | null;
+  chipLabel?: string | null;
   isFavorite?: boolean;
   favoriteDisabled?: boolean;
   onFavorite?: () => void;
@@ -52,6 +53,7 @@ export function CampDetailHeader({
   description,
   isFeatured,
   activityKind,
+  chipLabel,
   isFavorite,
   favoriteDisabled,
   onFavorite,
@@ -70,11 +72,12 @@ export function CampDetailHeader({
       {/* Top row: badge + actions */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          {isFeatured ? (
-            <Tag label="Featured" style={{ background: "#E3FA4F", color: "#000" }} />
-          ) : activityKind ? (
-            <Tag label={activityKind.charAt(0).toUpperCase() + activityKind.slice(1)} />
-          ) : null}
+          {(() => {
+            if (isFeatured) return <Tag label="Featured" style={{ background: "#E3FA4F", color: "#000" }} />;
+            const label = activityKind ?? chipLabel;
+            if (label) return <Tag label={label.charAt(0).toUpperCase() + label.slice(1)} />;
+            return null;
+          })()}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">

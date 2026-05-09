@@ -20,6 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { RegistrationPanel } from "@/components/RegistrationPanel";
+import type { RegistrationStatus } from "@/components/RegistrationPanel";
 
 /* ── Types ── */
 
@@ -767,6 +769,7 @@ export default function CampDetailPage() {
               name={name}
               isFeatured={!!camp.featured}
               activityKind={activityKind}
+              chipLabel={category ?? camp.listing_type ?? undefined}
               isFavorite={isFavorite}
               favoriteDisabled={authLoading || favoriteLoading}
               onFavorite={() => {
@@ -785,125 +788,96 @@ export default function CampDetailPage() {
             />
 
             {/* ── External partner CTA ── */}
-            {camp.external_url && (() => {
-              const selectedSession = campSessions?.find(s => selectedSessionIds.has(s.id)) ?? null;
-              const sessionPriceCents = (selectedSession as any)?.priceCents as number | undefined;
-              const displayPrice = sessionPriceCents
-                ? `$${Math.round(sessionPriceCents / 100)}`
-                : priceDisplay;
-              return (
-                <div className="rounded-card bg-card overflow-hidden">
-                  <div className="px-5 py-3 border-b border-border">
-                    <p className="text-sm font-semibold text-foreground">Registration</p>
-                  </div>
-                  <div className="px-5 py-4 space-y-4">
+            {camp.external_url && (
+              <RegistrationPanel
+                status="external"
+                campName={orgName ?? name}
+                guests={reservationGuests}
+                maxGuests={Math.max(1, Math.min(spotsLeft ?? 10, 10))}
+                onGuestsChange={setReservationGuests}
+                sessions={campSessions?.map((s) => ({
+                  id: s.id,
+                  name: s.label ?? "Session",
+                  dateRange: (() => {
+                    const dr = formatDateRange(s.startDate, s.endDate);
+                    const t =
+                      s.startTime && s.endTime
+                        ? `${formatTimeLocal(s.startTime)} – ${formatTimeLocal(s.endTime)}`
+                        : null;
+                    return [dr, t].filter(Boolean).join(" · ") || "";
+                  })(),
+                }))}
+                selectedSessionIds={selectedSessionIds}
+                onSessionToggle={(sid) => setSelectedSessionIds(new Set([sid]))}
+                onRegisterExternal={() => window.open(camp.external_url!, "_blank")}
+                onMarkGoing={handleToggleGoing}
+                onExploreSimilar={() => {}}
+              />
+            )}
 
-                    {/* External booking banner */}
-                    <div className="flex items-center justify-center gap-2 rounded-xl bg-lime-100 px-4 py-3">
-                      <span className="material-symbols-rounded select-none text-lime-700 shrink-0" style={{ fontSize: 18 }}>storefront</span>
-                      <p className="text-sm font-medium text-lime-800">
-                        Booking is handled on{" "}
-                        <a
-                          href={camp.external_url ?? "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline underline-offset-2"
-                        >
-                          {orgName ?? name}&apos;s website
-                        </a>
-                      </p>
-                    </div>
+            {/* ── Reservation card: status states → RegistrationPanel ── */}
+            {!camp.external_url && statusVariant !== null && (
+              <RegistrationPanel
+                status={
+                  statusVariant === "waitlisted"
+                    ? "waitlist"
+                    : (statusVariant as "booked" | "full" | "ended")
+                }
+                guests={reservationGuests}
+                onGuestsChange={setReservationGuests}
+                onInviteFriend={() => {
+                  const url = window.location.href;
+                  if (navigator.share) navigator.share({ title: camp.name, url });
+                  else navigator.clipboard.writeText(url);
+                }}
+                onCancelReservation={async () => {
+                  if (!booking?.id) return;
+                  const confirmed = window.confirm("Cancel your reservation?");
+                  if (!confirmed) return;
+                  await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
+                  setBooking(null);
+                  fetch("/api/waitlist/promote", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ campId: id }),
+                  }).catch(() => {});
+                }}
+                onJoinWaitlist={async () => {
+                  if (!user) { setAuthReason("booking"); setAuthOpen(true); return; }
+                  setJoiningWaitlist(true);
+                  try {
+                    const res = await fetch("/api/waitlist/join", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        campId: id,
+                        campName: name,
+                        userId: user.id,
+                        email: user.email,
+                        guests: reservationGuests,
+                        sessionIds: [...selectedSessionIds],
+                      }),
+                    });
+                    const json = await res.json();
+                    if (json.waitlisted) {
+                      setBooking({ id: json.bookingId, status: "waitlisted" });
+                      const { count: wCount } = await supabase
+                        .from("bookings").select("*", { count: "exact", head: true })
+                        .eq("camp_id", id).eq("status", "waitlisted");
+                      setWaitlistPosition(wCount ?? null);
+                    } else {
+                      alert(json.error ?? "Something went wrong. Please try again.");
+                    }
+                  } finally {
+                    setJoiningWaitlist(false);
+                  }
+                }}
+                onExploreSimilar={() => {}}
+              />
+            )}
 
-                    {/* Session/option picker */}
-                    {campSessions && campSessions.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-0.5">Choose your program</p>
-                        {campSessions.map((session) => {
-                          const isSelected = selectedSessionIds.has(session.id);
-                          const sPriceCents = (session as any).priceCents as number | undefined;
-                          return (
-                            <button
-                              key={session.id}
-                              type="button"
-                              onClick={() => setSelectedSessionIds(new Set([session.id]))}
-                              className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${isSelected ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/30 hover:bg-muted/40"}`}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-foreground">{session.label}</p>
-                                  {session.startTime && session.endTime && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                      {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
-                                    </p>
-                                  )}
-                                </div>
-                                {sPriceCents != null && (
-                                  <p className="shrink-0 text-sm font-semibold text-foreground">
-                                    ${Math.round(sPriceCents / 100)}<span className="text-xs font-normal text-muted-foreground">/wk</span>
-                                  </p>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Fallback price when no sessions */}
-                    {(!campSessions || campSessions.length === 0) && displayPrice && (
-                      <div>
-                        <p className="text-xl font-bold text-foreground">{displayPrice}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">per week</p>
-                      </div>
-                    )}
-
-                    {/* Selected price summary */}
-                    {selectedSession && displayPrice && (
-                      <div className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-3">
-                        <p className="text-sm text-muted-foreground">{selectedSession.label}</p>
-                        <p className="text-sm font-semibold text-foreground">{displayPrice}<span className="text-xs font-normal text-muted-foreground">/wk</span></p>
-                      </div>
-                    )}
-
-                    {/* Primary actions */}
-                    <div className="flex gap-3">
-                      <a
-                        href={camp.external_url ?? "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition-colors"
-                      >
-                        Register on their website
-                      </a>
-                      <button
-                        type="button"
-                        onClick={handleToggleGoing}
-                        disabled={goingLoading}
-                        className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
-                          isGoing
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-muted text-muted-foreground hover:bg-muted/70"
-                        }`}
-                      >
-                        <span>{isGoing ? "Going ✓" : "I'm going"}</span>
-                      </button>
-                    </div>
-
-                    {/* Soft secondary link */}
-                    <button
-                      type="button"
-                      className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Explore similar events
-                    </button>
-
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* ── Reservation card ── */}
-            {!camp.external_url && (
+            {/* ── Reservation card: available state (inline) ── */}
+            {!camp.external_url && statusVariant === null && (
             <div className="rounded-card bg-card overflow-hidden">
               {/* Header */}
               <div className="px-5 py-3 border-b border-border">
@@ -929,7 +903,7 @@ export default function CampDetailPage() {
                 )}
 
                 {/* First class date — for ongoing weekly classes */}
-                {firstClassDate && statusVariant !== "booked" && (
+                {firstClassDate && (
                   <div className="rounded-xl bg-muted/40 px-4 py-3">
                     <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                       {classSchedule?.sessionStartDate ? "Enrollment starts" : "Your first class"}
@@ -944,8 +918,7 @@ export default function CampDetailPage() {
                   </div>
                 )}
 
-                {statusVariant === null && (
-                  <>
+                <>
                     {/* Appointment-style slot picker for ongoing classes */}
                     {isAppointmentClass && (
                       <div>
@@ -1387,154 +1360,8 @@ export default function CampDetailPage() {
                       </button>
                     </div>
                     <p className="text-[11px] text-muted-foreground text-center">You won&apos;t be charged yet</p>
-                  </>
-                )}
+                </>
 
-                {statusVariant === "booked" && (
-                  <div className="space-y-3">
-                    <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-                      🌱 You&apos;re in. We can&apos;t wait to see you!
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const url = window.location.href;
-                          if (navigator.share) {
-                            navigator.share({ title: camp.name, url });
-                          } else {
-                            navigator.clipboard.writeText(url);
-                          }
-                        }}
-                        className="flex-1 rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-                      >
-                        Invite a friend
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!booking?.id) return;
-                          const confirmed = window.confirm("Cancel your reservation?");
-                          if (!confirmed) return;
-                          await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
-                          setBooking(null);
-                          // Notify waitlisted users that a spot opened up
-                          fetch("/api/waitlist/promote", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ campId: id }),
-                          }).catch(() => {});
-                        }}
-                        className="flex-1 rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-                      >
-                        Cancel reservation
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {justFull && statusVariant !== "waitlisted" && (
-                  <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-                    This camp just filled up while you were checking out. You can join the waitlist below.
-                  </div>
-                )}
-                {statusVariant === "waitlisted" && (
-                  <div className="space-y-3">
-                    <div className="rounded-xl bg-violet-50 border border-violet-100 px-4 py-3 space-y-0.5">
-                      <p className="text-sm font-semibold text-violet-800">You&apos;re on the waitlist</p>
-                      <p className="text-xs text-violet-600">
-                        {waitlistPosition != null
-                          ? `You're #${waitlistPosition} in line — we'll email you if a spot opens up.`
-                          : "We'll email you if a spot opens up."}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!booking?.id) return;
-                        const ok = window.confirm("Leave the waitlist?");
-                        if (!ok) return;
-                        await supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
-                        setBooking(null);
-                        setWaitlistPosition(null);
-                      }}
-                      className="w-full rounded-lg bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-                    >
-                      Leave waitlist
-                    </button>
-                  </div>
-                )}
-                {statusVariant === "full" && (
-                  enableWaitlist ? (
-                    <div className="space-y-3">
-                      <div className="rounded-xl bg-muted/60 px-4 py-3 text-sm text-muted-foreground text-center">
-                        This session is full — but you can join the waitlist.
-                      </div>
-                      <button
-                        type="button"
-                        disabled={joiningWaitlist}
-                        onClick={async () => {
-                          if (!user) { setAuthReason("booking"); setAuthOpen(true); return; }
-                          setJoiningWaitlist(true);
-                          try {
-                            const res = await fetch("/api/waitlist/join", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                campId: id,
-                                campName: name,
-                                userId: user.id,
-                                email: user.email,
-                                guests: reservationGuests,
-                                sessionIds: [...selectedSessionIds],
-                              }),
-                            });
-                            const json = await res.json();
-                            if (json.waitlisted) {
-                              setBooking({ id: json.bookingId, status: "waitlisted" });
-                              // Fetch position — count all waitlisted for this camp
-                              const { count: wCount } = await supabase
-                                .from("bookings").select("*", { count: "exact", head: true })
-                                .eq("camp_id", id).eq("status", "waitlisted");
-                              setWaitlistPosition(wCount ?? null);
-                            } else {
-                              alert(json.error ?? "Something went wrong. Please try again.");
-                            }
-                          } finally {
-                            setJoiningWaitlist(false);
-                          }
-                        }}
-                        className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
-                      >
-                        {joiningWaitlist ? "Joining…" : "Join Waitlist"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground text-center">
-                      This session is full.
-                    </div>
-                  )
-                )}
-                {statusVariant === "ended" && (
-                  <div className="space-y-2">
-                    <div className="rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground text-center">
-                      This camp has ended.
-                    </div>
-                    {booking?.status === "confirmed" && !alreadyReviewed && (
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/review/${booking.id}`)}
-                        className="w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
-                      >
-                        ⭐ Leave a review
-                      </button>
-                    )}
-                    {alreadyReviewed && (
-                      <p className="text-center text-xs text-muted-foreground">
-                        ✓ Thanks for your review!
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
             )}
@@ -1589,7 +1416,7 @@ export default function CampDetailPage() {
             {description && (
               <div className="space-y-2 py-2">
                 <h2 className="text-base font-semibold text-foreground">About</h2>
-                <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+                <div className="space-y-3 text-sm leading-relaxed" style={{ color: "rgba(0,0,0,0.8)" }}>
                   {description.split(/\n\n+/).map((para, i) => (
                     <p key={i}>{para.trim()}</p>
                   ))}
