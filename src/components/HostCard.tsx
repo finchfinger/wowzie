@@ -50,26 +50,7 @@ export function HostCard({
       <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>edit</span>
       Edit listing
     </button>
-  ) : externalUrl ? (
-    <a
-      href={externalUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
-    >
-      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>open_in_new</span>
-      Visit website
-    </a>
-  ) : (
-    <button
-      type="button"
-      onClick={onMessage}
-      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
-    >
-      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chat</span>
-      Message
-    </button>
-  );
+  ) : null;
 
   return (
     <div className="space-y-3">
@@ -79,13 +60,13 @@ export function HostCard({
         <div className="flex items-center gap-3 min-w-0">
           {/* Square avatar */}
           {hostAvatarUrl ? (
-            <div className="relative h-14 w-14 shrink-0 overflow-hidden" style={{ borderRadius: 10 }}>
-              <Image src={hostAvatarUrl} alt={hostName} fill sizes="56px" className="object-cover" />
+            <div className="relative h-8 w-8 shrink-0 overflow-hidden" style={{ borderRadius: 6 }}>
+              <Image src={hostAvatarUrl} alt={hostName} fill sizes="32px" className="object-cover" />
             </div>
           ) : (
             <div
-              className="h-14 w-14 shrink-0 bg-primary/10 flex items-center justify-center text-lg font-semibold text-primary"
-              style={{ borderRadius: 10 }}
+              className="h-8 w-8 shrink-0 bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary"
+              style={{ borderRadius: 6 }}
             >
               {initial}
             </div>
