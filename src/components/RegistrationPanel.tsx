@@ -384,7 +384,7 @@ export function RegistrationPanel({
     const bannerMap = {
       booked:   { variant: "success"  as const, icon: "cheer",      message: "You're in. We can't wait to see you!" },
       full:     { variant: "error"    as const, icon: "cancel",     message: "This session is full" },
-      external: { variant: "external" as const, icon: "outbound",   message: `Booking is handled on ${campName ?? "their"}'s website` },
+      external: { variant: "external" as const, icon: "outbound",   message: "Booking is handled on their website" },
       waitlist: { variant: "waitlist" as const, icon: "list_alt",   message: "This session has reached capacity but you can join the waitlist." },
       ended:    { variant: "ended"    as const, icon: "event_busy", message: "This class has ended" },
     };
