@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     // 2. Fetch camp
     const { data: camp } = await supabase
       .from("camps")
-      .select("capacity, meta, slug, host_id")
+      .select("capacity, meta, slug, short_id, host_id")
       .eq("id", campId)
       .single();
 

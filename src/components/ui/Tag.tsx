@@ -21,21 +21,21 @@ export function Tag({ label, size = "md", onRemove, disabled, className, style }
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        height: isSmall ? 24 : 32,
+        height: isSmall ? 24 : 28,
         borderRadius: isSmall ? 4 : 4,
-        background: "var(--md-sys-color-secondary-container, #E8DEF8)",
-        paddingLeft: isSmall ? 8 : 12,
-        paddingRight: removable ? (isSmall ? 6 : 8) : (isSmall ? 8 : 12),
+        background: "rgba(87, 55, 246, 0.08)",
+        paddingLeft: isSmall ? 6 : 8,
+        paddingRight: removable ? (isSmall ? 4 : 6) : (isSmall ? 6 : 8),
         gap: isSmall ? 4 : 8,
         ...style,
       }}
     >
       <span
         style={{
-          fontSize: isSmall ? 10 : 12,
+          fontSize: isSmall ? 10 : 11,
           lineHeight: "16px",
           fontWeight: 500,
-          color: "var(--md-sys-color-on-secondary-container, #1D192B)",
+          color: "#5737F6",
           whiteSpace: "nowrap",
         }}
       >
@@ -60,7 +60,7 @@ export function Tag({ label, size = "md", onRemove, disabled, className, style }
           }}
         >
           <span
-            className="material-symbols-rounded select-none"
+            className="material-symbols-outlined select-none"
             style={{ fontSize: 16, lineHeight: 1, color: "var(--md-sys-color-on-secondary-container, #1D192B)" }}
             aria-hidden
           >

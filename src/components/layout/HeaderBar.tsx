@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 function MI({ name, size = 20 }: { name: string; size?: number }) {
   return (
     <span
-      className="material-symbols-rounded select-none"
+      className="material-symbols-outlined select-none"
       style={{ fontSize: size, lineHeight: 1 }}
     >
       {name}
@@ -34,7 +34,7 @@ function AskScoutButton({ onClick }: { onClick?: () => void }) {
       >
         <span className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-background text-sm font-medium text-foreground whitespace-nowrap hover:bg-muted/60 transition-colors">
           <span
-            className="material-symbols-rounded select-none text-foreground"
+            className="material-symbols-outlined select-none text-foreground"
             style={{ fontSize: 18, lineHeight: 1 }}
           >
             explore
@@ -86,7 +86,7 @@ const ACCOUNT_ITEMS: Array<{ label: string; href: string; icon: string }> = [
 /* ── Dots icon (Material) ───────────────────────────── */
 function DotsGrid() {
   return (
-    <span className="material-symbols-rounded select-none" style={{ fontSize: 22, lineHeight: 1 }}>apps</span>
+    <span className="material-symbols-outlined select-none" style={{ fontSize: 22, lineHeight: 1 }}>apps</span>
   );
 }
 
@@ -110,7 +110,7 @@ function _DotsGridOld() {
 /* ── Search icon (Material) ─────────────────────────── */
 function SearchIcon() {
   return (
-    <span className="material-symbols-rounded select-none" style={{ fontSize: 22, lineHeight: 1 }}>search</span>
+    <span className="material-symbols-outlined select-none" style={{ fontSize: 22, lineHeight: 1 }}>search</span>
   );
 }
 

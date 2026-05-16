@@ -283,14 +283,14 @@ export default function HostHomePage() {
                 className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 transition-colors"
               >
                 <span
-                  className="material-symbols-rounded shrink-0 text-amber-500 select-none"
+                  className="material-symbols-outlined shrink-0 text-amber-500 select-none"
                   style={{ fontSize: 18 }}
                 >
                   {item.icon}
                 </span>
                 <p className="text-sm text-foreground flex-1">{item.label}</p>
                 <span
-                  className="material-symbols-rounded shrink-0 text-muted-foreground/50 select-none"
+                  className="material-symbols-outlined shrink-0 text-muted-foreground/50 select-none"
                   style={{ fontSize: 16 }}
                 >
                   chevron_right
@@ -313,7 +313,7 @@ export default function HostHomePage() {
               href="/host/activities/new"
               className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>add</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }}>add</span>
               Create a listing
             </Link>
           </div>
@@ -323,7 +323,7 @@ export default function HostHomePage() {
       {/* ── All clear ── */}
       {totalCamps > 0 && actionItems.length === 0 && upcomingCamps.length === 0 && (
         <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-          <span className="material-symbols-rounded text-emerald-500 select-none" style={{ fontSize: 18 }}>
+          <span className="material-symbols-outlined text-emerald-500 select-none" style={{ fontSize: 18 }}>
             check_circle
           </span>
           You&apos;re all caught up — nothing needs attention right now.

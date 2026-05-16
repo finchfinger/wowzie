@@ -10,6 +10,7 @@ import { getPriceUnit } from "@/lib/pricing";
 export type Camp = {
   id: string;
   slug: string;
+  short_id?: string | null;
   name: string;
   description?: string | null;
 
@@ -170,7 +171,7 @@ export function CampCard({
   return (
     <article className="group relative">
       <Link
-        href={`/camp/${slug}`}
+        href={`/activity/${camp.short_id}`}
         className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2"
         aria-label={`View ${name}`}
       >
@@ -206,7 +207,7 @@ export function CampCard({
         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       >
         <span
-          className="material-symbols-rounded select-none"
+          className="material-symbols-outlined select-none"
           style={{
             fontSize: 22,
             lineHeight: 1,

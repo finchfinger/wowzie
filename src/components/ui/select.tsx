@@ -51,7 +51,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <span className="material-symbols-rounded select-none opacity-40" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
+        <span className="material-symbols-outlined select-none opacity-40" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -140,7 +140,7 @@ function SelectItem({
         className="absolute right-2.5 flex size-4 items-center justify-center"
       >
         <SelectPrimitive.ItemIndicator>
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>check</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>check</span>
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -174,7 +174,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <span className="material-symbols-rounded select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_less</span>
+      <span className="material-symbols-outlined select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_less</span>
     </SelectPrimitive.ScrollUpButton>
   )
 }
@@ -192,7 +192,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <span className="material-symbols-rounded select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
+      <span className="material-symbols-outlined select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
     </SelectPrimitive.ScrollDownButton>
   )
 }

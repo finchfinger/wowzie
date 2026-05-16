@@ -13,6 +13,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Page grid */
+  --grid-template-columns-16: repeat(16, minmax(0, 1fr));
+  --spacing-gutter: 2rem; /* 32px */
+
   --color-brand: var(--brand);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -145,18 +149,21 @@
 }
 
 /* ─────────────────────────────────────────────
-   12-Column Layout System
+   16-Column Layout System
    ─────────────────────────────────────────────
    Variables
-   --grid-cols    : 12
-   --grid-gutter  : 24px          (between columns)
+   --grid-cols    : 16
+   --grid-gutter  : 32px          (between columns)
    --page-margin  : 80px          (left + right edge)
 
-   Centered span widths (within the 12-col grid):
-   span-6-center  → 6 cols  (narrow)
-   span-8-center  → 8 cols  (default)
-   span-10-center → 10 cols (wide)
-   span-12        → 12 cols (full)
+   Centered span widths (within the 16-col grid):
+   centering N cols: start = (16 - N) / 2 + 1
+   span-6-center  → 6 cols  — start col 6  (5 margin each side)
+   span-8-center  → 8 cols  — start col 5  (4 margin each side)
+   span-10-center → 10 cols — start col 4  (3 margin each side)
+   span-12-center → 12 cols — start col 3  (2 margin each side)
+   span-14-center → 14 cols — start col 2  (1 margin each side)
+   span-16        → 16 cols — full width
 ───────────────────────────────────────────── */
 @layer utilities {
 
@@ -178,30 +185,25 @@
     box-sizing: border-box;
   }
 
-  /* 2 ── 12-column grid ─────────────────────── */
+  /* 2 ── 16-column grid ─────────────────────── */
   .page-grid {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    column-gap: 24px;
+    grid-template-columns: repeat(16, 1fr);
+    column-gap: 32px;
   }
 
   /* 3 ── Centered span utilities ────────────── */
-  /*
-    Math: centering N cols inside 12 = start at (12 - N) / 2 + 1
-    span-6  → start col 4  (3 cols of margin each side)
-    span-8  → start col 3  (2 cols of margin each side)
-    span-10 → start col 2  (1 col  of margin each side)
-    span-12 → start col 1  (no margin)
-  */
-  .span-6-center  { grid-column: 4 / span 6;  }
+  .span-6-center  { grid-column: 6 / span 6;  }
   .span-7-center  {
     grid-column: 1 / -1;
-    --col-w: calc((100% - 11 * 24px) / 12);
-    width: calc(7 * var(--col-w) + 6 * 24px);
+    --col-w: calc((100% - 15 * 32px) / 16);
+    width: calc(7 * var(--col-w) + 6 * 32px);
     margin-inline: auto;
   }
-  .span-8-center  { grid-column: 3 / span 8;  }
-  .span-10-center { grid-column: 2 / span 10; }
+  .span-8-center  { grid-column: 5 / span 8;  }
+  .span-10-center { grid-column: 4 / span 10; }
+  .span-12-center { grid-column: 3 / span 12; }
+  .span-14-center { grid-column: 2 / span 14; }
   .span-12        { grid-column: 1 / -1;       }
 
   /* 4 ── Tablet (≤ 1024px): 40px margins ─────── */
@@ -212,10 +214,12 @@
     }
 
     /* Widen spans one step so content doesn't get too cramped */
-    .span-6-center  { grid-column: 3 / span 8;  }
-    .span-7-center  { grid-column: 2 / span 9;  }
-    .span-8-center  { grid-column: 2 / span 10; }
-    .span-10-center { grid-column: 1 / -1;       }
+    .span-6-center  { grid-column: 5 / span 8;  }
+    .span-7-center  { grid-column: 4 / span 10; }
+    .span-8-center  { grid-column: 4 / span 10; }
+    .span-10-center { grid-column: 3 / span 12; }
+    .span-12-center { grid-column: 2 / span 14; }
+    .span-14-center { grid-column: 1 / -1;       }
   }
 
   /* 5 ── Mobile (≤ 640px): 16px margins, single col ── */
@@ -233,6 +237,8 @@
     .span-7-center,
     .span-8-center,
     .span-10-center,
+    .span-12-center,
+    .span-14-center,
     .span-12 {
       grid-column: 1 / -1;
     }

@@ -326,7 +326,7 @@ export default function GuestDetailPage() {
           onClick={() => router.back()}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chevron_left</span> Back
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }} aria-hidden>chevron_left</span> Back
         </button>
       </div>
     );
@@ -340,7 +340,7 @@ export default function GuestDetailPage() {
         onClick={() => router.back()}
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
-        <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>chevron_left</span>
+        <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }} aria-hidden>chevron_left</span>
         All guests
       </button>
 
@@ -361,7 +361,7 @@ export default function GuestDetailPage() {
           onClick={() => router.push(`/messages?to=${contact.id}`)}
           className="inline-flex items-center gap-2 rounded-lg bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors shrink-0"
         >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>chat</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>chat</span>
           Message
         </button>
       </div>

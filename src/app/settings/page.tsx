@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 function MSIcon({ name, size = 16 }: { name: string; size?: number }) {
   return (
-    <span className="material-symbols-rounded select-none" style={{ fontSize: size }} aria-hidden>
+    <span className="material-symbols-outlined select-none" style={{ fontSize: size }} aria-hidden>
       {name}
     </span>
   );
@@ -578,7 +578,7 @@ function SettingsPageInner({
           <div className="page-grid">
             <div className="span-8-center">
               <div className="rounded-card bg-card shadow-sm p-8 text-center space-y-4">
-                <span className="material-symbols-rounded text-4xl text-muted-foreground">manage_accounts</span>
+                <span className="material-symbols-outlined text-4xl text-muted-foreground">manage_accounts</span>
                 <div>
                   <h2 className="text-base font-semibold text-foreground">Sign in to manage your settings</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Your account, children, and preferences are waiting.</p>

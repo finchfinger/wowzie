@@ -82,7 +82,7 @@ export default function HostMarketingPage() {
         <CardContent className="px-8 py-6">
           <div className="flex items-start gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <span className="material-symbols-rounded select-none text-primary" style={{ fontSize: 20 }} aria-hidden>trending_up</span>
+              <span className="material-symbols-outlined select-none text-primary" style={{ fontSize: 20 }} aria-hidden>trending_up</span>
             </div>
             <div className="space-y-3 flex-1">
               <div>
@@ -98,7 +98,7 @@ export default function HostMarketingPage() {
                   { icon: "tune",              label: "On/off anytime", desc: "No commitment, cancel anytime" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-2.5 rounded-lg bg-muted/40 px-3.5 py-3">
-                    <span className="material-symbols-rounded select-none shrink-0 text-primary mt-0.5" style={{ fontSize: 16 }} aria-hidden>{item.icon}</span>
+                    <span className="material-symbols-outlined select-none shrink-0 text-primary mt-0.5" style={{ fontSize: 16 }} aria-hidden>{item.icon}</span>
                     <div>
                       <p className="text-xs font-medium text-foreground">{item.label}</p>
                       <p className="text-[11px] text-muted-foreground">{item.desc}</p>

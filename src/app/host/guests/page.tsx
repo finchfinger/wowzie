@@ -136,7 +136,7 @@ export default function HostGuestsPage() {
         </p>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <span className="material-symbols-rounded pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 15 }}>search</span>
+            <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 15 }}>search</span>
             <input
               type="text"
               value={search}
@@ -184,7 +184,7 @@ export default function HostGuestsPage() {
                   isVip ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"
                 }`}>
                   {isVip
-                    ? <span className="material-symbols-rounded select-none" style={{ fontSize: 15 }}>star</span>
+                    ? <span className="material-symbols-outlined select-none" style={{ fontSize: 15 }}>star</span>
                     : guest.email[0]?.toUpperCase() ?? "?"}
                 </div>
 
@@ -210,7 +210,7 @@ export default function HostGuestsPage() {
                   <p className="text-xs text-foreground">{fmtDate(guest.lastBooked)}</p>
                 </div>
 
-                <span className={`material-symbols-rounded text-muted-foreground select-none shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} style={{ fontSize: 18 }}>
+                <span className={`material-symbols-outlined text-muted-foreground select-none shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} style={{ fontSize: 18 }}>
                   expand_more
                 </span>
               </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { customAlphabet } from "nanoid";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -83,6 +84,8 @@ type ScheduleOption = {
 type CampSession = {
   id: string;
   label: string;
+  ageGroup?: string;
+  sessionType?: string;
   startDate: string;
   endDate: string;
   scheduleOptions: ScheduleOption[];
@@ -123,6 +126,7 @@ type CampMeta = {
   category?: string;
   categories?: string[];
   cancellation_policy?: string | null;
+  highlights?: string[];
   additionalDetails?: string;
   whatToBring?: string;
   whatsIncluded?: string;
@@ -586,6 +590,8 @@ const makeDefaultScheduleOption = (): ScheduleOption => ({
 const makeDefaultCampSession = (): CampSession => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   label: "",
+  ageGroup: "",
+  sessionType: "",
   startDate: "",
   endDate: "",
   scheduleOptions: [makeDefaultScheduleOption()],
@@ -701,7 +707,7 @@ function Stepper({
             }`}
           >
             <span
-              className="material-symbols-rounded shrink-0 select-none"
+              className="material-symbols-outlined shrink-0 select-none"
               style={{ fontSize: 20 }}
             >
               {step.icon}
@@ -931,7 +937,7 @@ function AddOnRow({
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-destructive transition-colors"
         aria-label="Remove fee"
       >
-        <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>delete</span>
+        <span className="material-symbols-outlined select-none" style={{ fontSize: 18 }}>delete</span>
       </button>
     </div>
   );
@@ -1060,7 +1066,7 @@ function ExpandableCheckboxCard({
               className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors"
               aria-label="Remove"
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 16, lineHeight: 1 }}>close</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 16, lineHeight: 1 }}>close</span>
             </button>
           )}
         </div>
@@ -1127,6 +1133,7 @@ export default function CreateActivityPage({
   const [meetingUrl, setMeetingUrl] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [description, setDescription] = useState("");
+  const [highlights, setHighlights] = useState<string[]>([]);
   const [additionalDetails, setAdditionalDetails] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [experienceLevels, setExperienceLevels] = useState<ExperienceLevel[]>([]);
@@ -1529,6 +1536,7 @@ export default function CreateActivityPage({
       setExistingSlug(data.slug ?? null);
       setTitle(data.name ?? "");
       setDescription(data.description ?? "");
+      setHighlights(Array.isArray(meta.highlights) ? meta.highlights : []);
       setLocation(data.location ?? "");
       if ((data as any).lat) setLocationLat((data as any).lat);
       if ((data as any).lng) setLocationLng((data as any).lng);
@@ -1821,6 +1829,7 @@ export default function CreateActivityPage({
       categories: categories.length ? categories : undefined,
       category: categories[0] || undefined,
       cancellation_policy: cancellationPolicy || null,
+      highlights: highlights.filter(Boolean).length ? highlights.filter(Boolean) : undefined,
       additionalDetails: additionalDetails || undefined,
       whatToBring: whatToBring || undefined,
       whatsIncluded: whatsIncluded || undefined,
@@ -1905,6 +1914,8 @@ export default function CreateActivityPage({
     };
 
     const slug = existingSlug ?? slugify(title);
+    const nanoidAlpha = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 8);
+    const short_id = nanoidAlpha();
 
     /* Photos: ordered list; first is primary */
     const ordered = photoItems.slice(0, MAX_PHOTOS);
@@ -2055,7 +2066,7 @@ export default function CreateActivityPage({
 
       const { data, error } = await supabase
         .from("camps")
-        .insert({ ...payload, approval_status: approvalStatus })
+        .insert({ ...payload, short_id, approval_status: approvalStatus })
         .select("id, slug")
         .single();
 
@@ -2177,6 +2188,7 @@ export default function CreateActivityPage({
       category: categories[0] || undefined,
       cancellation_policy: cancellationPolicy || null,
       requiresApproval: requiresApproval || undefined,
+      highlights: highlights.filter(Boolean).length ? highlights.filter(Boolean) : undefined,
       additionalDetails: additionalDetails || undefined,
       whatToBring: whatToBring || undefined,
       whatsIncluded: whatsIncluded || undefined,
@@ -2288,9 +2300,10 @@ export default function CreateActivityPage({
           .single();
         const approvalStatus = hp?.host_status === "approved" ? "approved" : "pending_review";
 
+        const nanoidAlpha = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 8);
         const { data } = await supabase
           .from("camps")
-          .insert({ ...payload, approval_status: approvalStatus })
+          .insert({ ...payload, short_id: nanoidAlpha(), approval_status: approvalStatus })
           .select("id")
           .single();
         if (data?.id) {
@@ -2517,6 +2530,46 @@ export default function CreateActivityPage({
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="" className="resize-none min-h-48" />
           </Field>
 
+          {/* Highlights */}
+          <Field label="Highlights" hint="Up to 5 bullet points shown on the listing.">
+            <div className="space-y-2">
+              {highlights.map((h, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="shrink-0 w-2 h-2 rounded-full bg-foreground/70" />
+                  <input
+                    type="text"
+                    value={h}
+                    onChange={(e) => {
+                      const next = [...highlights];
+                      next[i] = e.target.value;
+                      setHighlights(next);
+                    }}
+                    placeholder={`Highlight ${i + 1}`}
+                    className="flex-1 text-sm border border-input rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setHighlights(highlights.filter((_, j) => j !== i))}
+                    className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                    aria-label="Remove highlight"
+                  >
+                    <span className="material-symbols-outlined select-none" style={{ fontSize: 18 }}>close</span>
+                  </button>
+                </div>
+              ))}
+              {highlights.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => setHighlights([...highlights, ""])}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:underline mt-1"
+                >
+                  <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }}>add</span>
+                  Add highlight
+                </button>
+              )}
+            </div>
+          </Field>
+
           {/* Cancellation policy — always shown */}
           <Field label="Cancellation policy" hint={selectedCancellationHelper}>
             <Select value={cancellationPolicy} onValueChange={setCancellationPolicy}>
@@ -2661,6 +2714,24 @@ export default function CreateActivityPage({
               {session.startDate && session.endDate && session.endDate < session.startDate && (
                 <p className="text-xs text-destructive">End date must be after start date.</p>
               )}
+            </div>
+
+            {/* Age group + session type */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Age group">
+                <Input
+                  value={session.ageGroup ?? ""}
+                  onChange={(e) => updateCampSession(session.id, { ageGroup: e.target.value })}
+                  placeholder="e.g. Ages 8–10"
+                />
+              </Field>
+              <Field label="Session type">
+                <Input
+                  value={session.sessionType ?? ""}
+                  onChange={(e) => updateCampSession(session.id, { sessionType: e.target.value })}
+                  placeholder="e.g. Morning"
+                />
+              </Field>
             </div>
 
             {/* Schedule options */}
@@ -3082,7 +3153,7 @@ export default function CreateActivityPage({
             onClick={() => setShowPhotoTips(true)}
             className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
           >
-            <span className="material-symbols-rounded" style={{ fontSize: 13 }}>lightbulb</span>
+            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>lightbulb</span>
             Get tips
           </button>
         }
@@ -3337,7 +3408,7 @@ export default function CreateActivityPage({
             }}
             className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
           >
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 18 }}>add_circle</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 18 }}>add_circle</span>
             Add custom fee or discount
           </button>
 
@@ -3430,7 +3501,7 @@ export default function CreateActivityPage({
       const SectionHeader = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
         <div className="mb-4">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 16 }}>{icon}</span>
+            <span className="material-symbols-outlined select-none text-muted-foreground" style={{ fontSize: 16 }}>{icon}</span>
             <span className="text-sm font-semibold text-foreground">{title}</span>
           </div>
           <p className="text-xs text-muted-foreground pl-[22px]">{subtitle}</p>
@@ -3876,7 +3947,7 @@ export default function CreateActivityPage({
               onClick={() => router.push(`/host/activities/${activityId}`)}
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>arrow_back</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }}>arrow_back</span>
               Back to listing
             </button>
           )}
@@ -3915,13 +3986,13 @@ export default function CreateActivityPage({
         {/* Error banner */}
         {stepError && (
           <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 16 }}>error</span>
+            <span className="material-symbols-outlined select-none shrink-0" style={{ fontSize: 16 }}>error</span>
             {stepError}
           </div>
         )}
         {submitError && (
           <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 16 }}>error</span>
+            <span className="material-symbols-outlined select-none shrink-0" style={{ fontSize: 16 }}>error</span>
             {submitError}
           </div>
         )}
@@ -3959,24 +4030,24 @@ export default function CreateActivityPage({
                 onClick={() => setShowPhotoTips(false)}
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
-                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>close</span>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
               </button>
             </div>
             <ul className="space-y-3 text-sm text-foreground">
               <li className="flex gap-2.5">
-                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>photo_camera</span>
+                <span className="material-symbols-outlined shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>photo_camera</span>
                 <span><span className="font-medium">Action shots convert best.</span> Kids doing the activity — not logos or flyers.</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>star</span>
+                <span className="material-symbols-outlined shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>star</span>
                 <span><span className="font-medium">First photo is your cover.</span> Make it bright, clear, and square-friendly.</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>grid_view</span>
+                <span className="material-symbols-outlined shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>grid_view</span>
                 <span><span className="font-medium">Add 4–6 photos.</span> Listings with more images get significantly more clicks.</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="material-symbols-rounded shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>face</span>
+                <span className="material-symbols-outlined shrink-0 text-foreground mt-0.5" style={{ fontSize: 16 }}>face</span>
                 <span><span className="font-medium">Show the environment.</span> Parents want to see the space, not just close-ups.</span>
               </li>
             </ul>
@@ -3987,7 +4058,7 @@ export default function CreateActivityPage({
       {/* Save for later toast */}
       {savedToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background shadow-lg">
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>check</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }}>check</span>
           Draft saved
         </div>
       )}

@@ -100,7 +100,7 @@ function DropdownMenuCheckboxItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>check</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>check</span>
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}
@@ -135,7 +135,7 @@ function DropdownMenuRadioItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 10, lineHeight: 1 }} aria-hidden>circle</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 10, lineHeight: 1 }} aria-hidden>circle</span>
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}
@@ -217,7 +217,7 @@ function DropdownMenuSubTrigger({
       {...props}
     >
       {children}
-      <span className="material-symbols-rounded select-none ml-auto" style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>chevron_right</span>
+      <span className="material-symbols-outlined select-none ml-auto" style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>chevron_right</span>
     </DropdownMenuPrimitive.SubTrigger>
   )
 }

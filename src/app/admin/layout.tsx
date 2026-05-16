@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="flex items-center justify-center min-h-[calc(100dvh-72px)]">
         <div className="text-center space-y-2">
-          <span className="material-symbols-rounded text-4xl text-destructive block">lock</span>
+          <span className="material-symbols-outlined text-4xl text-destructive block">lock</span>
           <p className="text-sm font-medium text-foreground">Access denied</p>
           <p className="text-xs text-muted-foreground">Admin access required.</p>
         </div>

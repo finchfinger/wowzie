@@ -76,7 +76,7 @@ function MessageText({ text, onNavigate }: { text: string; onNavigate: (href: st
               onMouseEnter={e => (e.currentTarget.style.background = "#C4BCDF")}
               onMouseLeave={e => (e.currentTarget.style.background = "#D9D3EE")}
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 11 }}>open_in_new</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 11 }}>open_in_new</span>
               {label}
             </button>
           );
@@ -239,7 +239,7 @@ export function ScoutOverlay({
             onMouseEnter={e => (e.currentTarget.style.background = "#E8DEF8")}
             onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
           >
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 20, lineHeight: 1 }}>close</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 20, lineHeight: 1 }}>close</span>
           </button>
         </div>
 
@@ -259,7 +259,7 @@ export function ScoutOverlay({
                 >
                   <span className="flex items-center justify-center h-full w-full rounded-full bg-white">
                     <span
-                      className="material-symbols-rounded select-none"
+                      className="material-symbols-outlined select-none"
                       style={{ fontSize: 13, lineHeight: 1, color: "#7c3aed" }}
                     >
                       explore
@@ -296,7 +296,7 @@ export function ScoutOverlay({
                   onMouseLeave={e => (e.currentTarget.style.background = "#EDE7F6")}
                 >
                   <span
-                    className="material-symbols-rounded select-none shrink-0"
+                    className="material-symbols-outlined select-none shrink-0"
                     style={{ fontSize: 18, lineHeight: 1, color: "#6750A4" }}
                   >
                     {chip.icon}
@@ -371,7 +371,7 @@ export function ScoutOverlay({
               className="h-10 w-10 flex items-center justify-center rounded-full transition-opacity disabled:opacity-30 hover:opacity-90 shrink-0"
               style={{ background: "#6750A4", color: "#fff" }}
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 20, lineHeight: 1 }}>arrow_upward</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 20, lineHeight: 1 }}>arrow_upward</span>
             </button>
           </div>
         </div>

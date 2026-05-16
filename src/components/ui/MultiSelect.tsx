@@ -145,7 +145,7 @@ export const MultiSelect: React.FC<Props> = ({
                   className="rounded-md p-0.5 text-muted-foreground hover:text-foreground"
                   aria-label={`Remove ${opt.label}`}
                 >
-                  <span className="material-symbols-rounded select-none" style={{ fontSize: 14, lineHeight: 1 }} aria-hidden>close</span>
+                  <span className="material-symbols-outlined select-none" style={{ fontSize: 14, lineHeight: 1 }} aria-hidden>close</span>
                 </button>
               </span>
             ))}
@@ -155,7 +155,7 @@ export const MultiSelect: React.FC<Props> = ({
             )}
           </div>
 
-          <span className="material-symbols-rounded select-none opacity-70 shrink-0" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
+          <span className="material-symbols-outlined select-none opacity-70 shrink-0" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
         </div>
       </PopoverTrigger>
 
@@ -209,7 +209,7 @@ export const MultiSelect: React.FC<Props> = ({
                       )}
                       aria-hidden="true"
                     >
-                      <span className="material-symbols-rounded select-none" style={{ fontSize: 12, lineHeight: 1 }} aria-hidden>check</span>
+                      <span className="material-symbols-outlined select-none" style={{ fontSize: 12, lineHeight: 1 }} aria-hidden>check</span>
                     </span>
                     {opt.label}
                   </span>

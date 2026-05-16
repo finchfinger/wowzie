@@ -1,3 +1,5 @@
+"use client";
+import React, { useState } from "react";
 import { Tag } from "@/components/ui/Tag";
 import { CampMetaList } from "@/components/CampMetaList";
 
@@ -7,6 +9,7 @@ type CampDetailHeaderProps = {
   isFeatured?: boolean;
   activityKind?: string | null;
   chipLabel?: string | null;
+  seasonLabel?: string | null;
   isFavorite?: boolean;
   favoriteDisabled?: boolean;
   onFavorite?: () => void;
@@ -19,31 +22,29 @@ type CampDetailHeaderProps = {
   locationLine?: string | null;
   isVirtual?: boolean;
   ageLabel?: string | null;
+  ageDescription?: string | null;
   priceLabel?: string | null;
+  priceDescription?: string | null;
 };
 
 // ─── M3 Expressive Icon Button ─────────────────────────────────────────────
 
 type IconButtonProps = {
   icon: string;
-  label: string;           // short label shown on hover, also used for aria-label
-  ariaLabel?: string;      // override aria-label (e.g. for toggle states)
+  label: string;
+  ariaLabel?: string;
   onClick?: () => void;
   active?: boolean;
-  activeColor?: string;    // icon + text color when active
-  activeBg?: string;       // container color when active
+  activeColor?: string;
+  activeBg?: string;
   disabled?: boolean;
+  width: number;
+  radius: number;
+  onHover: (hovered: boolean) => void;
 };
 
 function IconButton({
-  icon,
-  label,
-  ariaLabel,
-  onClick,
-  active,
-  activeColor,
-  activeBg,
-  disabled,
+  icon, label, ariaLabel, onClick, active, activeColor, activeBg, disabled, width, radius, onHover,
 }: IconButtonProps) {
   return (
     <button
@@ -51,28 +52,22 @@ function IconButton({
       onClick={onClick}
       aria-label={ariaLabel ?? label}
       disabled={disabled}
-      className="flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      className="flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed overflow-hidden"
       style={{
+        width,
         height: 40,
-        borderRadius: 999,
-        minWidth: 40,
+        borderRadius: radius,
         border: "none",
         cursor: disabled ? "not-allowed" : "pointer",
-        background: active
-          ? (activeBg ?? "rgba(123,92,191,0.12)")
-          : "rgba(255,255,255,0.85)",
-        padding: "0 10px",
-        transition: "background 0.18s ease, padding 0.18s ease",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.padding = "0 16px";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.padding = "0 10px";
+        background: active ? (activeBg ?? "rgba(123,92,191,0.12)") : "rgba(255,255,255,0.85)",
+        padding: 0,
+        transition: "width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), border-radius 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.18s ease",
       }}
     >
       <span
-        className="material-symbols-rounded select-none shrink-0"
+        className="material-symbols-outlined select-none shrink-0"
         style={{
           fontSize: 22,
           lineHeight: 1,
@@ -88,6 +83,22 @@ function IconButton({
   );
 }
 
+function IconButtonGroup({ children }: { children: React.ReactNode }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const items = React.Children.toArray(children);
+  return (
+    <div className="flex items-center gap-1.5">
+      {items.map((child, i) =>
+        React.isValidElement(child) ? React.cloneElement(child as React.ReactElement<IconButtonProps>, {
+          width: hovered === null ? 40 : hovered === i ? 48 : 36,
+          radius: hovered === i ? 8 : 20,
+          onHover: (h: boolean) => setHovered(h ? i : null),
+        }) : null
+      )}
+    </div>
+  );
+}
+
 // ─── CampDetailHeader ──────────────────────────────────────────────────────
 
 export function CampDetailHeader({
@@ -96,6 +107,7 @@ export function CampDetailHeader({
   isFeatured,
   activityKind,
   chipLabel,
+  seasonLabel,
   isFavorite,
   favoriteDisabled,
   onFavorite,
@@ -107,49 +119,62 @@ export function CampDetailHeader({
   locationLine,
   isVirtual,
   ageLabel,
+  ageDescription,
   priceLabel,
+  priceDescription,
 }: CampDetailHeaderProps) {
   return (
     <div className="space-y-6">
       {/* Top row: badge + actions */}
       <div className="flex items-center justify-between gap-4">
-        {/* Chip */}
-        <div className="flex items-center gap-2">
-          {(() => {
-            if (isFeatured) return <Tag label="Featured" style={{ background: "#E3FA4F", color: "#000" }} />;
-            const label = activityKind ?? chipLabel;
-            if (label) return <Tag label={label.charAt(0).toUpperCase() + label.slice(1)} />;
-            return null;
-          })()}
+        {/* Chips */}
+        <div className="flex items-center gap-1">
+          {seasonLabel && <Tag label={seasonLabel} />}
+          {isFeatured
+            ? <Tag label="Featured" />
+            : (activityKind ?? chipLabel) && <Tag label={activityKind ?? chipLabel!} />
+          }
         </div>
 
         {/* M3 Expressive icon buttons */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <IconButtonGroup>
           <IconButton
             icon="favorite"
             label="Favorite"
             ariaLabel={isFavorite ? "Remove from favorites" : "Add to favorites"}
             onClick={onFavorite}
             active={isFavorite}
-            activeColor="#e91e8c"
-            activeBg="rgba(233, 30, 140, 0.12)"
+            activeColor="#F200FF"
+            activeBg="#F9C1FF"
             disabled={favoriteDisabled}
+            width={40}
+            radius={20}
+            onHover={() => {}}
           />
           <IconButton
             icon="conversation"
             label="Message"
             onClick={onMessage}
+            width={40}
+            radius={20}
+            onHover={() => {}}
           />
           <IconButton
             icon="arrow_circle_up"
             label="Share"
             onClick={onShare}
+            width={40}
+            radius={20}
+            onHover={() => {}}
           />
-        </div>
+        </IconButtonGroup>
       </div>
 
       {/* Title */}
-      <h1 className="text-[24px] font-medium tracking-tight text-foreground leading-tight">
+      <h1
+        className="text-[26px] tracking-tight text-foreground leading-tight"
+        style={{ fontFamily: "'Google Sans Flex', sans-serif", fontVariationSettings: "'wght' 600, 'wdth' 151, 'GRAD' 22" }}
+      >
         {name}
       </h1>
 
@@ -168,7 +193,9 @@ export function CampDetailHeader({
         locationLine={locationLine}
         isVirtual={isVirtual}
         ageLabel={ageLabel}
+        ageDescription={ageDescription}
         priceLabel={priceLabel}
+        priceDescription={priceDescription}
       />
     </div>
   );

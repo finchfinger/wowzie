@@ -214,7 +214,7 @@ export default function FriendsPage() {
               className="shrink-0 h-9 w-9 flex items-center justify-center rounded-xl bg-background hover:bg-muted transition-colors text-muted-foreground"
               aria-label="Share via QR / link"
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>qr_code</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>qr_code</span>
             </button>
           </div>
 

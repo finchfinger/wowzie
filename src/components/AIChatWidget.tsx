@@ -166,7 +166,7 @@ export function AIChatWidget({ open, onClose }: { open: boolean; onClose: () => 
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-card shrink-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <span className="material-symbols-rounded" style={{ fontSize: "18px" }}>smart_toy</span>
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>smart_toy</span>
           </div>
           <div>
             <p className="text-sm font-semibold text-foreground leading-none">Wowzi AI</p>

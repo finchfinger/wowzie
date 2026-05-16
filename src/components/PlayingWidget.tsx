@@ -513,14 +513,14 @@ export function PlayingWidget() {
               onClick={() => setTab("status")}
               className={`flex flex-col items-center transition-opacity ${tab === "status" ? "opacity-100" : "opacity-30"}`}
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 24 }}>radio_button_checked</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 24 }}>radio_button_checked</span>
             </button>
             <button
               type="button"
               onClick={() => setTab("peeps")}
               className={`flex flex-col items-center transition-opacity ${tab === "peeps" ? "opacity-100" : "opacity-30"}`}
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 24 }}>cruelty_free</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 24 }}>cruelty_free</span>
             </button>
           </div>
         </div>

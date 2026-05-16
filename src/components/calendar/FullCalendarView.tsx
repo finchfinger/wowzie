@@ -82,8 +82,8 @@ export function FullCalendarView({
         dateClick={(info) => onDateClick?.(info.dateStr)}
         datesSet={(info) => onMonthChange?.(info.view.currentStart)}
         eventClick={(info) => {
-          const slug = info.event.extendedProps?.slug as string | null;
-          if (slug) router.push(`/camp/${slug}`);
+          const short_id = info.event.extendedProps?.short_id as string | null;
+          if (short_id) router.push(`/activity/${short_id}`);
         }}
         eventClassNames="!rounded-md !text-[11px] !font-medium !border-0 !px-1.5 !py-0.5 !leading-tight cursor-pointer"
         dayCellClassNames="!border-border"

@@ -51,7 +51,7 @@ export function PageHeader({
             href={backHref}
             className="inline-flex items-center gap-1 rounded-full bg-foreground/8 px-3 py-1.5 text-xs font-medium text-foreground/70 hover:bg-foreground/12 hover:text-foreground transition-colors"
           >
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 12 }} aria-hidden>chevron_left</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 12 }} aria-hidden>chevron_left</span>
             {backLabel ?? "Back"}
           </Link>
         </div>

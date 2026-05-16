@@ -19,7 +19,7 @@ export function FormCard({ title, subtitle, icon, action, children }: FormCardPr
           <div className="flex items-center gap-2">
             {icon && (
               <span
-                className="material-symbols-rounded select-none text-muted-foreground"
+                className="material-symbols-outlined select-none text-muted-foreground"
                 style={{ fontSize: 20 }}
               >
                 {icon}

@@ -31,6 +31,7 @@ type UpcomingActivity = {
   timeLabel: string;
   heroImageUrl: string | null;
   slug: string | null;
+  short_id: string | null;
 };
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -47,7 +48,7 @@ function formatActivityTime(iso: string): string {
 function Badge({ icon, label }: { icon: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-      <span className="material-symbols-rounded text-[14px] leading-none">{icon}</span>
+      <span className="material-symbols-outlined text-[14px] leading-none">{icon}</span>
       {label}
     </span>
   );
@@ -137,7 +138,7 @@ export default function ProfilePage() {
         try {
           const { data: bData } = await supabase
             .from("bookings")
-            .select("id, camps:camp_id(id, name, slug, hero_image_url, image_url, start_time, meta)")
+            .select("id, camps:camp_id(id, name, slug, short_id, hero_image_url, image_url, start_time, meta)")
             .eq("user_id", profileRow.id)
             .in("status", ["confirmed", "pending"])
             .order("created_at", { ascending: false })
@@ -165,6 +166,7 @@ export default function ProfilePage() {
                   timeLabel: formatActivityTime(startIso),
                   heroImageUrl: camp.hero_image_url ?? camp.image_url ?? null,
                   slug: camp.slug ?? null,
+                  short_id: camp.short_id ?? null,
                 };
               })
               .filter((x): x is WithMs => x !== null)
@@ -288,9 +290,9 @@ export default function ProfilePage() {
                     {/* Camera overlay */}
                     <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
                       {uploadingAvatar ? (
-                        <span className="material-symbols-rounded text-white text-[18px] animate-spin">progress_activity</span>
+                        <span className="material-symbols-outlined text-white text-[18px] animate-spin">progress_activity</span>
                       ) : (
-                        <span className="material-symbols-rounded text-white text-[18px]">photo_camera</span>
+                        <span className="material-symbols-outlined text-white text-[18px]">photo_camera</span>
                       )}
                     </span>
                   </button>
@@ -339,7 +341,7 @@ export default function ProfilePage() {
               {/* Search + sort */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="relative flex-1">
-                  <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[18px]">search</span>
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[18px]">search</span>
                   <input
                     type="text"
                     placeholder="Search"
@@ -349,7 +351,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 text-sm text-muted-foreground">
-                  <span className="material-symbols-rounded text-[18px]">filter_list</span>
+                  <span className="material-symbols-outlined text-[18px]">filter_list</span>
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value as "date" | "alpha")}
@@ -374,8 +376,8 @@ export default function ProfilePage() {
                       title={a.title}
                       timeLabel={a.timeLabel}
                       heroImageUrl={a.heroImageUrl}
-                      slug={a.slug}
-                      onMenuClick={isOwnProfile ? () => router.push(`/camp/${a.slug}`) : undefined}
+                      short_id={a.short_id}
+                      onMenuClick={isOwnProfile ? () => router.push(`/activity/${a.short_id}`) : undefined}
                     />
                   ))}
                 </div>

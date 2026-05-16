@@ -236,7 +236,7 @@ export default function FriendActivitiesPage() {
       const { data: bookingData, error: bErr } = await supabase
         .from("bookings")
         .select(
-          `id, camp_id, status, guests_count, created_at, camps:camp_id (id, name, slug, location, image_url, hero_image_url, start_time, end_time, meta)`
+          `id, camp_id, status, guests_count, created_at, camps:camp_id (id, name, slug, short_id, location, image_url, hero_image_url, start_time, end_time, meta)`
         )
         .eq("user_id", friendId)
         .in("status", ["confirmed", "pending"])

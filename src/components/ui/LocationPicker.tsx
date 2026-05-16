@@ -173,7 +173,7 @@ export function LocationPicker({
         {/* Virtual mode "chip" */}
         <div className="flex items-center justify-between rounded-md border border-input bg-white px-3 h-10 shadow-sm">
           <div className="flex items-center gap-2 text-sm">
-            <span className="material-symbols-rounded text-muted-foreground" style={{ fontSize: 16 }}>videocam</span>
+            <span className="material-symbols-outlined text-muted-foreground" style={{ fontSize: 16 }}>videocam</span>
             <span className="font-medium text-foreground">Virtual / Online</span>
           </div>
           <button
@@ -236,7 +236,7 @@ export function LocationPicker({
                       onClick={() => void handlePick(s)}
                       className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors"
                     >
-                      <span className="material-symbols-rounded shrink-0 text-muted-foreground" style={{ fontSize: 15 }}>location_on</span>
+                      <span className="material-symbols-outlined shrink-0 text-muted-foreground" style={{ fontSize: 15 }}>location_on</span>
                       {text}
                     </button>
                   </li>
@@ -256,7 +256,7 @@ export function LocationPicker({
                   onClick={switchToVirtual}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors"
                 >
-                  <span className="material-symbols-rounded shrink-0 text-muted-foreground" style={{ fontSize: 15 }}>videocam</span>
+                  <span className="material-symbols-outlined shrink-0 text-muted-foreground" style={{ fontSize: 15 }}>videocam</span>
                   Online / Virtual meeting
                 </button>
               </div>

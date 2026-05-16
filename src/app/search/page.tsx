@@ -79,7 +79,8 @@ const SELECT_COLUMNS = `
   created_at,
   is_promoted,
   min_age,
-  max_age
+  max_age,
+  short_id
 `;
 
 /** Floats up to 3 promoted listings to the top, preserving organic order otherwise */
@@ -235,7 +236,7 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
 
   return (
     <div className="flex items-center gap-2 sm:gap-4 py-4 border-b border-border last:border-0 min-w-0 overflow-hidden">
-      <Link href={`/camp/${camp.slug}`} className="shrink-0">
+      <Link href={`/activity/${camp.short_id}`} className="shrink-0">
         <div className="relative h-[56px] w-[56px] sm:h-[72px] sm:w-[72px] rounded-xl overflow-hidden bg-muted">
           {image
             ? <Image src={image} alt={camp.name} fill sizes="72px" className="object-cover" />
@@ -246,7 +247,7 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <Link
-            href={`/camp/${camp.slug}`}
+            href={`/activity/${camp.short_id}`}
             className="font-semibold text-foreground hover:underline truncate"
           >
             {camp.name}
@@ -257,7 +258,7 @@ function SearchResultRow({ camp, favIds, onToggleFav }: {
             className="shrink-0 transition-transform hover:scale-110"
             aria-label={isFav ? "Remove from favorites" : "Save"}
           >
-            <span className={`material-symbols-rounded select-none ${isFav ? "text-red-500" : "text-muted-foreground/40"}`} style={{ fontSize: 16, fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+            <span className={`material-symbols-outlined select-none ${isFav ? "text-red-500" : "text-muted-foreground/40"}`} style={{ fontSize: 16, fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
           </button>
         </div>
         {dateStr && <p className="text-sm text-muted-foreground truncate">{dateStr}</p>}
@@ -645,7 +646,7 @@ function SearchContent() {
             <div className="space-y-3">
               {/* Row 1: Search input */}
               <div className="relative flex items-center rounded-full" style={{ background: "#fff" }}>
-                <span className="material-symbols-rounded select-none absolute left-4 text-foreground pointer-events-none" style={{ fontSize: 20, lineHeight: 1 }}>search</span>
+                <span className="material-symbols-outlined select-none absolute left-4 text-foreground pointer-events-none" style={{ fontSize: 20, lineHeight: 1 }}>search</span>
                 <input
                   value={localQ}
                   onChange={(e) => handleQChange(e.target.value)}
@@ -658,7 +659,7 @@ function SearchContent() {
                   <button type="button"
                     onClick={() => { setLocalQ(""); pushParams({ q: "" }); }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>close</span>
+                    <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>close</span>
                   </button>
                 )}
               </div>
@@ -681,7 +682,7 @@ function SearchContent() {
                   {(localLocation || usingBrowserGeo) && (
                     <button type="button" onClick={clearLocation}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10">
-                      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }}>close</span>
+                      <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }}>close</span>
                     </button>
                   )}
                 </div>
@@ -761,7 +762,7 @@ function SearchContent() {
                   active={advancedFilterCount > 0}
                   onClick={() => setFiltersOpen(true)}
                 >
-                  <span className="material-symbols-rounded select-none" style={{ fontSize: 15 }} aria-hidden>tune</span>
+                  <span className="material-symbols-outlined select-none" style={{ fontSize: 15 }} aria-hidden>tune</span>
                   Filters
                   <FilterBadge count={advancedFilterCount} />
                 </FilterPill>
@@ -977,7 +978,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
     <button type="button" onClick={onRemove}
       className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-foreground hover:bg-muted/70 transition-colors">
       {label}
-      <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 12 }} aria-hidden>close</span>
+      <span className="material-symbols-outlined select-none text-muted-foreground" style={{ fontSize: 12 }} aria-hidden>close</span>
     </button>
   );
 }

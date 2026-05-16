@@ -124,7 +124,7 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3 text-center">
                     {u.is_host ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-[11px] font-medium text-violet-700">
-                        <span className="material-symbols-rounded select-none" style={{ fontSize: 11 }}>storefront</span>
+                        <span className="material-symbols-outlined select-none" style={{ fontSize: 11 }}>storefront</span>
                         Host
                       </span>
                     ) : (

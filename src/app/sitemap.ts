@@ -40,13 +40,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const { data: camps } = await supabase
       .from("camps")
-      .select("slug, updated_at")
+      .select("slug, short_id, updated_at")
       .eq("is_published", true)
       .eq("is_active", true);
 
     if (camps) {
       campEntries = camps.map((camp) => ({
-        url: `${base}/camp/${camp.slug}`,
+        url: `${base}/activity/${camp.short_id}`,
         lastModified: camp.updated_at ? new Date(camp.updated_at) : new Date(),
         changeFrequency: "weekly" as const,
         priority: 0.8,

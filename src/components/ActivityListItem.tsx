@@ -7,7 +7,7 @@ export type ActivityListItemProps = {
   title: string;
   timeLabel: string;
   heroImageUrl?: string | null;
-  slug?: string | null;
+  short_id?: string | null;
   /** If provided, a ⋮ button renders and calls this when clicked */
   onMenuClick?: () => void;
 };
@@ -16,7 +16,7 @@ export function ActivityListItem({
   title,
   timeLabel,
   heroImageUrl,
-  slug,
+  short_id,
   onMenuClick,
 }: ActivityListItemProps) {
   const router = useRouter();
@@ -26,7 +26,7 @@ export function ActivityListItem({
       {/* Clickable left side → camp detail */}
       <button
         type="button"
-        onClick={() => slug && router.push(`/camp/${slug}`)}
+        onClick={() => short_id && router.push(`/activity/${short_id}`)}
         className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
         {/* Thumbnail */}
@@ -56,7 +56,7 @@ export function ActivityListItem({
           className="shrink-0 h-8 w-8 flex items-center justify-center rounded-full hover:bg-accent text-muted-foreground transition-colors"
           aria-label="More options"
         >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
         </button>
       )}
     </div>

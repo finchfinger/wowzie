@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 
 type Props = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
   children: React.ReactNode;
 };
 
@@ -14,13 +14,13 @@ function getSupabase() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { id } = await params;
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.heywowzi.com";
 
   const { data: camp } = await getSupabase()
     .from("camps")
     .select("name, description, hero_image_url, image_url, price_cents, price_unit, location, meta, category")
-    .eq("slug", slug)
+    .eq("short_id", id)
     .single();
 
   if (!camp) {
@@ -37,7 +37,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `$${Math.round((camp.price_cents as number) / 100)}${camp.price_unit ? `/${camp.price_unit}` : ""}`
     : null;
 
-  // Build a rich description: actual description + location + price
   let description = raw.length > 0 ? (raw.length > 120 ? raw.slice(0, 117) + "…" : raw) : "";
   const suffix = [location, price ? `From ${price}` : null].filter(Boolean).join(" · ");
   if (suffix && description.length + suffix.length + 3 <= 160) {
@@ -49,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const image = (camp.hero_image_url as string | null) || (camp.image_url as string | null);
   const title = `${name} | Wowzi`;
-  const canonical = `${base}/camp/${slug}`;
+  const canonical = `${base}/activity/${id}`;
 
   return {
     title,
@@ -72,13 +71,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export async function generateJsonLd(slug: string) {
+export async function generateJsonLd(id: string) {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.heywowzi.com";
 
   const { data: camp } = await getSupabase()
     .from("camps")
     .select("name, description, hero_image_url, image_url, price_cents, price_unit, location, meta, category, start_time, end_time")
-    .eq("slug", slug)
+    .eq("short_id", id)
     .single();
 
   if (!camp) return null;
@@ -89,13 +88,11 @@ export async function generateJsonLd(slug: string) {
   const price = camp.price_cents ? ((camp.price_cents as number) / 100).toFixed(2) : null;
   const meta = (camp.meta as any) ?? {};
 
-  // Resolve location
   const locationName = (camp.location as string | null)
     || meta?.location_city
     || meta?.address
     || null;
 
-  // Resolve start/end dates from sessions or fixed schedule or start_time
   let startDate: string | null = null;
   let endDate: string | null = null;
 
@@ -111,7 +108,6 @@ export async function generateJsonLd(slug: string) {
     endDate = camp.end_time ? (camp.end_time as string).slice(0, 10) : null;
   }
 
-  // Age range
   const minAge = meta?.ageMin ?? meta?.minAge ?? meta?.age_min ?? null;
   const maxAge = meta?.ageMax ?? meta?.maxAge ?? meta?.age_max ?? null;
 
@@ -120,7 +116,7 @@ export async function generateJsonLd(slug: string) {
     "@type": "Event",
     name,
     description,
-    url: `${base}/camp/${slug}`,
+    url: `${base}/activity/${id}`,
     ...(image && { image }),
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
@@ -144,7 +140,7 @@ export async function generateJsonLd(slug: string) {
         price,
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
-        url: `${base}/camp/${slug}`,
+        url: `${base}/activity/${id}`,
         validFrom: new Date().toISOString().slice(0, 10),
       },
     }),
@@ -152,15 +148,15 @@ export async function generateJsonLd(slug: string) {
   };
 }
 
-export default async function CampSlugLayout({
+export default async function ActivityIdLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { slug } = await params;
-  const jsonLd = await generateJsonLd(slug);
+  const { id } = await params;
+  const jsonLd = await generateJsonLd(id);
 
   return (
     <>

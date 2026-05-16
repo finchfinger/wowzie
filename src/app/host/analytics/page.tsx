@@ -106,9 +106,9 @@ function ExportMenu({ onExport }: { onExport: (fmt: ExportFormat) => void }) {
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 transition-colors"
       >
-        <span className="material-symbols-rounded select-none" style={{ fontSize: 15 }}>download</span>
+        <span className="material-symbols-outlined select-none" style={{ fontSize: 15 }}>download</span>
         Export
-        <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }}>
+        <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }}>
           {open ? "expand_less" : "expand_more"}
         </span>
       </button>
@@ -120,7 +120,7 @@ function ExportMenu({ onExport }: { onExport: (fmt: ExportFormat) => void }) {
               onClick={() => { onExport(f); setOpen(false); }}
               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted/60 transition-colors text-left"
             >
-              <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 15 }}>
+              <span className="material-symbols-outlined select-none text-muted-foreground" style={{ fontSize: 15 }}>
                 {f === "pdf" ? "picture_as_pdf" : f === "xlsx" ? "table" : "csv"}
               </span>
               {f.toUpperCase()}
@@ -328,7 +328,7 @@ export default function HostAnalyticsPage() {
   if (!confirmed.length) {
     return (
       <div className="rounded-card bg-card px-6 py-14 text-center space-y-2">
-        <span className="material-symbols-rounded text-4xl text-muted-foreground select-none">bar_chart</span>
+        <span className="material-symbols-outlined text-4xl text-muted-foreground select-none">bar_chart</span>
         <p className="text-sm font-medium text-foreground">No data yet</p>
         <p className="text-xs text-muted-foreground max-w-xs mx-auto">
           Your insights will appear here as bookings come in. Share your listings to get started.
@@ -462,7 +462,7 @@ export default function HostAnalyticsPage() {
                     <td className="px-8 py-3.5">
                       <div className="flex items-center gap-2">
                         {i === 0 && (
-                          <span className="material-symbols-rounded text-amber-500 select-none shrink-0" style={{ fontSize: 16 }}>star</span>
+                          <span className="material-symbols-outlined text-amber-500 select-none shrink-0" style={{ fontSize: 16 }}>star</span>
                         )}
                         <span className="text-sm text-foreground truncate max-w-[180px]">{g.email}</span>
                       </div>

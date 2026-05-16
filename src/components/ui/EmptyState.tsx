@@ -66,7 +66,7 @@ export function EmptyState({
         )}
       >
         <span
-          className={cn("material-symbols-rounded select-none", iconColor)}
+          className={cn("material-symbols-outlined select-none", iconColor)}
           style={{ fontSize: iconSize }}
           aria-hidden
         >

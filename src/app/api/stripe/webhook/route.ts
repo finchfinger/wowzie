@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
       // Fetch booking info for notifications and waitlist promotion
       const { data: booking } = await supabase
         .from("bookings")
-        .select("user_id, camp_id, camps:camp_id(name, slug)")
+        .select("user_id, camp_id, camps:camp_id(name, slug, short_id, short_id)")
         .eq("id", bookingId)
         .single();
 

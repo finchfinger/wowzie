@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // Confirm there's actually a spot open
     const { data: camp } = await supabase
       .from("camps")
-      .select("capacity, name, slug")
+      .select("capacity, name, slug, short_id")
       .eq("id", campId)
       .single();
 

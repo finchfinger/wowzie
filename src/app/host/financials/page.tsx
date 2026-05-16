@@ -251,7 +251,7 @@ export default function HostFinancialsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span
-                          className="material-symbols-rounded select-none text-[20px] text-emerald-600"
+                          className="material-symbols-outlined select-none text-[20px] text-emerald-600"
                           title="Paid"
                           aria-label="Paid"
                         >

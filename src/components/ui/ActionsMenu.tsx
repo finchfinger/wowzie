@@ -65,7 +65,7 @@ export function ActionsMenu({ items, stopPropagation = true }: Props) {
         aria-label="More actions"
         className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 transition-colors"
       >
-        <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
+        <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
       </button>
 
       {open && pos && (

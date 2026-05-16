@@ -13,6 +13,7 @@ type CampRow = {
   id: string;
   name: string;
   slug: string;
+  short_id: string | null;
   is_published: boolean;
   is_active: boolean;
   created_at: string;
@@ -49,7 +50,7 @@ export default function AdminCampsPage() {
       setLoading(true);
       const { data } = await supabase
         .from("camps")
-        .select("id, name, slug, is_published, is_active, created_at, category, price_cents, price_unit, host_id, capacity, approval_status")
+        .select("id, name, slug, short_id, is_published, is_active, created_at, category, price_cents, price_unit, host_id, capacity, approval_status")
         .order("created_at", { ascending: false });
       setCamps((data ?? []) as CampRow[]);
       setLoading(false);
@@ -139,11 +140,11 @@ export default function AdminCampsPage() {
       return (
         <div className="flex items-center justify-end gap-2">
           <Link
-            href={`/camp/${camp.slug}`}
+            href={`/activity/${camp.short_id}`}
             target="_blank"
             className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 13 }}>open_in_new</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 13 }}>open_in_new</span>
             View
           </Link>
           <Button
@@ -171,11 +172,11 @@ export default function AdminCampsPage() {
       return (
         <div className="flex items-center justify-end gap-2">
           <Link
-            href={`/camp/${camp.slug}`}
+            href={`/activity/${camp.short_id}`}
             target="_blank"
             className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 13 }}>open_in_new</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 13 }}>open_in_new</span>
             View
           </Link>
           <Button
@@ -195,11 +196,11 @@ export default function AdminCampsPage() {
     return (
       <div className="flex items-center justify-end gap-2">
         <Link
-          href={`/camp/${camp.slug}`}
+          href={`/activity/${camp.short_id}`}
           target="_blank"
           className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 13 }}>open_in_new</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 13 }}>open_in_new</span>
           View
         </Link>
         <Button

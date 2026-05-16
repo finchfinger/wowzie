@@ -152,10 +152,10 @@ export default function GuestsPage() {
           <CardTitle>Guests</CardTitle>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>person_add</span>Add guest
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }} aria-hidden>person_add</span>Add guest
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5">
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>send</span>Send update
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }} aria-hidden>send</span>Send update
             </Button>
           </div>
         </div>
@@ -164,12 +164,12 @@ export default function GuestsPage() {
         {/* Search */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <span className="material-symbols-rounded select-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" style={{ fontSize: 14 }} aria-hidden>search</span>
+            <span className="material-symbols-outlined select-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" style={{ fontSize: 14 }} aria-hidden>search</span>
             <Input type="text" placeholder="Search" value={guestSearch} onChange={e => setGuestSearch(e.target.value)} className="pl-8" />
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
             <span>Alphabetical</span>
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>expand_more</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }} aria-hidden>expand_more</span>
           </div>
         </div>
 
@@ -231,7 +231,7 @@ export default function GuestsPage() {
                       {ri === 0 && (
                         <button type="button" onClick={() => router.push(`/host/activities/${activityId}/guests/${g.id}`)}
                           className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground">
-                          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>more_horiz</span>
+                          <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>more_horiz</span>
                         </button>
                       )}
                     </div>

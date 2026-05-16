@@ -69,7 +69,7 @@ export function FriendListItem({
         className="shrink-0 h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
         aria-label="More options"
       >
-        <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
+        <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
       </button>
     </div>
   );

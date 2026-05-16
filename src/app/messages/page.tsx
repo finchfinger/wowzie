@@ -641,7 +641,7 @@ function MessagesPageInner() {
           onClick={() => setMobileView("list")}
           className="lg:hidden shrink-0 p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
         >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>arrow_back</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 20 }} aria-hidden>arrow_back</span>
         </button>
 
         {activeConv ? (
@@ -663,7 +663,7 @@ function MessagesPageInner() {
               type="button"
               className="shrink-0 p-1.5 rounded-full hover:bg-muted transition-colors text-muted-foreground"
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>more_vert</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 20 }} aria-hidden>more_vert</span>
             </button>
           </>
         ) : (
@@ -766,7 +766,7 @@ function MessagesPageInner() {
                               isUser ? "text-violet-700" : "text-primary"
                             }`}
                           >
-                            <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 16 }} aria-hidden>description</span>
+                            <span className="material-symbols-outlined select-none shrink-0" style={{ fontSize: 16 }} aria-hidden>description</span>
                             <span className="truncate max-w-[180px]">
                               {decodeURIComponent(
                                 m.image_url!.split("/").pop()?.split("?")[0]?.replace(/^\d+-/, "") ?? "File"
@@ -806,7 +806,7 @@ function MessagesPageInner() {
               />
             ) : (
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 20 }} aria-hidden>description</span>
+                <span className="material-symbols-outlined select-none text-muted-foreground" style={{ fontSize: 20 }} aria-hidden>description</span>
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -824,7 +824,7 @@ function MessagesPageInner() {
               onClick={removePendingMedia}
               className="p-1 rounded-full hover:bg-muted transition-colors text-muted-foreground shrink-0"
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>close</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>close</span>
             </button>
           </div>
         )}
@@ -845,7 +845,7 @@ function MessagesPageInner() {
                   className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                   title="Add emoji"
                 >
-                  <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>sentiment_satisfied</span>
+                  <span className="material-symbols-outlined select-none" style={{ fontSize: 20 }} aria-hidden>sentiment_satisfied</span>
                 </button>
 
                 {emojiPickerOpen && (
@@ -874,7 +874,7 @@ function MessagesPageInner() {
                 className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                 title="Add image"
               >
-                <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>image</span>
+                <span className="material-symbols-outlined select-none" style={{ fontSize: 20 }} aria-hidden>image</span>
               </button>
 
               {/* File attachment */}
@@ -885,7 +885,7 @@ function MessagesPageInner() {
                 className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
                 title="Add attachment"
               >
-                <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>attach_file</span>
+                <span className="material-symbols-outlined select-none" style={{ fontSize: 20 }} aria-hidden>attach_file</span>
               </button>
             </div>
 
@@ -928,7 +928,7 @@ function MessagesPageInner() {
                 {sending ? (
                   <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 ) : (
-                  <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>send</span>
+                  <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>send</span>
                 )}
               </button>
             </div>
@@ -969,7 +969,7 @@ function MessagesPageInner() {
                   onClick={() => setError(null)}
                   className="ml-3 text-destructive/60 hover:text-destructive shrink-0"
                 >
-                  <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>close</span>
+                  <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }} aria-hidden>close</span>
                 </button>
               </div>
             )}

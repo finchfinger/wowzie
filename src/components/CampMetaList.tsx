@@ -5,21 +5,20 @@ export type CampMetaListItemProps = {
   primary: React.ReactNode;
   description?: React.ReactNode;
   href?: string;
+  iconSize?: number;
 };
 
-export function CampMetaListItem({ icon, primary, description, href }: CampMetaListItemProps) {
+export function CampMetaListItem({ icon, primary, description, href, iconSize = 24 }: CampMetaListItemProps) {
   return (
-    <div className="flex items-center" style={{ gap: 0 }}>
-      {/* Icon — 40×40 container, no background */}
-      <div className="shrink-0 flex items-center justify-center" style={{ width: 40, height: 40 }}>
-        <span
-          className="material-symbols-rounded select-none"
-          style={{ fontSize: 20, lineHeight: 1, color: "rgba(0,0,0,0.8)" }}
-          aria-hidden
-        >
-          {icon}
-        </span>
-      </div>
+    <div className="flex items-center py-2" style={{ gap: 12 }}>
+      {/* Icon */}
+      <span
+        className="material-symbols-outlined select-none shrink-0"
+        style={{ fontSize: iconSize, lineHeight: 1, color: "rgba(0,0,0,0.8)" }}
+        aria-hidden
+      >
+        {icon}
+      </span>
 
       {/* Text */}
       <div>
@@ -33,7 +32,7 @@ export function CampMetaListItem({ icon, primary, description, href }: CampMetaL
           >
             {primary}
             <span
-              className="material-symbols-rounded select-none"
+              className="material-symbols-outlined select-none"
               style={{ fontSize: 14, lineHeight: 1 }}
               aria-hidden
             >
@@ -62,7 +61,9 @@ type CampMetaListProps = {
   locationLine?: string | null;
   isVirtual?: boolean;
   ageLabel?: string | null;
+  ageDescription?: string | null;
   priceLabel?: string | null;
+  priceDescription?: string | null;
 };
 
 export function CampMetaList({
@@ -72,7 +73,9 @@ export function CampMetaList({
   locationLine,
   isVirtual,
   ageLabel,
+  ageDescription,
   priceLabel,
+  priceDescription,
 }: CampMetaListProps) {
   const locationPrimary = locationVenueName ?? (isVirtual ? "Online event" : locationLine) ?? "";
   const hasLocation = !!(locationVenueName || locationLine);
@@ -82,7 +85,7 @@ export function CampMetaList({
     : undefined;
 
   return (
-    <div className="flex flex-col" style={{ gap: 8 }}>
+    <div className="flex flex-col divide-y divide-black/10">
       {/* Date + time combined */}
       {dateLabel && (
         <CampMetaListItem
@@ -96,13 +99,18 @@ export function CampMetaList({
         <CampMetaListItem
           icon={isVirtual ? "wifi" : "assistant_navigation"}
           primary={locationPrimary}
+          description={locationVenueName ? (locationLine ?? undefined) : undefined}
           href={mapsHref}
         />
       )}
       {/* Age */}
-      {ageLabel && <CampMetaListItem icon="mood" primary={ageLabel} />}
+      {ageLabel && (
+        <CampMetaListItem icon="mood" primary={ageLabel} description={ageDescription ?? undefined} />
+      )}
       {/* Price */}
-      {priceLabel && <CampMetaListItem icon="paid" primary={priceLabel} />}
+      {priceLabel && (
+        <CampMetaListItem icon="savings" primary={priceLabel} description={priceDescription ?? undefined} />
+      )}
     </div>
   );
 }

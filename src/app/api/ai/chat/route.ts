@@ -94,7 +94,7 @@ async function fetchAllCampsContext(): Promise<string> {
 
   const { data, error } = await supabase
     .from("camps")
-    .select("name, slug, description, price_cents, price_unit, category, location, meta, is_promoted, start_time, end_time")
+    .select("name, slug, short_id, description, price_cents, price_unit, category, location, meta, is_promoted, start_time, end_time")
     .eq("is_published", true)
     .eq("is_active", true)
     .order("is_promoted", { ascending: false })
@@ -143,7 +143,7 @@ async function fetchAllCampsContext(): Promise<string> {
 
     const details = [location, ages, dates, price].filter(Boolean).join(" · ");
 
-    return `- [${camp.name}](/camp/${camp.slug})${details ? ` — ${details}` : ""}${camp.category ? ` [${camp.category}]` : ""}${desc ? `\n  ${desc}` : ""}`;
+    return `- [${camp.name}](/activity/${camp.short_id})${details ? ` — ${details}` : ""}${camp.category ? ` [${camp.category}]` : ""}${desc ? `\n  ${desc}` : ""}`;
   });
 
   return lines.join("\n");
@@ -186,7 +186,7 @@ async function executeSearch(input: SearchInput): Promise<string> {
 
   let q = supabase
     .from("camps")
-    .select("name, slug, description, price_cents, price_unit, category, location, meta, is_promoted")
+    .select("name, slug, short_id, description, price_cents, price_unit, category, location, meta, is_promoted")
     .eq("is_published", true)
     .eq("is_active", true)
     .order("is_promoted", { ascending: false })
@@ -216,7 +216,7 @@ async function executeSearch(input: SearchInput): Promise<string> {
     const desc = camp.description
       ? camp.description.slice(0, 120).trimEnd() + (camp.description.length > 120 ? "…" : "")
       : null;
-    return `[${camp.name}](/camp/${camp.slug}) — ${[location, price].filter(Boolean).join(" · ")}${desc ? `\n  ${desc}` : ""}`;
+    return `[${camp.name}](/activity/${camp.short_id}) — ${[location, price].filter(Boolean).join(" · ")}${desc ? `\n  ${desc}` : ""}`;
   }).join("\n\n");
 }
 

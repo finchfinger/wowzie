@@ -241,7 +241,7 @@ function PaymentForm({
             disabled={!stripe || !elements || submitting}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60 hover:bg-foreground/90 transition-colors"
           >
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>lock</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }} aria-hidden>lock</span>
             {submitting ? "Processing…" : `Reserve — ${formatMoney(totalCents)}`}
           </button>
 
@@ -326,7 +326,7 @@ function PaymentForm({
           </div>
 
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 12 }} aria-hidden>lock</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 12 }} aria-hidden>lock</span>
             Secured by Stripe
           </div>
         </aside>
@@ -383,7 +383,7 @@ function CheckoutContent() {
       if (!campId) { setError("No camp specified."); setLoading(false); return; }
       setLoading(true);
       try {
-        const select = "id, slug, name, description, location, image_url, hero_image_url, price_cents, meta, host_id";
+        const select = "id, slug, short_id, name, description, location, image_url, hero_image_url, price_cents, meta, host_id";
         const byId = isUuid(campId);
         const query = supabase.from("camps").select(select);
         const { data, error: campError } = byId

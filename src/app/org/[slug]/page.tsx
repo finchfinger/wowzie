@@ -141,7 +141,7 @@ export default function OrgPage() {
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
                   {orgLocation && (
                     <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }}>location_on</span>
+                      <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }}>location_on</span>
                       {orgLocation}
                     </span>
                   )}
@@ -152,7 +152,7 @@ export default function OrgPage() {
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-sm text-primary hover:underline"
                     >
-                      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }}>open_in_new</span>
+                      <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }}>open_in_new</span>
                       Visit website
                     </a>
                   )}

@@ -41,7 +41,7 @@ export default function FeedbackPage() {
 
       const { data: bData } = await supabase
         .from("bookings")
-        .select("id, camp_id, camps:camp_id(name, slug, hero_image_url, image_url)")
+        .select("id, camp_id, camps:camp_id(name, slug, short_id, hero_image_url, image_url)")
         .eq("id", bookingId)
         .eq("user_id", uid)
         .single();
@@ -132,7 +132,7 @@ export default function FeedbackPage() {
     <div className="mx-auto max-w-md px-4 py-16 text-center space-y-4">
       <div className="flex justify-center">
         <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="material-symbols-rounded text-primary" style={{ fontSize: 32 }}>check_circle</span>
+          <span className="material-symbols-outlined text-primary" style={{ fontSize: 32 }}>check_circle</span>
         </div>
       </div>
       <h1 className="text-xl font-semibold text-foreground">Thanks for sharing!</h1>
@@ -146,7 +146,7 @@ export default function FeedbackPage() {
   if (alreadySubmitted) return (
     <div className="mx-auto max-w-md px-4 py-16 text-center space-y-4">
       <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto">
-        <span className="material-symbols-rounded text-muted-foreground" style={{ fontSize: 28 }}>check</span>
+        <span className="material-symbols-outlined text-muted-foreground" style={{ fontSize: 28 }}>check</span>
       </div>
       <h1 className="text-xl font-semibold text-foreground">Already submitted</h1>
       <p className="text-sm text-muted-foreground">You've already left feedback for <span className="font-medium">{booking.camp_name}</span>.</p>
@@ -179,7 +179,7 @@ export default function FeedbackPage() {
                   <img src={booking.camp_thumb} alt={booking.camp_name} className="h-full w-full object-cover" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center">
-                    <span className="material-symbols-rounded text-muted-foreground" style={{ fontSize: 24 }}>forest</span>
+                    <span className="material-symbols-outlined text-muted-foreground" style={{ fontSize: 24 }}>forest</span>
                   </div>
                 )}
               </div>

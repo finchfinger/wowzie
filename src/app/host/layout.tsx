@@ -164,7 +164,7 @@ export default function HostLayout({
               </div>
               <Button asChild size="sm" className="shrink-0">
                 <Link href="/host/activities/new">
-                  <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>add</span>
+                  <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>add</span>
                   Create listing
                 </Link>
               </Button>
@@ -287,7 +287,7 @@ const FAQ_SECTIONS = [
 function ChevronDown({ open }: { open: boolean }) {
   return (
     <span
-      className={`material-symbols-rounded text-muted-foreground shrink-0 select-none transition-transform ${open ? "rotate-180" : ""}`}
+      className={`material-symbols-outlined text-muted-foreground shrink-0 select-none transition-transform ${open ? "rotate-180" : ""}`}
       style={{ fontSize: 16 }}
       aria-hidden
     >

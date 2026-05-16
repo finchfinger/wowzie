@@ -355,7 +355,7 @@ export default function ActivitiesPage() {
       const { data: bookingData, error: bErr } = await supabase
         .from("bookings")
         .select(
-          `id, camp_id, status, guests_count, total_cents, created_at, camps:camp_id (id, name, slug, location, image_url, hero_image_url, start_time, end_time, meta)`
+          `id, camp_id, status, guests_count, total_cents, created_at, camps:camp_id (id, name, slug, short_id, location, image_url, hero_image_url, start_time, end_time, meta)`
         )
         .eq("user_id", uid)
         .in("status", ["confirmed", "pending"])
@@ -537,7 +537,7 @@ export default function ActivitiesPage() {
       if (events.length === 0) {
         const { data: campRows } = await supabase
           .from("camps")
-          .select("id, slug, name, description, image_url, hero_image_url, price_cents, price_unit, listing_type, meta")
+          .select("id, slug, short_id, name, description, image_url, hero_image_url, price_cents, price_unit, listing_type, meta")
           .eq("status", "published")
           .limit(6);
         if (campRows && campRows.length > 0) {
@@ -914,7 +914,7 @@ export default function ActivitiesPage() {
                     </CardHeader>
                     <CardContent className="px-6 pb-6">
                       <div className="relative">
-                        <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
+                        <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
                         <Input
                           type="text"
                           value={activitySearch}

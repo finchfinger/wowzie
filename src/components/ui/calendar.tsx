@@ -141,18 +141,18 @@ function Calendar({
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === "left") {
             return (
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>chevron_left</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>chevron_left</span>
             )
           }
 
           if (orientation === "right") {
             return (
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>chevron_right</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>chevron_right</span>
             )
           }
 
           return (
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>expand_more</span>
           )
         },
         DayButton: CalendarDayButton,

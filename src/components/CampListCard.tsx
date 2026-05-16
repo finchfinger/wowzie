@@ -71,7 +71,7 @@ const resolveMeta = (camp: Camp): string | null => {
 };
 
 export function CampListCard({ camp }: CampListCardProps) {
-  const { slug, name } = camp;
+  const { short_id, name } = camp;
   const image = useMemo(() => resolveImage(camp), [camp]);
   const price = useMemo(() => resolvePrice(camp), [camp]);
   const unit = useMemo(() => getPriceUnit(camp), [camp]);
@@ -79,7 +79,7 @@ export function CampListCard({ camp }: CampListCardProps) {
 
   return (
     <Link
-      href={`/camp/${slug}`}
+      href={`/activity/${short_id}`}
       className="group flex items-center gap-3 rounded-xl overflow-hidden hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
       aria-label={`View ${name}`}
     >

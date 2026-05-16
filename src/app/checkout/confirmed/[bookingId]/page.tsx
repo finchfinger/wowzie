@@ -137,19 +137,19 @@ export default function CheckoutConfirmedPage() {
             <div className="space-y-1.5 text-sm text-muted-foreground">
               {booking.camp?.location && (
                 <p className="flex items-center gap-1.5">
-                  <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>location_on</span>
+                  <span className="material-symbols-outlined select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>location_on</span>
                   {booking.camp.location}
                 </p>
               )}
               {dateRange && (
                 <p className="flex items-center gap-1.5">
-                  <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>calendar_month</span>
+                  <span className="material-symbols-outlined select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>calendar_month</span>
                   {dateRange}
                 </p>
               )}
               {booking.guests_count && (
                 <p className="flex items-center gap-1.5">
-                  <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>person</span>
+                  <span className="material-symbols-outlined select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>person</span>
                   {booking.guests_count} guest{booking.guests_count > 1 ? "s" : ""}
                 </p>
               )}
@@ -161,7 +161,7 @@ export default function CheckoutConfirmedPage() {
               )}
               {booking.contact_email && (
                 <p className="flex items-center gap-1.5">
-                  <span className="material-symbols-rounded select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>mail</span>
+                  <span className="material-symbols-outlined select-none shrink-0" style={{ fontSize: 14 }} aria-hidden>mail</span>
                   {booking.contact_email}
                 </p>
               )}
@@ -176,7 +176,7 @@ export default function CheckoutConfirmedPage() {
           href={messageHref}
           className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
         >
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>chat</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>chat</span>
           Message the host
         </Link>
       )}

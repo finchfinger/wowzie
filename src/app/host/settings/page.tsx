@@ -95,7 +95,7 @@ function SectionTitle({ icon, label }: { icon: string; label: string }) {
     <span className="inline-flex items-center gap-2">
       <span
         aria-hidden
-        className="material-symbols-rounded text-muted-foreground select-none"
+        className="material-symbols-outlined text-muted-foreground select-none"
         style={{ fontSize: 18, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20" }}
       >
         {icon}

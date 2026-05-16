@@ -35,7 +35,7 @@ export default function AdminBookingsPage() {
       setLoading(true);
       const { data } = await supabase
         .from("bookings")
-        .select("id, created_at, status, total_cents, platform_fee_percent, guests_count, contact_email, camps:camp_id(name, slug)")
+        .select("id, created_at, status, total_cents, platform_fee_percent, guests_count, contact_email, camps:camp_id(name, slug, short_id, short_id)")
         .order("created_at", { ascending: false })
         .limit(500);
       setBookings((data ?? []) as unknown as BookingRow[]);

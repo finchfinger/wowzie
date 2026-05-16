@@ -245,7 +245,7 @@ export default function HostListingsPage() {
           {/* Search + sort row */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <span className="material-symbols-rounded pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
+              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
               <Input
                 type="text"
                 value={search}
@@ -291,7 +291,7 @@ export default function HostListingsPage() {
 
       {savedToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background shadow-lg">
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>check</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }}>check</span>
           Listing saved
         </div>
       )}

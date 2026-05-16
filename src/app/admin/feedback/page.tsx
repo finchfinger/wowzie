@@ -29,7 +29,7 @@ export default function AdminFeedbackPage() {
       setLoading(true);
       const { data } = await supabase
         .from("feedback")
-        .select("id, created_at, went_well, improve, book_again, camps:camp_id(name, slug)")
+        .select("id, created_at, went_well, improve, book_again, camps:camp_id(name, slug, short_id, short_id)")
         .order("created_at", { ascending: false });
       setRows((data ?? []) as unknown as FeedbackRow[]);
       setLoading(false);

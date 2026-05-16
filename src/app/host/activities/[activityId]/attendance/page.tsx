@@ -126,11 +126,11 @@ function MiniCalendar({ campDays, datesWithData, selectedDate, onSelect, todaySt
     <div className="select-none">
       <div className="flex items-center justify-between mb-2">
         <button type="button" onClick={prevMonth} className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors">
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>chevron_left</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>chevron_left</span>
         </button>
         <span className="text-sm font-medium text-foreground">{monthLabel}</span>
         <button type="button" onClick={nextMonth} className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors">
-          <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>chevron_right</span>
+          <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>chevron_right</span>
         </button>
       </div>
       <div className="grid grid-cols-7 mb-1">
@@ -291,7 +291,7 @@ function MessageDrawer({
                 <img src={target.activityImage} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
               ) : (
                 <div className="h-10 w-10 shrink-0 rounded-lg bg-muted flex items-center justify-center">
-                  <span className="material-symbols-rounded text-muted-foreground select-none" style={{ fontSize: 18 }}>group</span>
+                  <span className="material-symbols-outlined text-muted-foreground select-none" style={{ fontSize: 18 }}>group</span>
                 </div>
               )}
               <div className="flex-1 min-w-0">
@@ -303,7 +303,7 @@ function MessageDrawer({
             </>
           )}
           <button type="button" onClick={onClose} className="shrink-0 h-7 w-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>close</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }}>close</span>
           </button>
         </div>
 
@@ -345,7 +345,7 @@ function MessageDrawer({
         <div className="px-5 pb-6">
           {sent ? (
             <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-50 py-3 text-sm font-medium text-emerald-700">
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>check_circle</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }}>check_circle</span>
               Sent!
             </div>
           ) : (
@@ -356,7 +356,7 @@ function MessageDrawer({
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-semibold text-background hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {sending ? "Sending…" : target.type === "group" ? `Send to ${activeCount}` : "Send"}
-              {!sending && <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }}>send</span>}
+              {!sending && <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }}>send</span>}
             </button>
           )}
         </div>
@@ -591,7 +591,7 @@ function AttendanceTab({ activity }: { activity: Activity }) {
                 })}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 transition-colors"
               >
-                <span className="material-symbols-rounded select-none" style={{ fontSize: 15 }}>send</span>
+                <span className="material-symbols-outlined select-none" style={{ fontSize: 15 }}>send</span>
                 Send update
               </button>
             )}
@@ -604,7 +604,7 @@ function AttendanceTab({ activity }: { activity: Activity }) {
         )}
         <MiniCalendar campDays={campDays} datesWithData={datesWithData} selectedDate={selectedDate} onSelect={setSelectedDate} todayStr={todayStr} />
         <div className="relative">
-          <span className="material-symbols-rounded select-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" style={{ fontSize: 16 }} aria-hidden>search</span>
+          <span className="material-symbols-outlined select-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" style={{ fontSize: 16 }} aria-hidden>search</span>
           <Input className="pl-9" placeholder="Search" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>

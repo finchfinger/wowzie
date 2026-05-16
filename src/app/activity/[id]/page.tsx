@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCampFavorite } from "@/hooks/useCampFavorite";
 import type { Camp } from "@/components/CampCard";
 import { HostCard } from "@/components/HostCard";
+import { ActivityImageGrid } from "@/components/ActivityImageGrid";
 import { CampDetailHeader } from "@/components/CampDetailHeader";
 import {
   Dialog,
@@ -22,7 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AuthModal } from "@/components/auth/AuthModal";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
 import type { RegistrationStatus } from "@/components/RegistrationPanel";
+import { Alert } from "@/components/ui/Alert";
 import { AttendanceCard } from "@/components/AttendanceCard";
+import { ExploreMoreSection } from "@/components/ExploreMoreSection";
 
 /* ── Types ── */
 
@@ -51,6 +54,16 @@ type Review = {
 
 /* ── Helpers ── */
 
+function getSeasonLabel(iso: string): string {
+  const d = new Date(iso);
+  const month = d.getMonth();
+  const year = d.getFullYear();
+  if (month >= 5 && month <= 7) return `Summer ${year}`;
+  if (month >= 8 && month <= 10) return `Fall ${year}`;
+  if (month === 11 || month <= 1) return `Winter ${year}`;
+  return `Spring ${year}`;
+}
+
 function formatDate(iso: string): { month: string; day: string; full: string } {
   // Append T12:00:00 to date-only strings so they parse as local noon, not UTC midnight
   const d = new Date(iso.includes("T") ? iso : iso + "T12:00:00");
@@ -66,9 +79,9 @@ function formatDateRange(startIso: string | null | undefined, endIso: string | n
   const s = new Date(startIso + "T12:00:00");
   const e = endIso ? new Date(endIso + "T12:00:00") : null;
   if (isNaN(s.getTime())) return null;
-  const sStr = s.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const sStr = s.toLocaleDateString("en-US", { month: "long", day: "numeric" });
   if (!e || isNaN(e.getTime())) return sStr;
-  const eStr = e.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const eStr = e.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   return `${sStr} – ${eStr}`;
 }
 
@@ -186,7 +199,7 @@ function generateDaysByWeek(startIso: string, endIso: string) {
 
 export default function CampDetailPage() {
   const params = useParams();
-  const slug = params.slug as string;
+  const id = params.id as string;
   const router = useRouter();
   const searchParams = useSearchParams();
   const justFull = searchParams.get("full") === "1";
@@ -240,17 +253,18 @@ export default function CampDetailPage() {
   const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
   const [friendsGoing, setFriendsGoing] = useState<{ id: string; name: string; avatarUrl?: string | null }[]>([]);
   const [friendsGoingTotal, setFriendsGoingTotal] = useState(0);
+  const [nearbyCamps, setNearbyCamps] = useState<Camp[]>([]);
 
   const { isFavorite, favoriteLoading, toggleFavorite } = useCampFavorite(camp?.id ?? null);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!id) return;
     const load = async () => {
       setLoadingCamp(true);
       setCampError(null);
       const { data, error } = await supabase.from("camps")
         .select("id, slug, name, description, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, host_id, capacity, start_time, end_time, is_published, external_url, location, featured")
-        .eq("slug", slug).maybeSingle();
+        .eq("short_id", id).maybeSingle();
       if (error || !data) { setCampError("We couldn't load this camp."); setLoadingCamp(false); return; }
       setCamp(data as FullCamp);
       setLoadingCamp(false);
@@ -265,7 +279,7 @@ export default function CampDetailPage() {
       }
     };
     void load();
-  }, [slug]);
+  }, [id]);
 
   useEffect(() => {
     if (!camp?.id) return;
@@ -384,15 +398,31 @@ export default function CampDetailPage() {
     void load();
   }, [user, camp?.id]);
 
+  useEffect(() => {
+    if (!camp?.id) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("camps")
+        .select("id, slug, short_id, name, image_url, image_urls, hero_image_url, price_cents, price_unit, listing_type, schedule_days, meta, start_time, end_time")
+        .eq("is_published", true)
+        .neq("id", camp.id)
+        .not("hero_image_url", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(12);
+      if (data) setNearbyCamps(data as Camp[]);
+    };
+    void load();
+  }, [camp?.id]);
+
   if (loadingCamp) {
     return (
       <main>
         <div className="page-container py-8">
           <div className="page-grid">
-            <div className="span-10-center">
-              <div className="grid gap-10 lg:grid-cols-[5fr_8fr] items-start animate-pulse">
-                <div className="aspect-square rounded-3xl bg-muted" />
-                <div className="space-y-4">
+            <div className="span-12-center">
+              <div className="grid grid-cols-12 gap-gutter items-start animate-pulse">
+                <div className="col-span-5 aspect-square rounded-3xl bg-muted" />
+                <div className="col-span-7 space-y-4">
                   <div className="h-8 w-3/4 rounded-xl bg-muted" />
                   <div className="h-4 w-1/2 rounded-lg bg-muted" />
                   <div className="h-32 rounded-card bg-muted" />
@@ -410,7 +440,7 @@ export default function CampDetailPage() {
       <main>
         <div className="page-container py-8">
           <div className="page-grid">
-            <div className="span-10-center">
+            <div className="span-12-center">
               <button type="button" className="mb-4 text-xs text-muted-foreground hover:text-foreground" onClick={() => router.back()}>← Back</button>
               <div className="rounded-card bg-card px-6 py-8">
                 <p className="text-sm text-destructive">{campError || "We couldn't find that camp."}</p>
@@ -422,7 +452,7 @@ export default function CampDetailPage() {
     );
   }
 
-  const { id, name, description, image_urls, image_url, hero_image_url, price_cents, meta, location_city, location_neighborhood, host_id, capacity, start_time, end_time } = camp;
+  const { id: campId, name, description, image_urls, image_url, hero_image_url, price_cents, meta, location_city, location_neighborhood, host_id, capacity, start_time, end_time } = camp;
 
   // Images — deduplicate across hero_image_url / image_urls / image_url
   const imageCandidates: string[] = [];
@@ -442,7 +472,7 @@ export default function CampDetailPage() {
   const pricingMeta = meta?.pricing as { display?: string } | undefined;
   const rawDisplay = pricingMeta?.display || price;
   const priceDisplay = rawDisplay
-    ? rawDisplay.startsWith("$") ? rawDisplay : `$${rawDisplay}`
+    ? (pricingMeta?.display ? rawDisplay : rawDisplay.startsWith("$") ? rawDisplay : `$${rawDisplay}`)
     : null;
 
   // Host
@@ -453,11 +483,17 @@ export default function CampDetailPage() {
 
   // Dates
   const startDate = start_time ? formatDate(start_time) : null;
-  const dateLabel = startDate
-    ? startDate.full
-    : (meta?.dateLabel as string | undefined) || null;
+  const dateLabel = (meta?.dateLabel as string | undefined)
+    || (startDate ? startDate.full : null);
+  const firstSessionDate = (meta?.campSessions as Array<{ startDate?: string }> | undefined)?.[0]?.startDate ?? null;
+  const seasonLabel = start_time
+    ? getSeasonLabel(start_time)
+    : firstSessionDate
+    ? getSeasonLabel(firstSessionDate)
+    : null;
 
   const timeLabel = (() => {
+    if (meta?.timeLabel) return meta.timeLabel as string;
     const fixed = meta?.fixedSchedule as { startTime?: string; endTime?: string; allDay?: boolean } | undefined;
     if (fixed?.allDay) return "All day";
     if (fixed?.startTime && fixed?.endTime) return `${formatTimeLocal(fixed.startTime)} – ${formatTimeLocal(fixed.endTime)}`;
@@ -471,6 +507,7 @@ export default function CampDetailPage() {
   const locationVenueName = (meta?.locationName as string | undefined) || null;
   const locationCityState = [location_neighborhood, location_city].filter(Boolean).join(", ")
     || (camp as any).location as string | null
+    || (meta?.locationName2 as string | undefined)
     || null;
   const locationLine = isVirtual ? "Online event" : locationCityState;
 
@@ -480,7 +517,10 @@ export default function CampDetailPage() {
   const minAge = meta?.min_age as number | undefined;
   const maxAge = meta?.max_age as number | undefined;
   const experienceLevels = (meta?.experienceLevel as string[] | undefined) || [];
-  const activityKind = meta?.activityKind as "camp" | "class" | undefined;
+  const activityKindRaw = meta?.activityKind as string | undefined;
+  const activityKind = activityKindRaw
+    ? (activityKindRaw.charAt(0).toUpperCase() + activityKindRaw.slice(1)) as "camp" | "class" | undefined
+    : undefined;
   const cancellationPolicy = meta?.cancellation_policy as string | undefined;
   const additionalDetails = meta?.additionalDetails as string | undefined;
   const advanced = meta?.advanced as {
@@ -525,7 +565,8 @@ export default function CampDetailPage() {
   })();
 
   const campSessions = meta?.campSessions as Array<{
-    id: string; label?: string; startDate: string; endDate: string;
+    id: string; label?: string; ageGroup?: string; sessionType?: string;
+    startDate: string; endDate: string;
     days?: string[];
     startTime: string; endTime: string; capacity: string;
     enableWaitlist?: boolean;
@@ -546,11 +587,14 @@ export default function CampDetailPage() {
 
   // Age label
   const ageLabel = (() => {
+    if (meta?.ageLabel) return meta.ageLabel as string;
     if (minAge != null && maxAge != null) return `Ages ${minAge}–${maxAge}`;
     if (minAge != null) return `Ages ${minAge}+`;
     if (ageBuckets.length) return ageBucketLabel(ageBuckets);
     return null;
   })();
+  const ageDescription = (meta?.age_description as string | undefined) ?? null;
+  const priceDescription = (meta?.price_description as string | undefined) ?? null;
 
   // Reviews
   const avgRating =
@@ -738,39 +782,20 @@ export default function CampDetailPage() {
     <main>
       <div className="page-container pb-8">
         <div className="page-grid">
-          <div className="span-10-center">
+          <div className="span-12-center">
 
 
-        <div className="grid gap-x-10 gap-y-6 lg:grid-cols-[5fr_8fr] items-start">
+        <div className="grid grid-cols-12 gap-gutter gap-y-6 items-start">
 
           {/* ── LEFT COLUMN ── */}
-          <div className="space-y-4">
+          <div className="col-span-5 space-y-4">
 
-            {/* Main image */}
-            <div className="relative overflow-hidden bg-muted aspect-square" style={{ borderRadius: 12 }}>
-              <Image
-                src={images[selectedIdx]}
-                alt={name}
-                fill
-                sizes="(max-width: 1024px) 100vw, 360px"
-                className="object-cover cursor-zoom-in"
-                onClick={() => { setLightboxIdx(selectedIdx); setLightboxOpen(true); }}
-                priority
-              />
-            </div>
-
-            {/* Thumbnail strip */}
-            {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {images.map((src, i) => (
-                  <button key={i} type="button" onClick={() => setSelectedIdx(i)}
-                    className={`relative flex-shrink-0 h-14 w-14 rounded-xl overflow-hidden border-2 transition-colors ${i === selectedIdx ? "border-primary" : "border-transparent hover:border-muted-foreground/30"}`}
-                  >
-                    <Image src={src} alt={`Photo ${i + 1}`} fill sizes="56px" className="object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Image grid */}
+            <ActivityImageGrid
+              images={images}
+              alt={name}
+              onImageClick={(i) => { setLightboxIdx(i); setLightboxOpen(true); }}
+            />
 
             {/* Host card */}
             <HostCard
@@ -789,37 +814,18 @@ export default function CampDetailPage() {
               totalGoing={friendsGoingTotal}
             />
 
-            {/* Tags */}
-            {(category || ageLabel || activityKind) && (
-              <div className="flex flex-wrap gap-2">
-                {activityKind && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary capitalize">
-                    {activityKind}
-                  </span>
-                )}
-                {category && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-foreground">
-                    <span className="material-symbols-rounded select-none" style={{ fontSize: 12 }} aria-hidden>label</span> {category}
-                  </span>
-                )}
-                {experienceLevels.length > 0 && !experienceLevels.includes("all_levels") && (
-                  <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs text-foreground">
-                    {levelLabel(experienceLevels)}
-                  </span>
-                )}
-              </div>
-            )}
 
           </div>
 
           {/* ── RIGHT COLUMN ── */}
-          <div className="space-y-5">
+          <div className="col-span-7 space-y-5">
 
             <CampDetailHeader
               name={name}
               isFeatured={!!camp.featured}
               activityKind={activityKind}
               chipLabel={category ?? camp.listing_type ?? undefined}
+              seasonLabel={seasonLabel}
               isFavorite={isFavorite}
               favoriteDisabled={favoriteLoading}
               onFavorite={() => {
@@ -834,35 +840,47 @@ export default function CampDetailPage() {
               locationLine={locationLine}
               isVirtual={!!isVirtual}
               ageLabel={ageLabel}
+              ageDescription={ageDescription}
               priceLabel={priceDisplay ?? undefined}
+              priceDescription={priceDescription}
             />
 
             {/* ── External partner CTA ── */}
             {camp.external_url && (
-              <RegistrationPanel
-                status="external"
-                campName={orgName ?? name}
-                guests={reservationGuests}
-                maxGuests={Math.max(1, Math.min(spotsLeft ?? 10, 10))}
-                onGuestsChange={setReservationGuests}
-                sessions={campSessions?.map((s) => ({
-                  id: s.id,
-                  name: s.label ?? "Session",
-                  dateRange: (() => {
-                    const dr = formatDateRange(s.startDate, s.endDate);
-                    const t =
-                      s.startTime && s.endTime
-                        ? `${formatTimeLocal(s.startTime)} – ${formatTimeLocal(s.endTime)}`
-                        : null;
-                    return [dr, t].filter(Boolean).join(" · ") || "";
-                  })(),
-                }))}
-                selectedSessionIds={selectedSessionIds}
-                onSessionToggle={(sid) => setSelectedSessionIds(new Set([sid]))}
-                onRegisterExternal={() => window.open(camp.external_url!, "_blank")}
-                onMarkGoing={handleToggleGoing}
-                onExploreSimilar={() => {}}
-              />
+              <>
+                <Alert
+                  tone="warning"
+                  icon="outbound"
+                  action={{ label: "Register now", onClick: () => window.open(camp.external_url!, "_blank") }}
+                >
+                  Registration is handled on their website.
+                </Alert>
+
+                {description && (
+                  <div className="space-y-2 py-2">
+                    <h2 className="text-[14px] font-semibold text-foreground">About</h2>
+                    <div className="space-y-3 text-sm leading-relaxed" style={{ color: "rgba(0,0,0,0.8)" }}>
+                      {description.split(/\n\n+/).map((para, i) => (
+                        <p key={i}>{para.trim()}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {Array.isArray(meta?.highlights) && (meta.highlights as string[]).filter(Boolean).length > 0 && (
+                  <div className="space-y-2 py-2">
+                    <h2 className="text-base font-semibold text-foreground">Highlights</h2>
+                    <ul className="space-y-3">
+                      {(meta.highlights as string[]).filter(Boolean).map((h, i) => (
+                        <li key={i} className="flex items-start gap-3 text-sm" style={{ color: "rgba(0,0,0,0.8)" }}>
+                          <span className="mt-1.5 shrink-0 w-2 h-2 rounded-full bg-foreground/80" />
+                          {h}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
 
             {/* ── Reservation card: status states → RegistrationPanel ── */}
@@ -1170,8 +1188,8 @@ export default function CampDetailPage() {
                             <p className="text-xs text-muted-foreground">Optional convenience for families</p>
                           </div>
                           {addonsExpanded
-                            ? <span className="material-symbols-rounded select-none text-muted-foreground shrink-0" style={{ fontSize: 16 }} aria-hidden>expand_less</span>
-                            : <span className="material-symbols-rounded select-none text-muted-foreground shrink-0" style={{ fontSize: 16 }} aria-hidden>expand_more</span>
+                            ? <span className="material-symbols-outlined select-none text-muted-foreground shrink-0" style={{ fontSize: 16 }} aria-hidden>expand_less</span>
+                            : <span className="material-symbols-outlined select-none text-muted-foreground shrink-0" style={{ fontSize: 16 }} aria-hidden>expand_more</span>
                           }
                         </button>
 
@@ -1341,7 +1359,7 @@ export default function CampDetailPage() {
                             {/* Sibling discount */}
                             {advanced?.siblingDiscount?.enabled && advanced.siblingDiscount.value && (
                               <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-muted/30">
-                                <span className="material-symbols-rounded select-none shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>percent</span>
+                                <span className="material-symbols-outlined select-none shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>percent</span>
                                 <div>
                                   <p className="text-sm font-semibold text-foreground">Sibling discount</p>
                                   <p className="text-xs text-muted-foreground">
@@ -1420,7 +1438,7 @@ export default function CampDetailPage() {
             {classSchedule?.frequency && (
               <div className="flex items-start gap-4 py-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-                  <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>repeat</span>
+                  <span className="material-symbols-outlined select-none text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>repeat</span>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{frequencyLabel(classSchedule.frequency)}</p>
@@ -1433,7 +1451,7 @@ export default function CampDetailPage() {
             {totalCapacity != null && (
               <div className="flex items-start gap-4 py-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-                  <span className="material-symbols-rounded select-none text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>group</span>
+                  <span className="material-symbols-outlined select-none text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>group</span>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">
@@ -1463,9 +1481,9 @@ export default function CampDetailPage() {
             )}
 
             {/* About */}
-            {description && (
+            {!camp.external_url && description && (
               <div className="space-y-2 py-2">
-                <h2 className="text-base font-semibold text-foreground">About</h2>
+                <h2 className="text-[14px] font-semibold text-foreground">About</h2>
                 <div className="space-y-3 text-sm leading-relaxed" style={{ color: "rgba(0,0,0,0.8)" }}>
                   {description.split(/\n\n+/).map((para, i) => (
                     <p key={i}>{para.trim()}</p>
@@ -1474,11 +1492,26 @@ export default function CampDetailPage() {
               </div>
             )}
 
+            {/* Highlights */}
+            {!camp.external_url && Array.isArray(meta?.highlights) && (meta.highlights as string[]).filter(Boolean).length > 0 && (
+              <div className="space-y-2 py-2">
+                <h2 className="text-base font-semibold text-foreground">Highlights</h2>
+                <ul className="space-y-3">
+                  {(meta.highlights as string[]).filter(Boolean).map((h, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm" style={{ color: "rgba(0,0,0,0.8)" }}>
+                      <span className="mt-1.5 shrink-0 w-2 h-2 rounded-full bg-foreground/80" />
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Additional details */}
             {additionalDetails && (
               <div className="space-y-2 py-2">
                 <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                  <span className="material-symbols-rounded select-none" style={{ fontSize: 16 }} aria-hidden>menu_book</span> What to bring
+                  <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>menu_book</span> What to bring
                 </h2>
                 <p className="text-sm leading-relaxed text-muted-foreground">{additionalDetails}</p>
               </div>
@@ -1551,7 +1584,7 @@ export default function CampDetailPage() {
             {/* Cancellation policy */}
             {cancellationPolicy && (
               <div className="flex items-start gap-3 py-2">
-                <span className="material-symbols-rounded select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>calendar_month</span>
+                <span className="material-symbols-outlined select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>calendar_month</span>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Cancellation policy</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{cancellationPolicy}</p>
@@ -1577,7 +1610,7 @@ export default function CampDetailPage() {
             className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
             onClick={() => setLightboxOpen(false)}
           >
-            <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>close</span>
+            <span className="material-symbols-outlined select-none" style={{ fontSize: 20 }} aria-hidden>close</span>
           </button>
 
           {/* Prev */}
@@ -1587,7 +1620,7 @@ export default function CampDetailPage() {
               className="absolute left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
               onClick={(e) => { e.stopPropagation(); setLightboxIdx((lightboxIdx - 1 + images.length) % images.length); }}
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>chevron_left</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 20 }} aria-hidden>chevron_left</span>
             </button>
           )}
 
@@ -1607,7 +1640,7 @@ export default function CampDetailPage() {
               className="absolute right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
               onClick={(e) => { e.stopPropagation(); setLightboxIdx((lightboxIdx + 1) % images.length); }}
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 20 }} aria-hidden>chevron_right</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 20 }} aria-hidden>chevron_right</span>
             </button>
           )}
 
@@ -1619,6 +1652,9 @@ export default function CampDetailPage() {
           )}
         </div>
       )}
+
+      {/* ── Explore more ── */}
+      <ExploreMoreSection camps={nearbyCamps} variant="mono" />
 
       {/* ── Pick days modal ── */}
       <Dialog open={pickDaysModal !== null} onOpenChange={(open) => { if (!open) setPickDaysModal(null); }}>

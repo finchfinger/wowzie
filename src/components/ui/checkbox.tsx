@@ -28,7 +28,7 @@ function Checkbox({
         data-slot="checkbox-indicator"
         className="grid place-content-center text-current transition-none"
       >
-        <span className="material-symbols-rounded select-none" style={{ fontSize: 14, lineHeight: 1 }} aria-hidden>check</span>
+        <span className="material-symbols-outlined select-none" style={{ fontSize: 14, lineHeight: 1 }} aria-hidden>check</span>
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   )

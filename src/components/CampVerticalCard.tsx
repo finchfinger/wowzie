@@ -49,7 +49,7 @@ const resolveDate = (camp: Camp): string | null => {
 };
 
 export function CampVerticalCard({ camp }: CampVerticalCardProps) {
-  const { slug, name } = camp;
+  const { short_id, name } = camp;
   const image = useMemo(() => resolveImage(camp), [camp]);
   const price = useMemo(() => resolvePrice(camp), [camp]);
   const unit = useMemo(() => getPriceUnit(camp), [camp]);
@@ -57,7 +57,7 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
 
   return (
     <Link
-      href={`/camp/${slug}`}
+      href={`/activity/${short_id}`}
       className="group block focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-lg"
       aria-label={`View ${name}`}
     >

@@ -47,7 +47,7 @@ export function HostCard({
       onClick={onEdit}
       className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
     >
-      <span className="material-symbols-rounded select-none" style={{ fontSize: 14 }} aria-hidden>edit</span>
+      <span className="material-symbols-outlined select-none" style={{ fontSize: 14 }} aria-hidden>edit</span>
       Edit listing
     </button>
   ) : null;

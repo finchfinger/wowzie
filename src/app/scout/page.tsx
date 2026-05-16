@@ -72,7 +72,7 @@ function MessageText({ text, onNavigate }: { text: string; onNavigate: (href: st
               onMouseEnter={e => (e.currentTarget.style.background = "#ddd6fe")}
               onMouseLeave={e => (e.currentTarget.style.background = "#ede9fe")}
             >
-              <span className="material-symbols-rounded select-none" style={{ fontSize: 11 }}>open_in_new</span>
+              <span className="material-symbols-outlined select-none" style={{ fontSize: 11 }}>open_in_new</span>
               {label}
             </button>
           );
@@ -153,7 +153,7 @@ const SUGGESTION_CHIPS: Array<{ icon: string; label: string }> = [
 function MI({ name, size = 16 }: { name: string; size?: number }) {
   return (
     <span
-      className="material-symbols-rounded select-none"
+      className="material-symbols-outlined select-none"
       style={{ fontSize: size, lineHeight: 1 }}
     >
       {name}
@@ -315,7 +315,7 @@ export default function AIChatPage() {
                     className="flex items-center gap-2 rounded-xl border border-border/60 bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/30 transition-colors"
                   >
                     <span
-                      className="material-symbols-rounded text-muted-foreground select-none"
+                      className="material-symbols-outlined text-muted-foreground select-none"
                       style={{ fontSize: 16, lineHeight: 1 }}
                     >
                       {chip.icon}

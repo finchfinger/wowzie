@@ -76,7 +76,7 @@ export default function HelpPage() {
                 <div className="grid gap-8 md:grid-cols-2">
                   {PARENT_ARTICLES.map((a) => (
                     <Link key={a.href} href={a.href} className="group flex gap-3">
-                      <span className="material-symbols-rounded mt-0.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" style={{ fontSize: 22 }} aria-hidden="true">{a.icon}</span>
+                      <span className="material-symbols-outlined mt-0.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" style={{ fontSize: 22 }} aria-hidden="true">{a.icon}</span>
                       <div>
                         <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">{a.title}</h3>
                         <p className="mt-1 text-sm text-muted-foreground">{a.desc}</p>
@@ -92,7 +92,7 @@ export default function HelpPage() {
                 <div className="grid gap-8 md:grid-cols-2">
                   {CAMP_ARTICLES.map((a) => (
                     <Link key={a.href} href={a.href} className="group flex gap-3">
-                      <span className="material-symbols-rounded mt-0.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" style={{ fontSize: 22 }} aria-hidden="true">{a.icon}</span>
+                      <span className="material-symbols-outlined mt-0.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" style={{ fontSize: 22 }} aria-hidden="true">{a.icon}</span>
                       <div>
                         <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">{a.title}</h3>
                         <p className="mt-1 text-sm text-muted-foreground">{a.desc}</p>

@@ -11,13 +11,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tag } from "@/components/ui/Tag";
+import { Alert } from "@/components/ui/Alert";
+import { SessionList } from "@/components/SessionList";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type RegistrationSession = {
   id: string;
   name: string;
+  ageGroup?: string;
+  sessionType?: string;
   dateRange: string;
+  timeRange?: string;
   spotsRemaining?: number | null;
 };
 
@@ -43,114 +48,163 @@ export type RegistrationStatus =
   | "waitlist"
   | "ended";
 
-// ─── RegistrationBanner ───────────────────────────────────────────────────────
+// ─── SessionPicker ────────────────────────────────────────────────────────────
 
-const BANNER_STYLES: Record<string, { background: string }> = {
-  success:  { background: "#D1FAE5" },
-  error:    { background: "#FECACA" },
-  external: { background: "#E0E7FF" },
-  waitlist: { background: "#FEF9C3" },
-  ended:    { background: "rgba(0,0,0,0.85)" },
+type SessionPickerProps = {
+  sessions: RegistrationSession[];
+  selectedSessionIds?: Set<string>;
+  onSessionToggle?: (id: string) => void;
 };
 
-export type RegistrationBannerProps = {
-  variant: "success" | "error" | "external" | "waitlist" | "ended";
-  icon: string;
-  message: string;
-};
-
-export function RegistrationBanner({ variant, icon, message }: RegistrationBannerProps) {
-  const { background } = BANNER_STYLES[variant];
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 4,
-        padding: "14px 20px",
-        background,
-        color: variant === "ended" ? "#fff" : "rgba(0,0,0,0.8)",
-      }}
-    >
-      <span
-        className="material-symbols-rounded select-none shrink-0"
-        style={{ fontSize: 20, lineHeight: 1 }}
-        aria-hidden
-      >
-        {icon}
-      </span>
-      <p style={{ fontSize: 14, fontWeight: 500, lineHeight: "20px" }}>{message}</p>
-    </div>
-  );
-}
-
-// ─── SessionCard ──────────────────────────────────────────────────────────────
-
-type SessionCardProps = {
-  session: RegistrationSession;
-  selected: boolean;
-  onToggle: () => void;
-};
-
-function SessionCard({ session, selected, onToggle }: SessionCardProps) {
-  const showSpotsWarning =
-    session.spotsRemaining != null && session.spotsRemaining <= 5;
-
+function FilterChip({ label, active, disabled, onClick }: { label: string; active: boolean; disabled: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={onClick}
+      disabled={disabled}
       style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "14px 16px",
-        borderRadius: 8,
+        padding: "6px 14px",
+        borderRadius: 999,
+        fontSize: 13,
+        fontWeight: 500,
         border: "none",
-        outline: "none",
-        boxShadow: selected
-          ? "0 0 0 2px rgba(0,0,0,0.85)"
-          : "0 0 0 1px var(--input)",
-        background: "#fff",
-        textAlign: "left",
-        cursor: "pointer",
-        transition: "box-shadow 0.15s",
+        cursor: disabled ? "default" : "pointer",
+        background: active ? "rgba(0,0,0,0.85)" : disabled ? "rgba(0,0,0,0.03)" : "rgba(0,0,0,0.06)",
+        color: active ? "#fff" : disabled ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.7)",
+        transition: "background 0.15s, color 0.15s",
       }}
     >
-      {/* Check indicator — always reserves space, invisible when unselected */}
-      <span
-        className="material-symbols-rounded select-none shrink-0"
-        style={{
-          fontSize: 22,
-          lineHeight: 1,
-          color: "rgba(0,0,0,0.85)",
-          fontVariationSettings: "'FILL' 1",
-          visibility: selected ? "visible" : "hidden",
-        }}
-        aria-hidden
-      >
-        check_circle
-      </span>
+      {label}
+    </button>
+  );
+}
 
-      {/* Text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(0,0,0,0.85)", lineHeight: "20px" }}>
-          {session.name}
-        </p>
-        <p style={{ fontSize: 13, fontWeight: 400, color: "rgba(0,0,0,0.45)", lineHeight: "18px" }}>
-          {session.dateRange}
-        </p>
+function SessionPicker({ sessions, selectedSessionIds = new Set(), onSessionToggle }: SessionPickerProps) {
+  const [age, setAge] = React.useState("");
+  const [time, setTime] = React.useState("");
+
+  const hasAgeGroups  = sessions.some(s => s.ageGroup);
+  const hasSessionTypes = sessions.some(s => s.sessionType);
+
+  const allAges  = [...new Set(sessions.map(s => s.ageGroup).filter(Boolean))] as string[];
+  const allTimes = [...new Set(sessions.map(s => s.sessionType).filter(Boolean))] as string[];
+  const allDates = [...new Set(sessions.map(s => s.dateRange))].sort((a, b) => {
+    const toMs = (dr: string) => new Date(dr.split("–")[0].trim()).getTime();
+    return toMs(a) - toMs(b);
+  });
+
+  const availableTimes = new Set(
+    sessions.filter(s => !age || s.ageGroup === age).map(s => s.sessionType).filter(Boolean)
+  );
+  const availableDates = new Set(
+    sessions
+      .filter(s => (!age || s.ageGroup === age) && (!time || s.sessionType === time))
+      .map(s => s.dateRange)
+  );
+
+  const handleAge = (a: string) => {
+    const next = a === age ? "" : a;
+    setAge(next);
+    if (time && !sessions.some(s => s.ageGroup === next && s.sessionType === time)) setTime("");
+  };
+
+  const handleTime = (t: string) => setTime(t === time ? "" : t);
+
+  const handleWeek = (dateRange: string) => {
+    const match = sessions.find(s =>
+      s.dateRange === dateRange &&
+      (!age  || s.ageGroup    === age) &&
+      (!time || s.sessionType === time)
+    );
+    if (match) onSessionToggle?.(match.id);
+  };
+
+  const selectedSessions = sessions.filter(s => selectedSessionIds.has(s.id));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {hasAgeGroups && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(0,0,0,0.4)" }}>Age group</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {allAges.map(a => (
+              <FilterChip key={a} label={a} active={age === a} disabled={false} onClick={() => handleAge(a)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasSessionTypes && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(0,0,0,0.4)" }}>Time of day</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {allTimes.map(t => (
+              <FilterChip key={t} label={t} active={time === t} disabled={!!age && !availableTimes.has(t)} onClick={() => handleTime(t)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(0,0,0,0.4)" }}>Weeks</p>
+        {allDates.map(dateRange => {
+          const isDisabled = (!!age || !!time) && !availableDates.has(dateRange);
+          const matchingSession = sessions.find(s =>
+            s.dateRange === dateRange &&
+            (!age  || s.ageGroup    === age) &&
+            (!time || s.sessionType === time)
+          );
+          const isChecked = !!matchingSession && selectedSessionIds.has(matchingSession.id);
+          return (
+            <button
+              key={dateRange}
+              type="button"
+              onClick={() => handleWeek(dateRange)}
+              disabled={isDisabled}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "11px 14px",
+                borderRadius: 8,
+                border: "none",
+                cursor: isDisabled ? "default" : "pointer",
+                background: "transparent",
+                boxShadow: isChecked ? "0 0 0 2px rgba(0,0,0,0.85)" : "0 0 0 1px var(--input)",
+                textAlign: "left",
+                opacity: isDisabled ? 0.3 : 1,
+                transition: "box-shadow 0.15s, opacity 0.15s",
+              }}
+            >
+              <span
+                className="material-symbols-outlined select-none shrink-0"
+                style={{ fontSize: 20, color: "rgba(0,0,0,0.85)", fontVariationSettings: "'FILL' 1", visibility: isChecked ? "visible" : "hidden" }}
+                aria-hidden
+              >
+                check_circle
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(0,0,0,0.85)" }}>{dateRange}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {showSpotsWarning && (
-        <Tag
-          size="sm"
-          label={`Only ${session.spotsRemaining} spot${session.spotsRemaining !== 1 ? "s" : ""} remaining`}
-        />
+      {selectedSessions.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 4, borderTop: "1px solid rgba(0,0,0,0.07)" }}>
+          {selectedSessions.map(s => (
+            <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 2px" }}>
+              <p style={{ fontSize: 13, color: "rgba(0,0,0,0.55)" }}>
+                {[s.ageGroup, s.sessionType, s.dateRange].filter(Boolean).join(" · ")}
+              </p>
+              <button type="button" onClick={() => onSessionToggle?.(s.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, flexShrink: 0 }}>
+                <span className="material-symbols-outlined select-none" style={{ fontSize: 16, color: "rgba(0,0,0,0.35)" }}>close</span>
+              </button>
+            </div>
+          ))}
+        </div>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -200,7 +254,7 @@ function AddonCard({ addon, state, onToggle, onModeChange, onEditDays }: AddonCa
         }}
       >
         <span
-          className="material-symbols-rounded select-none shrink-0"
+          className="material-symbols-outlined select-none shrink-0"
           style={{
             fontSize: 22,
             lineHeight: 1,
@@ -338,6 +392,7 @@ export type RegistrationPanelProps = {
   reserveDisabled?: boolean;
 
   // Booked actions
+  onViewBookingDetails?: () => void;
   onInviteFriend?: () => void;
   onCancelReservation?: () => void;
 
@@ -367,6 +422,7 @@ export function RegistrationPanel({
   onAddonEditDays,
   onReserve,
   reserveDisabled,
+  onViewBookingDetails,
   onInviteFriend,
   onCancelReservation,
   campName,
@@ -379,24 +435,34 @@ export function RegistrationPanel({
   const hasAddons = addons && addons.length > 0;
   const showSpotsInHeader = spotsRemaining != null && spotsRemaining <= 5;
 
-  // Status states: banner flush at top, actions below with padding
+  // Non-available states: Alert inside a standard card, read-only sessions, then action buttons
   if (status !== "available") {
-    const bannerMap = {
-      booked:   { variant: "success"  as const, icon: "cheer",      message: "You're in. We can't wait to see you!" },
-      full:     { variant: "error"    as const, icon: "cancel",     message: "This session is full" },
-      external: { variant: "external" as const, icon: "outbound",   message: "Booking is handled on their website" },
-      waitlist: { variant: "waitlist" as const, icon: "list_alt",   message: "This session has reached capacity but you can join the waitlist." },
-      ended:    { variant: "ended"    as const, icon: "event_busy", message: "This class has ended" },
+    type AlertConfig = {
+      tone: "success" | "error" | "warning" | "dark";
+      icon: string;
+      message: string;
+      action?: { label: string; onClick: () => void };
     };
-    const banner = bannerMap[status];
+    const alertMap: Record<Exclude<RegistrationStatus, "available">, AlertConfig> = {
+      booked:   { tone: "success", icon: "cheer",      message: "You're in. We can't wait to see you!", action: onViewBookingDetails ? { label: "See details", onClick: onViewBookingDetails } : undefined },
+      full:     { tone: "error",   icon: "cancel",     message: "This session is full.",                action: onExploreSimilar   ? { label: "Explore similar", onClick: onExploreSimilar } : undefined },
+      external: { tone: "warning", icon: "outbound",   message: "Registration is handled on their website.", action: onRegisterExternal ? { label: "Register now", onClick: onRegisterExternal } : undefined },
+      waitlist: { tone: "warning", icon: "list_alt",   message: "This session is full but the waitlist is open.", action: onJoinWaitlist ? { label: "Join the waitlist", onClick: onJoinWaitlist } : undefined },
+      ended:    { tone: "dark",    icon: "event_busy", message: "This camp has ended.",                  action: onExploreSimilar   ? { label: "Explore similar", onClick: onExploreSimilar } : undefined },
+    };
+    const { tone, icon, message, action } = alertMap[status];
 
     return (
-      <div className="rounded-card bg-card overflow-hidden flex flex-col">
-        {/* Banner — flush to top, edge-to-edge */}
-        <RegistrationBanner variant={banner.variant} icon={banner.icon} message={banner.message} />
+      <Card>
+        <CardContent className="flex flex-col gap-6">
+          <Alert tone={tone} icon={icon} action={action}>
+            {message}
+          </Alert>
 
-        {/* Actions — padded */}
-        <div className="flex flex-col gap-4 p-6">
+          {hasSessions && (
+            <SessionList sessions={sessions!} />
+          )}
+
           {status === "booked" && (
             <div className="grid grid-cols-2 gap-3">
               <Button size="lg" onClick={onInviteFriend}>Invite a friend</Button>
@@ -407,12 +473,6 @@ export function RegistrationPanel({
             <Button size="lg" variant="secondary" className="w-full" onClick={onExploreSimilar}>
               Explore similar events
             </Button>
-          )}
-          {status === "external" && (
-            <div className="grid grid-cols-2 gap-3">
-              <Button size="lg" onClick={onRegisterExternal}>Register on their website</Button>
-              <Button size="lg" variant="secondary" onClick={onMarkGoing}>I&apos;m going</Button>
-            </div>
           )}
           {status === "waitlist" && (
             <div className="grid grid-cols-2 gap-3">
@@ -425,8 +485,8 @@ export function RegistrationPanel({
               Explore similar events
             </Button>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -457,21 +517,11 @@ export function RegistrationPanel({
         </Select>
 
         {hasSessions && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(0,0,0,0.85)" }}>
-              Please select your sessions
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {sessions!.map((session) => (
-                <SessionCard
-                  key={session.id}
-                  session={session}
-                  selected={selectedSessionIds.has(session.id)}
-                  onToggle={() => onSessionToggle?.(session.id)}
-                />
-              ))}
-            </div>
-          </div>
+          <SessionPicker
+            sessions={sessions!}
+            selectedSessionIds={selectedSessionIds}
+            onSessionToggle={onSessionToggle}
+          />
         )}
 
         {hasAddons && (

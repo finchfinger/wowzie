@@ -65,6 +65,7 @@ const CAMP_CARD_COLUMNS = `
   id,
   program_id,
   slug,
+  short_id,
   name,
   location,
   image_url,
@@ -318,13 +319,14 @@ export default function HomePage() {
 
   // Hero rotating camps — populated from featured camps in pool
   const [heroIndex, setHeroIndex] = useState(0);
-  const heroCamps = useMemo<Array<{ name: string; slug: string; image: string }>>(() => {
+  const heroCamps = useMemo<Array<{ name: string; slug: string; short_id: string | null | undefined; image: string }>>(() => {
     const fromPool = pool
       .filter((c) => c.featured && (c.hero_image_url || (Array.isArray(c.image_urls) && c.image_urls.length > 0) || c.image_url))
       .slice(0, 5)
       .map((c) => ({
         name: c.name,
         slug: c.slug,
+        short_id: c.short_id,
         image: c.hero_image_url ?? (Array.isArray(c.image_urls) ? c.image_urls[0] : null) ?? c.image_url ?? "",
       }))
       .filter((c) => c.image);
@@ -578,7 +580,7 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <div ref={searchWrapperRef} className="relative flex-1 min-w-0">
               <div className="relative flex items-center" style={{ background: "#fff", borderRadius: "9999px" }}>
-                <span className="material-symbols-rounded select-none absolute left-4 text-foreground" style={{ fontSize: 20, lineHeight: 1 }}>search</span>
+                <span className="material-symbols-outlined select-none absolute left-4 text-foreground" style={{ fontSize: 20, lineHeight: 1 }}>search</span>
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
@@ -664,7 +666,7 @@ export default function HomePage() {
                 className="sm:hidden flex items-center justify-center rounded-full shrink-0"
                 style={{ background: "#E3FA4F", width: 44, height: 44 }}
               >
-                <span className="material-symbols-rounded select-none text-foreground" style={{ fontSize: 22, lineHeight: 1 }}>arrow_forward</span>
+                <span className="material-symbols-outlined select-none text-foreground" style={{ fontSize: 22, lineHeight: 1 }}>arrow_forward</span>
               </button>
             </div>
 
@@ -767,9 +769,9 @@ export default function HomePage() {
               priority
             />
             {/* Camp name chip */}
-            {heroCamps[heroIndex]?.slug ? (
+            {heroCamps[heroIndex]?.short_id ? (
               <a
-                href={`/camp/${heroCamps[heroIndex].slug}`}
+                href={`/activity/${heroCamps[heroIndex].short_id}`}
                 className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm hover:bg-white transition-colors"
               >
                 <span className="text-xs font-semibold text-foreground leading-none">{heroCamps[heroIndex].name}</span>
