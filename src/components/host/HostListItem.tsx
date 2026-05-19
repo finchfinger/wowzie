@@ -10,6 +10,7 @@ export type HostListItemData = {
   id: string;
   name: string;
   slug: string | null;
+  short_id?: string | null;
   image_url: string | null;
   hero_image_url: string | null;
   status: string | null;
@@ -381,7 +382,8 @@ export function HostListItem({
             {
               label: "Go to listing",
               onSelect: () => {
-                if (listing.slug) router.push(`/camp/${listing.slug}`);
+                if (listing.short_id) router.push(`/activity/${listing.short_id}`);
+                else if (listing.slug) router.push(`/camp/${listing.slug}`);
               },
             },
             {
@@ -391,8 +393,9 @@ export function HostListItem({
             {
               label: "Share listing",
               onSelect: () => {
-                if (!listing.slug) return;
-                const url = `${window.location.origin}/camp/${listing.slug}`;
+                const path = listing.short_id ? `/activity/${listing.short_id}` : listing.slug ? `/camp/${listing.slug}` : null;
+                if (!path) return;
+                const url = `${window.location.origin}${path}`;
                 navigator.clipboard.writeText(url).catch(() => {});
               },
             },

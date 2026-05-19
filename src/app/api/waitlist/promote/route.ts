@@ -65,7 +65,8 @@ export async function POST(req: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.heywowzi.com";
     const campName = camp.name as string;
-    const campSlug = camp.slug as string;
+    const campSlug = (camp.short_id ?? camp.slug) as string;
+    const campPath = camp.short_id ? `/activity/${camp.short_id}` : `/camp/${camp.slug}`;
     let promoted = 0;
 
     for (const entry of waitlisted) {
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
             from: FROM_EMAIL,
             to: userEmail,
             subject: `A spot just opened up for ${campName}!`,
-            html: waitlistPromotedEmailHtml({ campName, campSlug, appUrl }),
+            html: waitlistPromotedEmailHtml({ campName, campPath, appUrl }),
           });
           promoted++;
         }
@@ -107,14 +108,14 @@ export async function POST(req: NextRequest) {
 
 function waitlistPromotedEmailHtml({
   campName,
-  campSlug,
+  campPath,
   appUrl,
 }: {
   campName: string;
-  campSlug: string;
+  campPath: string;
   appUrl: string;
 }) {
-  const campUrl = `${appUrl}/camp/${campSlug}`;
+  const campUrl = `${appUrl}${campPath}`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

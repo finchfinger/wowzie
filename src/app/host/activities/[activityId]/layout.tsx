@@ -156,7 +156,7 @@ function ActivityShell({ children }: { children: React.ReactNode }) {
               <>
                 <Button size="sm" className="bg-foreground text-background hover:bg-foreground/90" onClick={handleEdit}>Edit Listing</Button>
                 <ActionsMenu items={[
-                  { label: "View event page", onSelect: () => { if (activity.slug) router.push(`/camp/${activity.slug}`); }, disabled: !activity.slug },
+                  { label: "View event page", onSelect: () => { if (activity.short_id) router.push(`/activity/${activity.short_id}`); else if (activity.slug) router.push(`/camp/${activity.slug}`); }, disabled: !activity.short_id && !activity.slug },
                   { label: busyAction === "duplicate" ? "Duplicating…" : "Duplicate listing", onSelect: handleDuplicate },
                   { label: "Delete event", tone: "destructive", onSelect: () => { setDeleteOpen(true); } },
                 ]} />

@@ -177,11 +177,11 @@ export async function POST(req: NextRequest) {
       // Fetch booking info for notifications and waitlist promotion
       const { data: booking } = await supabase
         .from("bookings")
-        .select("user_id, camp_id, camps:camp_id(name, slug, short_id, short_id)")
+        .select("user_id, camp_id, camps:camp_id(name, slug, short_id)")
         .eq("id", bookingId)
         .single();
 
-      const campInfo = booking?.camps as unknown as { name: string; slug: string } | null;
+      const campInfo = booking?.camps as unknown as { name: string; slug: string; short_id: string | null } | null;
       const campName = campInfo?.name ?? "your camp";
 
       if (booking?.user_id) {
@@ -197,6 +197,7 @@ export async function POST(req: NextRequest) {
       // Promote waitlisted users now that a spot opened up
       if (booking?.camp_id) {
         const campId = booking.camp_id as string;
+        const campPath = campInfo?.short_id ? `/activity/${campInfo.short_id}` : `/camp/${campInfo?.slug ?? ""}`;
         const campSlug = campInfo?.slug ?? "";
         const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://golly-roan.vercel.app";
 
@@ -224,7 +225,7 @@ export async function POST(req: NextRequest) {
                 from: FROM_EMAIL,
                 to: userEmail,
                 subject: `A spot just opened up for ${campName}!`,
-                html: waitlistPromotedEmailHtml({ campName, campSlug, appUrl }),
+                html: waitlistPromotedEmailHtml({ campName, campPath, appUrl }),
               });
             }
           } catch (e) {
@@ -427,14 +428,14 @@ function bookingConfirmedEmailHtml({
 
 function waitlistPromotedEmailHtml({
   campName,
-  campSlug,
+  campPath,
   appUrl,
 }: {
   campName: string;
-  campSlug: string;
+  campPath: string;
   appUrl: string;
 }) {
-  const campUrl = `${appUrl}/camp/${campSlug}`;
+  const campUrl = `${appUrl}${campPath}`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

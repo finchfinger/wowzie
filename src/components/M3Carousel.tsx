@@ -7,6 +7,7 @@ import Link from "next/link";
 export type CarouselItem = {
   name: string;
   slug: string;
+  short_id?: string | null;
   image: string;
 };
 
@@ -107,7 +108,7 @@ export function M3Carousel({ items, autoAdvance = 6000, className = "" }: M3Caro
               <div className="absolute" style={{ bottom: 10, left: 10 }}>
                 {item.slug ? (
                   <Link
-                    href={`/camp/${item.slug}`}
+                    href={item.short_id ? `/activity/${item.short_id}` : `/camp/${item.slug}`}
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center bg-white font-medium hover:bg-white/90 transition-colors"
                     style={{ fontSize: 11, height: 28, borderRadius: 4, color: "rgba(0,0,0,0.6)", paddingLeft: 10, paddingRight: 10 }}

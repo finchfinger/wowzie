@@ -33,6 +33,7 @@ export type CampBookingRow = {
 export type Activity = {
   id: string;
   slug: string | null;
+  short_id: string | null;
   name: string;
   description: string | null;
   location: string | null;
@@ -53,7 +54,7 @@ export type Activity = {
 };
 
 export const ACTIVITY_COLUMNS = `
-  id, slug, name, description, location, capacity,
+  id, slug, short_id, name, description, location, capacity,
   price_cents, is_published, is_active, status,
   hero_image_url, image_url, image_urls,
   start_time, end_time, start_local, end_local, schedule_tz,
