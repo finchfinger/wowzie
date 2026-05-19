@@ -5,6 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Alert } from "@/components/ui/Alert";
+import { Tag } from "@/components/ui/Tag";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SortDropdown } from "@/components/ui/SortDropdown";
 import { ActivityListItem } from "@/components/ActivityListItem";
 import { ActionsMenu } from "@/components/ui/ActionsMenu";
 
@@ -18,6 +24,8 @@ type Profile = {
   city: string | null;
   about: string | null;
   avatar_url: string | null;
+  wowzi_managed?: boolean;
+  is_claimed?: boolean;
 };
 
 type HostProfile = {
@@ -43,17 +51,6 @@ function formatActivityTime(iso: string): string {
   return `${date} at ${time}`;
 }
 
-/* ── Badge chip ─────────────────────────────────────────── */
-
-function Badge({ icon, label }: { icon: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-      <span className="material-symbols-outlined text-[14px] leading-none">{icon}</span>
-      {label}
-    </span>
-  );
-}
-
 /* ── Main page ──────────────────────────────────────────── */
 
 export default function ProfilePage() {
@@ -64,6 +61,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hostProfile, setHostProfile] = useState<HostProfile | null>(null);
   const [upcomingActivities, setUpcomingActivities] = useState<UpcomingActivity[]>([]);
+  const [hostedCount, setHostedCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -93,33 +91,39 @@ export default function ProfilePage() {
         const { data: authData } = await supabase.auth.getUser();
         const isOwnId = authData?.user?.id === targetId;
 
-        const { data: pRow, error: pErr } = await supabase
-          .from("profiles")
-          .select("id, legal_name, preferred_first_name, email, city, about, avatar_url")
-          .eq("id", targetId)
-          .maybeSingle();
+        // Try API route first (bypasses RLS for public host profiles)
+        const apiRes = await fetch(`/api/profiles/${targetId}`);
+        if (apiRes.ok) {
+          profileRow = await apiRes.json() as Profile;
+        }
 
-        if (pRow) {
-          profileRow = pRow as unknown as Profile;
-        } else {
-          if (pErr) console.warn("[profile] SELECT error:", pErr.message);
-          if (isOwnId && authData?.user) {
-            const meta = authData.user.user_metadata ?? {};
-            const legalName = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || null;
-            profileRow = {
-              id: targetId,
-              legal_name: legalName,
-              preferred_first_name: (meta.first_name as string) || null,
-              email: authData.user.email ?? null,
-              city: null,
-              about: null,
-              avatar_url: null,
-            };
-            supabase.from("profiles").upsert(
-              { id: targetId, email: authData.user.email ?? null, legal_name: legalName, preferred_first_name: (meta.first_name as string) || null },
-              { onConflict: "id" },
-            ).then(({ error: e }) => { if (e) console.warn("[profile] upsert error:", e.message); });
-          }
+        if (!profileRow) {
+          const { data: pRow, error: pErr } = await supabase
+            .from("profiles")
+            .select("id, legal_name, preferred_first_name, email, city, about, avatar_url")
+            .eq("id", targetId)
+            .maybeSingle();
+          if (pRow) profileRow = pRow as unknown as Profile;
+          else if (pErr) console.warn("[profile] SELECT error:", pErr.message);
+        }
+
+        // Fallback: synthesize own profile from auth metadata if not in DB yet
+        if (!profileRow && isOwnId && authData?.user) {
+          const meta = authData.user.user_metadata ?? {};
+          const legalName = [meta.first_name, meta.last_name].filter(Boolean).join(" ") || null;
+          profileRow = {
+            id: targetId,
+            legal_name: legalName,
+            preferred_first_name: (meta.first_name as string) || null,
+            email: authData.user.email ?? null,
+            city: null,
+            about: null,
+            avatar_url: null,
+          };
+          supabase.from("profiles").upsert(
+            { id: targetId, email: authData.user.email ?? null, legal_name: legalName, preferred_first_name: (meta.first_name as string) || null },
+            { onConflict: "id" },
+          ).then(({ error: e }) => { if (e) console.warn("[profile] upsert error:", e.message); });
         }
 
         if (!isMounted) return;
@@ -176,6 +180,32 @@ export default function ProfilePage() {
           }
         } catch { setUpcomingActivities([]); }
 
+        /* Hosted camps (for host/org profiles) */
+        try {
+          const { data: hostedData } = await supabase
+            .from("camps")
+            .select("id, name, slug, short_id, hero_image_url, image_url, start_time, meta")
+            .eq("host_id", targetId)
+            .eq("is_published", true)
+            .limit(20);
+
+          if (isMounted && hostedData) setHostedCount(hostedData.length);
+          if (isMounted && hostedData && hostedData.length > 0) {
+            const hostedMapped = (hostedData as any[]).map((camp): UpcomingActivity => ({
+              id: camp.id,
+              title: camp.name ?? "Activity",
+              timeLabel: camp.meta?.dateLabel ?? (camp.start_time ? formatActivityTime(camp.start_time) : ""),
+              heroImageUrl: camp.hero_image_url ?? camp.image_url ?? null,
+              slug: camp.slug ?? null,
+              short_id: camp.short_id ?? null,
+            }));
+            setUpcomingActivities((prev) => {
+              const ids = new Set(prev.map((a) => a.id));
+              return [...prev, ...hostedMapped.filter((a) => !ids.has(a.id))];
+            });
+          }
+        } catch { /* ignore */ }
+
         setLoading(false);
       } catch {
         if (isMounted) { setError("Something went wrong."); setLoading(false); }
@@ -215,13 +245,19 @@ export default function ProfilePage() {
     }
   };
 
-  /* ── Badges ── */
-  const badges: { icon: string; label: string }[] = [];
+  /* ── Info rows (description list) ── */
+  const infoRows: { icon: string; label: string }[] = [];
+  if (profile?.city) infoRows.push({ icon: "location_on", label: profile.city });
+  if (hostProfile?.created_at) infoRows.push({ icon: "calendar_today", label: `Hosting since ${new Date(hostProfile.created_at).getFullYear()}` });
+  if (hostedCount > 0) infoRows.push({ icon: "camping", label: `${hostedCount} ${hostedCount === 1 ? "activity" : "activities"} hosted` });
+
+  /* ── Designations (Tags) ── */
+  const designations: string[] = [];
+  if ((profile?.wowzi_managed && profile.is_claimed) || hostProfile?.host_status === "approved") {
+    designations.push("Identity verified");
+  }
   if (hostProfile?.host_status === "approved") {
-    badges.push({ icon: "verified", label: "Superhost" });
-    if (hostProfile.created_at) {
-      badges.push({ icon: "calendar_today", label: `Host since ${new Date(hostProfile.created_at).getFullYear()}` });
-    }
+    designations.push("Superhost");
   }
 
   /* ── Loading / error ── */
@@ -253,114 +289,98 @@ export default function ProfilePage() {
     );
   }
 
-  const displayName = profile.preferred_first_name && profile.legal_name
-    ? `${profile.preferred_first_name} ${profile.legal_name.split(" ").slice(1).join(" ")}`.trim() || profile.legal_name
-    : profile.legal_name || profile.preferred_first_name || "Parent";
+  const displayName: string = (profile.preferred_first_name === profile.legal_name
+    ? profile.legal_name
+    : (profile.preferred_first_name && profile.legal_name
+      ? `${profile.preferred_first_name} ${profile.legal_name.split(" ").slice(1).join(" ")}`.trim() || profile.legal_name
+      : profile.legal_name || profile.preferred_first_name || "Parent")) ?? "Parent";
 
   return (
     <main>
       <div className="page-container py-8 lg:py-10">
         <div className="page-grid">
-          <div className="span-8-center space-y-4">
+          <div className="span-10-center space-y-4">
 
             {/* ── Header ── */}
-            <div className="flex items-center gap-3">
-              {/* Avatar — tappable on own profile */}
-              <div className="relative shrink-0">
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
-                {isOwnProfile ? (
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+            <PageHeader
+              title={displayName}
+              media={
+                isOwnProfile ? (
                   <button
                     type="button"
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={uploadingAvatar}
-                    className="group relative block rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="group relative block shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     aria-label="Change profile photo"
                   >
-                    <UserAvatar
-                      name={displayName}
-                      avatarUrl={profile.avatar_url ?? undefined}
-                      size={52}
-                    />
-                    {/* Camera overlay */}
+                    <UserAvatar name={displayName} avatarUrl={profile.avatar_url ?? undefined} size={52} />
                     <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {uploadingAvatar ? (
-                        <span className="material-symbols-outlined text-white text-[18px] animate-spin">progress_activity</span>
-                      ) : (
-                        <span className="material-symbols-outlined text-white text-[18px]">photo_camera</span>
-                      )}
+                      {uploadingAvatar
+                        ? <span className="material-symbols-outlined text-white text-[18px] animate-spin">progress_activity</span>
+                        : <span className="material-symbols-outlined text-white text-[18px]">photo_camera</span>}
                     </span>
                   </button>
                 ) : (
-                  <UserAvatar
-                    name={displayName}
-                    avatarUrl={profile.avatar_url ?? undefined}
-                    size={52}
-                  />
-                )}
-              </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">{displayName}</h1>
-            </div>
+                  <UserAvatar name={displayName} avatarUrl={profile.avatar_url ?? undefined} size={52} />
+                )
+              }
+              action={isOwnProfile ? { label: "Edit", href: "/settings" } : undefined}
+            />
 
             {/* ── About card ── */}
-            <div className="rounded-card bg-card shadow-sm p-5 sm:p-6 space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="text-base font-semibold text-foreground">About</h2>
-                {isOwnProfile && (
-                  <Link
-                    href="/settings"
-                    className="shrink-0 rounded-lg bg-transparent px-3 py-1 text-xs font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    Edit
-                  </Link>
-                )}
-              </div>
+            <div className="rounded-card bg-card p-5 sm:p-6 space-y-4">
+              <h2 className="text-base font-semibold text-foreground">About</h2>
 
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {profile.about || "No bio yet."}
               </p>
 
-              {badges.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {badges.map((b) => (
-                    <Badge key={b.label} icon={b.icon} label={b.label} />
+              {infoRows.length > 0 && (
+                <dl className="space-y-2">
+                  {infoRows.map((row) => (
+                    <div key={row.label} className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-muted-foreground select-none shrink-0" style={{ fontSize: 16 }} aria-hidden>{row.icon}</span>
+                      <dd className="text-sm text-foreground">{row.label}</dd>
+                    </div>
                   ))}
+                </dl>
+              )}
+
+              {designations.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {designations.map((d) => <Tag key={d} label={d} />)}
                 </div>
               )}
             </div>
 
             {/* ── Upcoming activities card ── */}
-            <div className="rounded-card bg-card shadow-sm p-5 sm:p-6">
+            <div className="rounded-card bg-card p-5 sm:p-6">
               <h2 className="text-base font-semibold text-foreground mb-4">Upcoming activities</h2>
 
               {/* Search + sort */}
               <div className="flex items-center gap-3 mb-4">
-                <div className="relative flex-1">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[18px]">search</span>
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-full bg-muted/40 pl-9 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 text-sm text-muted-foreground">
-                  <span className="material-symbols-outlined text-[18px]">filter_list</span>
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value as "date" | "alpha")}
-                    className="text-sm text-foreground bg-transparent border-none outline-none cursor-pointer"
-                  >
-                    <option value="date">By date</option>
-                    <option value="alpha">Alphabetical</option>
-                  </select>
-                </div>
+                <Input
+                  type="text"
+                  placeholder="Search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="flex-1"
+                />
+                <SortDropdown
+                  options={[
+                    { value: "date", label: "By date" },
+                    { value: "alpha", label: "Alphabetical" },
+                  ]}
+                  value={sort}
+                  onChange={(v) => setSort(v as "date" | "alpha")}
+                />
               </div>
 
               {/* List */}
@@ -384,16 +404,27 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* ── Message button (other profiles) ── */}
-            {!isOwnProfile && (
-              <div className="flex gap-3">
-                <Link
-                  href={`/messages?to=${encodeURIComponent(profile.id)}`}
-                  className="flex-1 rounded-xl bg-card px-4 py-2.5 text-sm font-medium text-foreground text-center hover:bg-accent transition-colors"
-                >
+            {/* ── Claim CTA (unclaimed wowzi-managed org) ── */}
+            {!isOwnProfile && profile.wowzi_managed && !profile.is_claimed && (
+              <Alert
+                tone="warning"
+                icon="lock_open"
+                action={{
+                  label: "Claim this listing",
+                  href: `mailto:hey@heywowzi.com?subject=${encodeURIComponent(`Claim listing: ${displayName}`)}`,
+                }}
+              >
+                Is this your organization? This listing was created by Wowzi on your behalf.
+              </Alert>
+            )}
+
+            {/* ── Message button (other non-org profiles) ── */}
+            {!isOwnProfile && !(profile.wowzi_managed && !profile.is_claimed) && (
+              <Button asChild variant="outline" className="w-full">
+                <Link href={`/messages?to=${encodeURIComponent(profile.id)}`}>
                   Message {profile.preferred_first_name || profile.legal_name || "parent"}
                 </Link>
-              </div>
+              </Button>
             )}
 
           </div>

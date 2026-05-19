@@ -45,7 +45,12 @@ const resolveMeta = (camp: Camp): string | null => {
   };
 
   let dateStr: string | null = null;
-  if (camp.start_time) {
+  // Multiple sessions → "Starting [Month Day]"
+  const sessions = camp.meta?.campSessions as Array<{ startDate?: string }> | undefined;
+  if (Array.isArray(sessions) && sessions.length > 1 && sessions[0]?.startDate) {
+    const d = new Date(sessions[0].startDate + "T12:00:00");
+    dateStr = `Starting ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`;
+  } else if (camp.start_time) {
     dateStr = `Starts ${fmtDate(camp.start_time)}`;
   } else if (camp.session_start) {
     dateStr = `Starts ${fmtDate(camp.session_start)}`;
@@ -53,8 +58,6 @@ const resolveMeta = (camp: Camp): string | null => {
     dateStr = camp.meta.dateLabel.trim();
   }
 
-  // Session count / type label from meta.campSessions or listing_type
-  const sessions = camp.meta?.campSessions as Array<unknown> | undefined;
   const sessionCount = Array.isArray(sessions) && sessions.length > 1
     ? `${sessions.length} sessions`
     : null;

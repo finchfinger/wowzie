@@ -117,7 +117,14 @@ export function CampCard({
   const unit = useMemo(() => getPriceUnit(camp), [camp]);
 
   const dateLabel: string | null = (() => {
-    // 1. Explicit label in meta (highest priority)
+    // 1. Multiple sessions → "Starting [Month Day]"
+    const sessions = meta?.campSessions as Array<{ startDate?: string }> | undefined;
+    if (sessions && sessions.length > 1 && sessions[0]?.startDate) {
+      const d = new Date(sessions[0].startDate + "T12:00:00");
+      return `Starting ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`;
+    }
+
+    // 2. Explicit label in meta
     if (typeof meta?.dateLabel === "string" && (meta.dateLabel as string).trim())
       return (meta.dateLabel as string).trim();
 

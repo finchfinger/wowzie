@@ -63,30 +63,21 @@ const CAMPS: Camp[] = [
     listing_type: "camp",
     start_time: "2026-07-14",
   },
+  {
+    id: "6",
+    slug: "urban-nature-photography",
+    short_id: "abc00006",
+    name: "Urban Nature Photography",
+    hero_image_url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600&q=80",
+    price_cents: 27000,
+    listing_type: "camp",
+    start_time: "2026-07-06",
+  },
 ];
 
-export const Monochrome: Story = {
+export const Default: Story = {
   args: {
     camps: CAMPS,
-    variant: "mono",
-    title: "Popular activities near you",
+    title: "Keep exploring",
   },
-};
-
-export const Color: Story = {
-  args: {
-    camps: CAMPS,
-    variant: "color",
-    title: "Popular activities near you",
-  },
-};
-
-export const BothVariants: Story = {
-  args: { camps: CAMPS, variant: "mono" },
-  render: () => (
-    <div>
-      <ExploreMoreSection camps={CAMPS} variant="mono" title="Popular activities near you" />
-      <ExploreMoreSection camps={CAMPS} variant="color" title="More near you" />
-    </div>
-  ),
 };

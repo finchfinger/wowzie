@@ -7,12 +7,13 @@ import { supabase } from "@/lib/supabase";
 import { NavTabs } from "@/components/ui/nav-tabs";
 
 const TABS = [
-  { id: "overview", label: "Overview",  href: "/admin/overview" },
-  { id: "users",    label: "Users",     href: "/admin/users" },
-  { id: "camps",    label: "Camps",     href: "/admin/camps" },
-  { id: "hosts",    label: "Hosts",     href: "/admin/hosts" },
-  { id: "bookings", label: "Bookings",  href: "/admin/bookings" },
-  { id: "feedback", label: "Feedback",  href: "/admin/feedback" },
+  { id: "overview",       label: "Overview",       href: "/admin/overview" },
+  { id: "users",          label: "Users",          href: "/admin/users" },
+  { id: "camps",          label: "Camps",          href: "/admin/camps" },
+  { id: "hosts",          label: "Hosts",          href: "/admin/hosts" },
+  { id: "organizations",  label: "Organizations",  href: "/admin/organizations" },
+  { id: "bookings",       label: "Bookings",       href: "/admin/bookings" },
+  { id: "feedback",       label: "Feedback",       href: "/admin/feedback" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 import { Button } from "./button";
@@ -36,7 +37,7 @@ type AlertProps = {
   /** Material Symbols Rounded icon name, e.g. "lightbulb" or "info" */
   icon?: string;
   children: ReactNode;
-  action?: { label: string; onClick: () => void };
+  action?: { label: string; onClick?: () => void; href?: string };
   className?: string;
 };
 
@@ -62,14 +63,23 @@ export function Alert({ tone, icon, children, action, className }: AlertProps) {
       )}
       <div className="flex-1">{children}</div>
       {action && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={action.onClick}
-          className={cn("shrink-0 rounded-full -my-1 hover:bg-transparent", TONE_ICON_COLOR[tone], TONE_BUTTON_HOVER[tone], "hover:text-inherit")}
-        >
-          {action.label}
-        </Button>
+        action.href ? (
+          <Link
+            href={action.href}
+            className={cn("shrink-0 rounded-full -my-1 px-3 py-1.5 text-sm font-medium transition-colors", TONE_ICON_COLOR[tone], TONE_BUTTON_HOVER[tone])}
+          >
+            {action.label}
+          </Link>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={action.onClick}
+            className={cn("shrink-0 rounded-full -my-1 hover:bg-transparent", TONE_ICON_COLOR[tone], TONE_BUTTON_HOVER[tone], "hover:text-inherit")}
+          >
+            {action.label}
+          </Button>
+        )
       )}
     </div>
   );

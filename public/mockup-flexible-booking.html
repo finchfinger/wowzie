@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flexible Booking — Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f2f2f7; display: flex; justify-content: center; padding: 40px 16px 80px; }
+  .page { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Card */
+  .card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card-title { font-size: 17px; font-weight: 700; color: rgba(0,0,0,0.85); margin-bottom: 20px; }
+
+  /* Section */
+  .section { margin-bottom: 20px; }
+  .section:last-of-type { margin-bottom: 0; }
+  .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  .section-title { font-size: 13px; font-weight: 700; color: rgba(0,0,0,0.85); }
+  .section-sub { font-size: 12px; color: rgba(0,0,0,0.4); margin-top: 1px; }
+  .section-price { font-size: 12px; color: rgba(0,0,0,0.4); }
+
+  /* Subsection labels */
+  .sub-label { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; margin-bottom: 5px; }
+  .sub-label-text { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(0,0,0,0.35); }
+  .sub-label-price { font-size: 12px; color: rgba(0,0,0,0.35); }
+
+  /* Picker row (button that opens modal) */
+  .picker-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-radius: 12px; border: none; cursor: pointer; background: transparent; box-shadow: 0 0 0 1px rgba(0,0,0,0.12); text-align: left; transition: box-shadow 0.15s, background 0.15s; width: 100%; }
+  .picker-row.active { background: rgba(0,0,0,0.04); box-shadow: 0 0 0 2px rgba(0,0,0,0.85); }
+  .picker-row-left { display: flex; align-items: center; gap: 10px; }
+  .picker-row-icon { font-size: 20px; color: rgba(0,0,0,0.25); font-family: "Material Symbols Rounded"; font-variation-settings: "FILL" 0; }
+  .picker-row.active .picker-row-icon { color: rgba(0,0,0,0.85); }
+  .picker-row-label { font-size: 14px; font-weight: 500; color: rgba(0,0,0,0.85); }
+  .picker-row-chevron { font-size: 18px; color: rgba(0,0,0,0.25); font-family: "Material Symbols Rounded"; }
+  .picker-row-amount { font-size: 13px; color: rgba(0,0,0,0.45); }
+
+  /* Divider between sections */
+  .section-divider { height: 1px; background: rgba(0,0,0,0.07); margin: 4px 0 20px; }
+
+  /* Price summary */
+  .summary { border-top: 1px solid rgba(0,0,0,0.08); padding-top: 16px; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .summary-line { display: flex; justify-content: space-between; font-size: 13px; color: rgba(0,0,0,0.5); }
+  .summary-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: rgba(0,0,0,0.85); padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.08); margin-top: 2px; }
+
+  /* Reserve button */
+  .btn-reserve { width: 100%; padding: 16px; border-radius: 12px; border: none; background: rgba(0,0,0,0.85); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+  .btn-reserve:disabled { opacity: 0.35; cursor: default; }
+
+  /* ── Modal overlay ── */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
+  .overlay.open { display: flex; }
+  @media (min-width: 500px) { .overlay { align-items: center; } }
+
+  .modal { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 430px; max-height: 88vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+  @media (min-width: 500px) { .modal { border-radius: 20px; max-height: 82vh; } }
+
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 12px; flex-shrink: 0; }
+  .modal-title { font-size: 17px; font-weight: 700; color: rgba(0,0,0,0.85); }
+  .modal-close { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.07); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .modal-close span { font-size: 16px; color: rgba(0,0,0,0.5); font-family: "Material Symbols Rounded"; }
+
+  .modal-body { flex: 1; overflow-y: auto; padding: 4px 20px 8px; }
+
+  /* Grouped list (Apple style) */
+  .group { margin-bottom: 24px; }
+  .group:last-child { margin-bottom: 0; }
+  .group-header { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; margin-bottom: 7px; }
+  .group-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(0,0,0,0.35); }
+  .group-all { font-size: 13px; font-weight: 500; color: rgba(0,0,0,0.4); background: none; border: none; cursor: pointer; padding: 0; }
+  .group-card { border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,0.08); }
+  .list-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border: none; border-top: 1px solid rgba(0,0,0,0.06); background: #fff; cursor: pointer; width: 100%; text-align: left; transition: background 0.1s; }
+  .list-row:first-child { border-top: none; }
+  .list-row.selected { background: rgba(0,0,0,0.03); }
+  .list-row-label { font-size: 14px; font-weight: 400; color: rgba(0,0,0,0.85); transition: font-weight 0.1s; }
+  .list-row.selected .list-row-label { font-weight: 600; }
+  .list-row-check { font-size: 20px; color: rgba(0,0,0,0.85); font-family: "Material Symbols Rounded"; font-variation-settings: "FILL" 1; opacity: 0; transition: opacity 0.1s; }
+  .list-row.selected .list-row-check { opacity: 1; }
+
+  .modal-footer { padding: 12px 20px 20px; flex-shrink: 0; border-top: 1px solid rgba(0,0,0,0.07); }
+  .btn-done { width: 100%; padding: 16px; border-radius: 14px; border: none; background: rgba(0,0,0,0.85); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Registration card -->
+  <div class="card">
+    <div class="card-title">Registration</div>
+
+    <!-- Half day section -->
+    <div class="section" id="section-half">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Half day</div>
+          <div class="section-sub">9 AM – 12 PM</div>
+        </div>
+      </div>
+      <div class="sub-label">
+        <span class="sub-label-text">Weekly</span>
+        <span class="sub-label-price">$350/week</span>
+      </div>
+      <button class="picker-row" id="half-weekly-btn" onclick="openModal('week', 'half')">
+        <div class="picker-row-left">
+          <span class="picker-row-icon material-symbols-rounded">date_range</span>
+          <span class="picker-row-label" id="half-weekly-label">Pick weeks</span>
+        </div>
+        <span class="picker-row-chevron material-symbols-rounded" id="half-weekly-trail">chevron_right</span>
+      </button>
+      <div class="sub-label">
+        <span class="sub-label-text">Drop-in</span>
+        <span class="sub-label-price">$75/day</span>
+      </div>
+      <button class="picker-row" id="half-dropin-btn" onclick="openModal('day', 'half')">
+        <div class="picker-row-left">
+          <span class="picker-row-icon material-symbols-rounded">calendar_month</span>
+          <span class="picker-row-label" id="half-dropin-label">Pick days</span>
+        </div>
+        <span class="picker-row-chevron material-symbols-rounded" id="half-dropin-trail">chevron_right</span>
+      </button>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Full day section -->
+    <div class="section" id="section-full">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Full day</div>
+          <div class="section-sub">9 AM – 3 PM</div>
+        </div>
+      </div>
+      <div class="sub-label">
+        <span class="sub-label-text">Weekly</span>
+        <span class="sub-label-price">$650/week</span>
+      </div>
+      <button class="picker-row" id="full-weekly-btn" onclick="openModal('week', 'full')">
+        <div class="picker-row-left">
+          <span class="picker-row-icon material-symbols-rounded">date_range</span>
+          <span class="picker-row-label" id="full-weekly-label">Pick weeks</span>
+        </div>
+        <span class="picker-row-chevron material-symbols-rounded" id="full-weekly-trail">chevron_right</span>
+      </button>
+      <div class="sub-label">
+        <span class="sub-label-text">Drop-in</span>
+        <span class="sub-label-price">$140/day</span>
+      </div>
+      <button class="picker-row" id="full-dropin-btn" onclick="openModal('day', 'full')">
+        <div class="picker-row-left">
+          <span class="picker-row-icon material-symbols-rounded">calendar_month</span>
+          <span class="picker-row-label" id="full-dropin-label">Pick days</span>
+        </div>
+        <span class="picker-row-chevron material-symbols-rounded" id="full-dropin-trail">chevron_right</span>
+      </button>
+    </div>
+
+    <!-- Summary (hidden until selection) -->
+    <div class="summary" id="summary" style="display:none">
+      <div id="summary-lines"></div>
+      <div class="summary-total">
+        <span>Total</span>
+        <span id="summary-grand"></span>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <button class="btn-reserve" id="reserve-btn" disabled onclick="alert('Booking submitted!')">Reserve</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal overlay -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Pick weeks</span>
+      <button class="modal-close" onclick="closeModal()">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-done" onclick="closeModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Data ──────────────────────────────────────────────────────────────────────
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function generateWeeks(startISO, endISO) {
+  const weeks = [];
+  const end = new Date(endISO + "T12:00:00");
+  const cur = new Date(startISO + "T12:00:00");
+  while (cur.getDay() !== 1) cur.setDate(cur.getDate() + 1);
+  while (cur <= end) {
+    const wStart = new Date(cur);
+    const days = [];
+    for (let d = 0; d < 5; d++) {
+      const day = new Date(cur);
+      day.setDate(cur.getDate() + d);
+      if (day > end) break;
+      days.push({ iso: day.toISOString().split("T")[0], label: `${DAYS[day.getDay()]} ${MONTHS[day.getMonth()]} ${day.getDate()}` });
+    }
+    if (days.length) {
+      const last = days[days.length - 1];
+      const lastD = new Date(last.iso + "T12:00:00");
+      weeks.push({
+        weekStart: wStart.toISOString().split("T")[0],
+        label: `${MONTHS[wStart.getMonth()]} ${wStart.getDate()} – ${MONTHS[lastD.getMonth()]} ${lastD.getDate()}`,
+        days,
+      });
+    }
+    cur.setDate(cur.getDate() + 7);
+  }
+  return weeks;
+}
+
+const weeks = generateWeeks("2026-06-08", "2026-09-04");
+
+const pricing = {
+  half: { weekly: 350, dropin: 75 },
+  full: { weekly: 650, dropin: 140 },
+};
+
+// selections[timeId][weekStart] = true  (for weeks)
+// daySelections[timeId][iso] = true     (for days)
+const weekSel = { half: new Set(), full: new Set() };
+const daySel  = { half: new Set(), full: new Set() };
+
+// ─── Modal state ───────────────────────────────────────────────────────────────
+
+let activeModal = null; // { type: 'week'|'day', timeId }
+
+function openModal(type, timeId) {
+  activeModal = { type, timeId };
+  const overlay = document.getElementById("overlay");
+  const title   = document.getElementById("modal-title");
+  const body    = document.getElementById("modal-body");
+
+  title.textContent = type === "week" ? "Pick weeks" : "Pick drop-in days";
+  body.innerHTML = "";
+
+  if (type === "week") {
+    renderWeekList(body, timeId);
+  } else {
+    renderDayList(body, timeId);
+  }
+
+  overlay.classList.add("open");
+}
+
+function closeModal() {
+  document.getElementById("overlay").classList.remove("open");
+  updateCard();
+  activeModal = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById("overlay")) closeModal();
+}
+
+// ─── Week list ─────────────────────────────────────────────────────────────────
+
+function renderWeekList(container, timeId) {
+  const card = document.createElement("div");
+  card.className = "group-card";
+
+  weeks.forEach((week, idx) => {
+    const row = document.createElement("button");
+    row.className = "list-row" + (weekSel[timeId].has(week.weekStart) ? " selected" : "");
+    row.innerHTML = `<span class="list-row-label">${week.label}</span><span class="list-row-check material-symbols-rounded">check</span>`;
+    row.onclick = () => {
+      if (weekSel[timeId].has(week.weekStart)) weekSel[timeId].delete(week.weekStart);
+      else weekSel[timeId].add(week.weekStart);
+      row.classList.toggle("selected", weekSel[timeId].has(week.weekStart));
+    };
+    card.appendChild(row);
+  });
+
+  const group = document.createElement("div");
+  group.className = "group";
+  group.appendChild(card);
+  container.appendChild(group);
+}
+
+// ─── Day list ──────────────────────────────────────────────────────────────────
+
+function renderDayList(container, timeId) {
+  weeks.forEach((week) => {
+    const group = document.createElement("div");
+    group.className = "group";
+
+    // Header
+    const header = document.createElement("div");
+    header.className = "group-header";
+    const lbl = document.createElement("span");
+    lbl.className = "group-label";
+    lbl.textContent = week.label;
+    const allBtn = document.createElement("button");
+    allBtn.className = "group-all";
+    const updateAllBtn = () => {
+      const allSel = week.days.every(d => daySel[timeId].has(d.iso));
+      allBtn.textContent = allSel ? "None" : "All";
+    };
+    updateAllBtn();
+    allBtn.onclick = () => {
+      const allSel = week.days.every(d => daySel[timeId].has(d.iso));
+      week.days.forEach(d => allSel ? daySel[timeId].delete(d.iso) : daySel[timeId].add(d.iso));
+      // re-render
+      renderDayList._refresh(group, week, timeId, updateAllBtn);
+      updateAllBtn();
+    };
+    header.appendChild(lbl);
+    header.appendChild(allBtn);
+
+    // Card
+    const card = document.createElement("div");
+    card.className = "group-card";
+
+    const buildRows = () => {
+      card.innerHTML = "";
+      week.days.forEach((day) => {
+        const row = document.createElement("button");
+        row.className = "list-row" + (daySel[timeId].has(day.iso) ? " selected" : "");
+        row.innerHTML = `<span class="list-row-label">${day.label}</span><span class="list-row-check material-symbols-rounded">check</span>`;
+        row.onclick = () => {
+          if (daySel[timeId].has(day.iso)) daySel[timeId].delete(day.iso);
+          else daySel[timeId].add(day.iso);
+          row.classList.toggle("selected", daySel[timeId].has(day.iso));
+          updateAllBtn();
+        };
+        card.appendChild(row);
+      });
+    };
+    buildRows();
+    renderDayList._refresh = (g, w, t, updater) => { buildRows(); updater(); };
+
+    group.appendChild(header);
+    group.appendChild(card);
+    container.appendChild(group);
+  });
+}
+renderDayList._refresh = () => {};
+
+// ─── Update card after modal closes ───────────────────────────────────────────
+
+function fmt(n) { return "$" + n.toLocaleString(); }
+
+function updateCard() {
+  ["half", "full"].forEach(timeId => {
+    const wCount = weekSel[timeId].size;
+    const dCount = daySel[timeId].size;
+    const p = pricing[timeId];
+
+    // Weekly row
+    const weeklyBtn = document.getElementById(`${timeId}-weekly-btn`);
+    const weeklyLbl = document.getElementById(`${timeId}-weekly-label`);
+    const weeklyTrail = document.getElementById(`${timeId}-weekly-trail`);
+    if (wCount > 0) {
+      weeklyBtn.classList.add("active");
+      weeklyLbl.textContent = `${wCount} week${wCount !== 1 ? "s" : ""} selected`;
+      weeklyTrail.textContent = fmt(wCount * p.weekly);
+      weeklyTrail.className = "picker-row-amount";
+    } else {
+      weeklyBtn.classList.remove("active");
+      weeklyLbl.textContent = "Pick weeks";
+      weeklyTrail.textContent = "chevron_right";
+      weeklyTrail.className = "picker-row-chevron material-symbols-rounded";
+    }
+
+    // Drop-in row
+    const dropinBtn = document.getElementById(`${timeId}-dropin-btn`);
+    const dropinLbl = document.getElementById(`${timeId}-dropin-label`);
+    const dropinTrail = document.getElementById(`${timeId}-dropin-trail`);
+    if (dCount > 0) {
+      dropinBtn.classList.add("active");
+      dropinLbl.textContent = `${dCount} day${dCount !== 1 ? "s" : ""} selected`;
+      dropinTrail.textContent = fmt(dCount * p.dropin);
+      dropinTrail.className = "picker-row-amount";
+    } else {
+      dropinBtn.classList.remove("active");
+      dropinLbl.textContent = "Pick days";
+      dropinTrail.textContent = "chevron_right";
+      dropinTrail.className = "picker-row-chevron material-symbols-rounded";
+    }
+  });
+
+  // Summary
+  const lines = [];
+  let grand = 0;
+  [["half","Half day"],["full","Full day"]].forEach(([id, name]) => {
+    const p = pricing[id];
+    const wc = weekSel[id].size, dc = daySel[id].size;
+    if (wc) { lines.push(`${name} · ${wc} week${wc!==1?"s":""} × ${fmt(p.weekly)}|${fmt(wc*p.weekly)}`); grand += wc*p.weekly; }
+    if (dc) { lines.push(`${name} drop-in · ${dc} day${dc!==1?"s":""} × ${fmt(p.dropin)}|${fmt(dc*p.dropin)}`); grand += dc*p.dropin; }
+  });
+
+  const summaryEl = document.getElementById("summary");
+  const linesEl   = document.getElementById("summary-lines");
+  const grandEl   = document.getElementById("summary-grand");
+  const reserveBtn = document.getElementById("reserve-btn");
+
+  if (lines.length) {
+    linesEl.innerHTML = lines.map(l => {
+      const [label, amt] = l.split("|");
+      return `<div class="summary-line"><span>${label}</span><span>${amt}</span></div>`;
+    }).join("");
+    grandEl.textContent = fmt(grand);
+    summaryEl.style.display = "flex";
+    summaryEl.style.flexDirection = "column";
+    reserveBtn.disabled = false;
+  } else {
+    summaryEl.style.display = "none";
+    reserveBtn.disabled = true;
+  }
+}
+</script>
+</body>
+</html>

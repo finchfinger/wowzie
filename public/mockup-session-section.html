@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Class model — Schedule & pricing mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { zoom: 0.7; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f0f0f2;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px 80px;
+    min-height: 100vh;
+  }
+  .page { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 4px; }
+
+  /* Section heading */
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px 12px;
+  }
+
+  /* Card */
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .card-body { padding: 18px 20px 20px; }
+  .card-divider { height: 1px; background: #f3f4f6; margin: 0 20px; }
+
+  /* Card section (within a card, separated by dotted dividers) */
+  .card-section { padding: 18px 20px; border-bottom: 1px dashed #e5e7eb; }
+  .card-section:last-child { border-bottom: none; }
+
+  .section-header { margin-bottom: 14px; }
+  .section-header-row { display: flex; align-items: center; gap: 7px; margin-bottom: 2px; }
+  .section-icon { font-size: 16px; color: #6b7280; }
+  .section-label { font-size: 14px; font-weight: 600; color: #111827; }
+  .section-sub { font-size: 12px; color: #6b7280; padding-left: 23px; }
+
+  /* Fields */
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-full { display: flex; flex-direction: column; gap: 5px; }
+  .mt { margin-top: 12px; }
+
+  label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  select, input[type="date"], input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: #111827;
+    background: #fff;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+  }
+  select:focus, input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  }
+  input[type="date"] { background-image: none; cursor: text; }
+  input[type="text"], input[type="number"] { cursor: text; }
+
+  /* Price input with $ prefix */
+  .price-wrap { position: relative; }
+  .price-wrap span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #6b7280; pointer-events: none; }
+  .price-wrap input { padding-left: 24px; }
+
+  /* Toggle pill */
+  .toggle-group {
+    display: flex;
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+    background: #f9fafb;
+    padding: 3px;
+    gap: 3px;
+  }
+  .toggle-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 7px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #6b7280;
+    background: transparent;
+    white-space: nowrap;
+  }
+  .toggle-btn.active {
+    background: #fff;
+    color: #111827;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+  }
+
+  /* Helper text */
+  .hint {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+
+  /* Date picker reveal */
+  .reveal { display: none; margin-top: 8px; }
+  .reveal.visible { display: block; }
+
+  /* Day grid */
+  .day-grid { display: flex; flex-direction: column; gap: 0; }
+  .day-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .day-row:last-child { border-bottom: none; }
+  .day-label { width: 76px; font-size: 12px; font-weight: 500; color: #374151; flex-shrink: 0; }
+  .day-slots { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .time-slot { display: flex; align-items: center; gap: 6px; }
+  .time-slot select { flex: 1; font-size: 12px; padding: 7px 10px; }
+  .time-sep { font-size: 12px; color: #9ca3af; flex-shrink: 0; }
+  .unavailable {
+    flex: 1;
+    height: 36px;
+    background: #fef2f2;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #f87171;
+  }
+  .day-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .day-btn {
+    width: 28px; height: 28px;
+    border: none; background: none; cursor: pointer;
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s, color 0.1s;
+  }
+  .day-btn:hover { background: #f3f4f6; color: #374151; }
+
+  /* Info banner */
+  .banner {
+    background: #ede9fe;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #6d28d9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .banner-dot { font-size: 14px; }
+
+  /* Timezone row */
+  .tz-row { margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Section title -->
+  <div class="section-title">
+    📅 Schedule and pricing
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+
+    <!-- 1. Session duration -->
+    <div class="card-section">
+      <div class="section-header">
+        <div class="section-header-row">
+          <span class="section-icon">⏱</span>
+          <span class="section-label">Session duration</span>
+        </div>
+        <div class="section-sub">How long each class runs and the total program length</div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Session length</label>
+          <select>
+            <option>30 min</option>
+            <option>45 min</option>
+            <option selected>1 hour</option>
+            <option>1.5 hours</option>
+            <option>2 hours</option>
+            <option>3 hours</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Program length</label>
+          <select id="program-length" onchange="onProgramLengthChange(this)">
+            <option>2 weeks</option>
+            <option>4 weeks</option>
+            <option>6 weeks</option>
+            <option selected>8 weeks</option>
+            <option>10 weeks</option>
+            <option>12 weeks</option>
+            <option>16 weeks</option>
+            <option value="ongoing">Ongoing</option>
+          </select>
+        </div>
+      </div>
+      <div class="row mt">
+        <div class="field">
+          <label>Class capacity</label>
+          <input type="number" placeholder="e.g. 12" />
+        </div>
+      </div>
+
+      <div class="row mt">
+        <div class="field">
+          <label>Program starts</label>
+          <select id="start-mode" onchange="onStartModeChange(this)">
+            <option value="fixed" selected>Fixed date</option>
+            <option value="rolling">When parent books</option>
+          </select>
+        </div>
+        <div class="field" id="date-field">
+          <label>Start date</label>
+          <input type="date" />
+        </div>
+      </div>
+      <p class="hint" id="start-hint" style="display:none;margin-top:6px;">Each student's program begins on the day they enroll.</p>
+    </div>
+
+    <!-- 2. Weekly schedule -->
+    <div class="card-section">
+      <div class="section-header">
+        <div class="section-header-row">
+          <span class="section-icon">🕐</span>
+          <span class="section-label">Weekly schedule</span>
+        </div>
+        <div class="section-sub">Set which days and times this class meets</div>
+      </div>
+
+      <div class="banner">
+        <span class="banner-dot">✦</span>
+        You can add multiple time blocks within a day
+      </div>
+
+      <div class="day-grid">
+        <div class="day-row">
+          <span class="day-label">Sunday</span>
+          <div class="unavailable">Unavailable</div>
+          <div class="day-actions">
+            <button class="day-btn" title="Add">＋</button>
+          </div>
+        </div>
+        <div class="day-row">
+          <span class="day-label">Monday</span>
+          <div class="day-slots">
+            <div class="time-slot">
+              <select><option>9:00am</option></select>
+              <span class="time-sep">–</span>
+              <select><option>1:00pm</option></select>
+            </div>
+          </div>
+          <div class="day-actions">
+            <button class="day-btn" title="Remove">⊘</button>
+            <button class="day-btn" title="Add">＋</button>
+            <button class="day-btn" title="Copy">⧉</button>
+          </div>
+        </div>
+        <div class="day-row">
+          <span class="day-label">Tuesday</span>
+          <div class="day-slots">
+            <div class="time-slot">
+              <select><option>9:00am</option></select>
+              <span class="time-sep">–</span>
+              <select><option>1:00pm</option></select>
+            </div>
+          </div>
+          <div class="day-actions">
+            <button class="day-btn">⊘</button>
+            <button class="day-btn">＋</button>
+            <button class="day-btn">⧉</button>
+          </div>
+        </div>
+        <div class="day-row">
+          <span class="day-label">Wednesday</span>
+          <div class="day-slots">
+            <div class="time-slot">
+              <select><option>9:00am</option></select>
+              <span class="time-sep">–</span>
+              <select><option>1:00pm</option></select>
+            </div>
+          </div>
+          <div class="day-actions">
+            <button class="day-btn">⊘</button>
+            <button class="day-btn">＋</button>
+            <button class="day-btn">⧉</button>
+          </div>
+        </div>
+        <div class="day-row">
+          <span class="day-label">Thursday</span>
+          <div class="day-slots">
+            <div class="time-slot">
+              <select><option>9:00am</option></select>
+              <span class="time-sep">–</span>
+              <select><option>1:00pm</option></select>
+            </div>
+          </div>
+          <div class="day-actions">
+            <button class="day-btn">⊘</button>
+            <button class="day-btn">＋</button>
+            <button class="day-btn">⧉</button>
+          </div>
+        </div>
+        <div class="day-row">
+          <span class="day-label">Friday</span>
+          <div class="day-slots">
+            <div class="time-slot">
+              <select><option>9:00am</option></select>
+              <span class="time-sep">–</span>
+              <select><option>1:00pm</option></select>
+            </div>
+          </div>
+          <div class="day-actions">
+            <button class="day-btn">⊘</button>
+            <button class="day-btn">＋</button>
+            <button class="day-btn">⧉</button>
+          </div>
+        </div>
+        <div class="day-row">
+          <span class="day-label">Saturday</span>
+          <div class="unavailable">Unavailable</div>
+          <div class="day-actions">
+            <button class="day-btn">＋</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tz-row">
+        <select><option>Central Time — Chicago</option><option>Eastern Time — New York</option><option>Pacific Time — Los Angeles</option></select>
+      </div>
+
+    </div>
+
+    <!-- 3. Pricing -->
+    <div class="card-section">
+      <div class="section-header">
+        <div class="section-header-row">
+          <span class="section-icon">💲</span>
+          <span class="section-label">Pricing</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label id="price-label">Price per session</label>
+          <div class="price-wrap">
+            <span>$</span>
+            <input type="text" placeholder="0.00" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Booking window -->
+    <div class="card-section">
+      <div class="section-header" style="margin-bottom:14px;">
+        <div class="section-header-row">
+          <span class="section-icon">🔒</span>
+          <span class="section-label">Booking window</span>
+        </div>
+        <div class="section-sub">Control when parents can book</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;text-transform:none;font-size:13px;font-weight:500;color:#111827;letter-spacing:0;">
+          <input type="radio" name="window" value="now" checked style="margin-top:2px;accent-color:#6366f1;" onchange="onWindowChange(this)" />
+          <span>Available now</span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;text-transform:none;letter-spacing:0;">
+          <input type="radio" name="window" value="dates" style="margin-top:2px;accent-color:#6366f1;" onchange="onWindowChange(this)" />
+          <div>
+            <div style="font-size:13px;font-weight:500;color:#111827;">Start and end dates</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:1px;">Limit the date range parents can enroll</div>
+          </div>
+        </label>
+      </div>
+
+      <div id="date-range-row" style="display:none;gap:10px;margin-bottom:16px;" class="row">
+        <div class="field">
+          <label>Enrollment opens</label>
+          <input type="date" />
+        </div>
+        <div class="field">
+          <label>Enrollment closes</label>
+          <input type="date" />
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px;">
+        <div>
+          <div style="font-size:13px;font-weight:500;color:#111827;margin-bottom:6px;">How far in advance parents can book</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" checked style="accent-color:#6366f1;width:15px;height:15px;cursor:pointer;" />
+            <input type="number" value="60" min="1" style="width:64px;padding:6px 10px;font-size:13px;border:1px solid #e5e7eb;border-radius:8px;" />
+            <span style="font-size:13px;color:#6b7280;">days</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:#111827;margin-bottom:6px;">Minimum notice before a class</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" checked style="accent-color:#6366f1;width:15px;height:15px;cursor:pointer;" />
+            <input type="number" value="4" min="0" style="width:64px;padding:6px 10px;font-size:13px;border:1px solid #e5e7eb;border-radius:8px;" />
+            <span style="font-size:13px;color:#6b7280;">hours</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end card -->
+</div><!-- end page -->
+
+<script>
+  function onWindowChange(input) {
+    const row = document.getElementById('date-range-row');
+    row.style.display = input.checked ? 'grid' : 'none';
+    document.querySelectorAll('input[name="window"]').forEach(r => {
+      if (r !== input) r.onchange = () => { row.style.display = 'none'; };
+    });
+  }
+
+  function onStartModeChange(sel) {
+    const dateField = document.getElementById('date-field');
+    const hint = document.getElementById('start-hint');
+    if (sel.value === 'rolling') {
+      dateField.style.visibility = 'hidden';
+      hint.style.display = 'block';
+    } else {
+      dateField.style.visibility = 'visible';
+      hint.style.display = 'none';
+    }
+  }
+
+  function onProgramLengthChange(sel) {
+    const lbl = document.getElementById('price-label');
+    lbl.textContent = sel.value === 'ongoing' ? 'Price per session' : 'Price per program';
+  }
+</script>
+</body>
+</html>

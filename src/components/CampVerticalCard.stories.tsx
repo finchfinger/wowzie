@@ -104,3 +104,20 @@ export const Skeleton: Story = {
     </div>
   ),
 };
+
+/** Compact variant — 1px smaller type, used in "Keep exploring" section */
+export const Compact: Story = {
+  args: { camp: VIOLIN, variant: "compact" },
+};
+
+/** Compact in a 6-column grid — mirrors the "Keep exploring" layout */
+export const CompactSixColumnGrid: Story = {
+  args: { camp: VIOLIN, variant: "compact" },
+  render: () => (
+    <div className="grid grid-cols-6 gap-4">
+      {[VIOLIN, CLIMBING, STARDUST, COOKING, VIOLIN, CLIMBING].map((c, i) => (
+        <CampVerticalCard key={i} camp={c} variant="compact" />
+      ))}
+    </div>
+  ),
+};

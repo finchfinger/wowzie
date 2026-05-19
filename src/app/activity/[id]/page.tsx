@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCampFavorite } from "@/hooks/useCampFavorite";
 import type { Camp } from "@/components/CampCard";
 import { HostCard } from "@/components/HostCard";
+import { HostedItem } from "@/components/HostedItem";
 import { ActivityImageGrid } from "@/components/ActivityImageGrid";
 import { CampDetailHeader } from "@/components/CampDetailHeader";
 import {
@@ -22,7 +23,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
-import type { RegistrationStatus } from "@/components/RegistrationPanel";
+import type { RegistrationStatus, RegistrationSession, RegistrationAddon, AddonState } from "@/components/RegistrationPanel";
+import { FlexibleBookingPanel } from "@/components/FlexibleBookingPanel";
+import type { TimeOption, FlexPricing, FlexRange } from "@/components/FlexibleBookingPanel";
 import { Alert } from "@/components/ui/Alert";
 import { AttendanceCard } from "@/components/AttendanceCard";
 import { ExploreMoreSection } from "@/components/ExploreMoreSection";
@@ -215,6 +218,8 @@ export default function CampDetailPage() {
     preferred_first_name: string | null;
     legal_name: string | null;
     avatar_url: string | null;
+    wowzi_managed?: boolean;
+    is_claimed?: boolean;
   } | null>(null);
 
   // Time slots — derived from camp meta, computed here so it's above early returns
@@ -270,12 +275,17 @@ export default function CampDetailPage() {
       setLoadingCamp(false);
 
       if ((data as FullCamp).host_id) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("preferred_first_name, legal_name, avatar_url")
-          .eq("id", (data as FullCamp).host_id!)
-          .maybeSingle();
-        if (profile) setHostProfile(profile as any);
+        const apiRes = await fetch(`/api/profiles/${(data as FullCamp).host_id}`);
+        if (apiRes.ok) {
+          setHostProfile(await apiRes.json() as any);
+        } else {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("preferred_first_name, legal_name, avatar_url, wowzi_managed, is_claimed")
+            .eq("id", (data as FullCamp).host_id!)
+            .maybeSingle();
+          if (profile) setHostProfile(profile as any);
+        }
       }
     };
     void load();
@@ -479,12 +489,17 @@ export default function CampDetailPage() {
   const orgName = meta?.organizationName as string | undefined;
   const orgSlug = meta?.organizationSlug as string | undefined;
   const hostName = orgName || hostProfile?.preferred_first_name || hostProfile?.legal_name || (meta?.host_name as string | undefined) || "Wowzi Host";
+  const hostAvatarUrl = hostProfile?.avatar_url || (meta?.organizationLogo as string | undefined) || null;
   const hostInitial = hostName.charAt(0).toUpperCase();
 
   // Dates
   const startDate = start_time ? formatDate(start_time) : null;
-  const dateLabel = (meta?.dateLabel as string | undefined)
-    || (startDate ? startDate.full : null);
+  const rawDateLabel = meta?.dateLabel as string | undefined;
+  const dateLabel = rawDateLabel
+    ? (!/\d{4}/.test(rawDateLabel) && start_time
+      ? `${rawDateLabel}, ${new Date(start_time.includes("T") ? start_time : start_time + "T12:00:00").getFullYear()}`
+      : rawDateLabel)
+    : (startDate ? startDate.full : null);
   const firstSessionDate = (meta?.campSessions as Array<{ startDate?: string }> | undefined)?.[0]?.startDate ?? null;
   const seasonLabel = start_time
     ? getSeasonLabel(start_time)
@@ -522,7 +537,14 @@ export default function CampDetailPage() {
     ? (activityKindRaw.charAt(0).toUpperCase() + activityKindRaw.slice(1)) as "camp" | "class" | undefined
     : undefined;
   const cancellationPolicy = meta?.cancellation_policy as string | undefined;
+  const metaSections = (meta?.sections as Array<{ title: string; body: string; linkLabel?: string; linkUrl?: string }> | undefined) ?? [];
   const additionalDetails = meta?.additionalDetails as string | undefined;
+
+  // Flexible booking model
+  const bookingModel = meta?.bookingModel as string | undefined;
+  const flexTimeOptions = (meta?.timeOptions as TimeOption[] | undefined) ?? [];
+  const flexPricing = (meta?.flexPricing as FlexPricing | undefined) ?? {};
+  const flexRange = meta?.flexRange as FlexRange | undefined;
   const advanced = meta?.advanced as {
     earlyDropoff?: { enabled: boolean; price?: string; start?: string; end?: string };
     extendedDay?: { enabled: boolean; price?: string; start?: string; end?: string };
@@ -769,13 +791,58 @@ export default function CampDetailPage() {
   const isMultiSlotClass = campSessions && campSessions.length > 1;
   const visibleSlots = isMultiSlotClass ? (showAllSlots ? campSessions : campSessions!.slice(0, 3)) : null;
 
-  function toggleSession(id: string) {
+  function toggleSession(sessionId: string) {
     setSelectedSessionIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
       return next;
     });
+  }
+
+  // ── RegistrationPanel props ──
+
+  const registrationSessions: RegistrationSession[] = campSessions?.map((s, idx) => ({
+    id: s.id,
+    name: s.label?.trim() || `Session ${idx + 1}`,
+    ageGroup: s.ageGroup,
+    sessionType: s.sessionType,
+    dateRange: formatDateRange(s.startDate, s.endDate) ?? s.startDate,
+    timeRange: (s.startTime && s.endTime) ? `${formatTimeLocal(s.startTime)} – ${formatTimeLocal(s.endTime)}` : undefined,
+    spotsRemaining: s.capacity ? Number(s.capacity) : null,
+  })) ?? [];
+
+  const registrationAddons: RegistrationAddon[] = [];
+  if (!isAppointmentClass && advanced?.earlyDropoff?.enabled && advanced?.earlyDropoff?.price) {
+    registrationAddons.push({ id: "earlyDropoff", name: "Early drop-off", priceLabel: `+ ${advanced.earlyDropoff.price}/day`, priceCents: earlyDropoffPriceCents, totalDays: totalCampDays });
+  }
+  if (!isAppointmentClass && advanced?.extendedDay?.enabled && advanced?.extendedDay?.price) {
+    registrationAddons.push({ id: "extendedDay", name: "Extended day", priceLabel: `+ ${advanced.extendedDay.price}/day`, priceCents: extendedDayPriceCents, totalDays: totalCampDays });
+  }
+
+  const registrationAddonStates: Record<string, AddonState> = {
+    earlyDropoff: { selected: earlyDropoffSelected, mode: earlyDropoffMode, daysSelected: earlyDropoffDays.size },
+    extendedDay:  { selected: extendedDaySelected,  mode: extendedDayMode,  daysSelected: extendedDayDays.size  },
+  };
+
+  function handleAddonToggle(addonId: string) {
+    if (addonId === "earlyDropoff") setEarlyDropoffSelected(v => !v);
+    if (addonId === "extendedDay")  setExtendedDaySelected(v => !v);
+  }
+  function handleAddonModeChange(addonId: string, mode: "all" | "pick") {
+    if (addonId === "earlyDropoff") setEarlyDropoffMode(mode);
+    if (addonId === "extendedDay")  setExtendedDayMode(mode);
+  }
+  function handleAddonEditDays(addonId: string) {
+    openPickDays(addonId as "earlyDropoff" | "extendedDay");
+  }
+
+  function handleReserve() {
+    if (!user) { setAuthReason("booking"); setAuthOpen(true); return; }
+    const qs = new URLSearchParams({ guests: String(reservationGuests) });
+    if (selectedSessionIds.size > 0) qs.set("sessions", [...selectedSessionIds].join(","));
+    if (selectedSlotKey) qs.set("slot", selectedSlotKey);
+    router.push(`/checkout/${id}?${qs.toString()}`);
   }
 
   return (
@@ -797,15 +864,12 @@ export default function CampDetailPage() {
               onImageClick={(i) => { setLightboxIdx(i); setLightboxOpen(true); }}
             />
 
-            {/* Host card */}
-            <HostCard
+            {/* Host item */}
+            <HostedItem
               hostName={hostName}
-              hostAvatarUrl={hostProfile?.avatar_url}
-              isOwner={isHost}
-              onMessage={handleSendMessage}
-              onEdit={() => router.push(`/host/activities/${id}/edit`)}
-              externalUrl={camp.external_url ?? null}
-              orgSlug={orgSlug ?? null}
+              hostAvatarUrl={hostAvatarUrl}
+              hostProfileHref={host_id ? `/profile/${host_id}` : "#"}
+              onContact={handleSendMessage}
             />
 
             {/* Friends going */}
@@ -869,7 +933,7 @@ export default function CampDetailPage() {
 
                 {Array.isArray(meta?.highlights) && (meta.highlights as string[]).filter(Boolean).length > 0 && (
                   <div className="space-y-2 py-2">
-                    <h2 className="text-base font-semibold text-foreground">Highlights</h2>
+                    <h2 className="text-[14px] font-semibold text-foreground">Highlights</h2>
                     <ul className="space-y-3">
                       {(meta.highlights as string[]).filter(Boolean).map((h, i) => (
                         <li key={i} className="flex items-start gap-3 text-sm" style={{ color: "rgba(0,0,0,0.8)" }}>
@@ -944,493 +1008,79 @@ export default function CampDetailPage() {
               />
             )}
 
-            {/* ── Reservation card: available state (inline) ── */}
+            {/* ── Reservation card: available state ── */}
             {!camp.external_url && statusVariant === null && (
-            <div className="rounded-card bg-card overflow-hidden">
-              {/* Header */}
-              <div className="px-5 py-3 border-b border-border">
-                <p className="text-sm font-semibold text-foreground">Reservation</p>
-              </div>
+            <div className="space-y-4">
 
-              <div className="px-5 py-4 space-y-4">
-                {/* Price + spots */}
-                {priceDisplay && (
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xl font-bold text-foreground">{priceDisplay}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        per {activityKind === "class" ? "class" : "camper"}
-                      </p>
-                    </div>
-                    {spotsLeft !== null && spotsLeft <= 5 && (
-                      <span className="shrink-0 rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-800">
-                        Only {spotsLeft} spot{spotsLeft !== 1 ? "s" : ""} left
-                      </span>
-                    )}
-                  </div>
-                )}
+              {/* Flexible booking model (e.g. Cooking Camp) */}
+              {bookingModel === "flexible" && flexRange && (
+                <FlexibleBookingPanel
+                  timeOptions={flexTimeOptions}
+                  flexPricing={flexPricing}
+                  flexRange={flexRange}
+                  onReserve={(selection) => {
+                    if (!user) { setAuthReason("booking"); setAuthOpen(true); return; }
+                    alert(`Booking submitted!\n${JSON.stringify(selection, null, 2)}`);
+                  }}
+                />
+              )}
 
-                {/* First class date — for ongoing weekly classes */}
-                {firstClassDate && (
-                  <div className="rounded-xl bg-muted/40 px-4 py-3">
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                      {classSchedule?.sessionStartDate ? "Enrollment starts" : "Your first class"}
-                    </p>
-                    <p className="text-sm font-semibold text-foreground mt-0.5">
-                      {firstClassDate.toLocaleDateString(undefined, {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                )}
-
+              {/* Standard booking */}
+              {bookingModel !== "flexible" && (
                 <>
-                    {/* Appointment-style slot picker for ongoing classes */}
-                    {isAppointmentClass && (
-                      <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5">
-                          Choose your time
-                        </label>
-                        <Select value={selectedSlotKey} onValueChange={setSelectedSlotKey}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select a time slot" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {timeSlots.map((slot) => (
-                              <SelectItem key={slot.key} value={slot.key}>{slot.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {/* Class multi-slot picker */}
-                    {isMultiSlotClass ? (
-                      <div className="space-y-2">
-                        {/* Selection summary */}
-                        <p className="text-xs text-muted-foreground px-0.5">
-                          {selectedSessionIds.size === 0
-                            ? "Select one or more sessions"
-                            : `${selectedSessionIds.size} session${selectedSessionIds.size !== 1 ? "s" : ""} selected`}
-                        </p>
-
-                        {/* Session cards */}
-                        {visibleSlots!.map((session, idx) => {
-                          const isSelected = selectedSessionIds.has(session.id);
-                          const isCamp = activityKind !== "class";
-                          return (
-                            <button
-                              key={session.id}
-                              type="button"
-                              onClick={() => toggleSession(session.id)}
-                              className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${isSelected ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/30 hover:bg-muted/40"}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                {/* Checkbox indicator */}
-                                <span className={`shrink-0 h-4 w-4 rounded border-2 flex items-center justify-center transition-colors ${isSelected ? "bg-foreground border-foreground" : "border-muted-foreground/40"}`}>
-                                  {isSelected && (
-                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                                      <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                  )}
-                                </span>
-
-                                <div className="flex-1 min-w-0">
-                                  {isCamp && (
-                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
-                                      {session.label?.trim() || `Session ${idx + 1}`}
-                                    </p>
-                                  )}
-                                  {sessionsShareDates ? (
-                                    /* Same date range — lead with time, show days + date as context */
-                                    <>
-                                      {session.startTime && session.endTime && (
-                                        <p className="text-sm font-semibold text-foreground">
-                                          {formatTimeLocal(session.startTime)} – {formatTimeLocal(session.endTime)}
-                                        </p>
-                                      )}
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {session.days && session.days.length > 0
-                                          ? session.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(", ")
-                                          : formatDateRange(session.startDate, session.endDate)}
-                                      </p>
-                                    </>
-                                  ) : (
-                                    /* Different date ranges — lead with date, show time below */
-                                    <>
-                                      <p className="text-sm font-semibold text-foreground">
-                                        {isCamp
-                                          ? (formatDateRange(session.startDate, session.endDate) ?? "Dates TBD")
-                                          : formatDate(session.startDate).full}
-                                      </p>
-                                      {(session.startTime || (session.days && session.days.length > 0)) && (
-                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                          {session.days && session.days.length > 0 && (
-                                            <span>{session.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(", ")}{session.startTime ? " · " : ""}</span>
-                                          )}
-                                          {session.startTime && session.endTime && `${formatTimeLocal(session.startTime)} – ${formatTimeLocal(session.endTime)}`}
-                                        </p>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-
-                                {session.capacity && (
-                                  <span className="text-xs text-muted-foreground shrink-0">
-                                    {session.capacity} spots
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-
-                        {campSessions!.length > 3 && (
-                          <button
-                            type="button"
-                            onClick={() => setShowAllSlots(!showAllSlots)}
-                            className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
-                          >
-                            {showAllSlots ? "Show fewer dates" : "Show all dates"}
-                          </button>
-                        )}
-
-                        {/* Guests */}
-                        <div className="mt-1">
-                          <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-0.5">Guests</label>
-                          <select
-                            className="w-full rounded-xl bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
-                            value={reservationGuests}
-                            onChange={(e) => setReservationGuests(Number(e.target.value))}
-                          >
-                            {Array.from({ length: Math.max(1, Math.min(spotsLeft ?? 10, 10)) }, (_, i) => i + 1).map((n) => (
-                              <option key={n} value={n}>{n} camper{n !== 1 ? "s" : ""}</option>
-                            ))}
-                          </select>
+                  {/* Appointment class: first-class date + slot picker (shown above the panel) */}
+                  {(firstClassDate || isAppointmentClass) && (
+                    <div className="rounded-card bg-card overflow-hidden px-5 py-4 space-y-4">
+                      {firstClassDate && (
+                        <div className="rounded-xl bg-muted/40 px-4 py-3">
+                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                            {classSchedule?.sessionStartDate ? "Enrollment starts" : "Your first class"}
+                          </p>
+                          <p className="text-sm font-semibold text-foreground mt-0.5">
+                            {firstClassDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                          </p>
                         </div>
-                      </div>
-                    ) : (
-                      /* Standard camp: date + guests dropdowns */
-                      <div className="space-y-2">
-                        {/* Single-session schedule summary */}
-                        {campSessions && campSessions.length === 1 && (() => {
-                          const s = campSessions[0];
-                          const dayLabels = s.days && s.days.length > 0
-                            ? s.days.map((d) => d.charAt(0).toUpperCase() + d.slice(1)).join(", ")
-                            : null;
-                          const startFmt = s.startTime ? formatTimeLocal(s.startTime) : null;
-                          const endFmt = s.endTime ? formatTimeLocal(s.endTime) : null;
-                          const timeStr = startFmt && endFmt ? `${startFmt} – ${endFmt}` : null;
-                          const dateRange = formatDateRange(s.startDate, s.endDate);
-                          return (
-                            <div className="rounded-xl bg-muted/50 px-4 py-3 space-y-0.5">
-                              <p className="text-sm font-semibold text-foreground">
-                                {dayLabels ? `Every ${dayLabels}` : dateRange}{timeStr ? ` · ${timeStr}` : ""}
-                              </p>
-                              {dayLabels && (
-                                <p className="text-xs text-muted-foreground">{dateRange}</p>
-                              )}
-                            </div>
-                          );
-                        })()}
-
-                        {/* Date — only show when there are multiple sessions to pick from */}
-                        {campSessions && campSessions.length > 1 && (
-                          <div>
-                            <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-1">Date</label>
-                            <select
-                              className="w-full rounded-xl bg-transparent px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 appearance-none"
-                              value={selectedSessionIds.size === 1 ? [...selectedSessionIds][0] : ""}
-                              onChange={(e) => setSelectedSessionIds(e.target.value ? new Set([e.target.value]) : new Set())}
-                            >
-                              <option value="">Select a date</option>
-                              {campSessions.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                  {formatDate(s.startDate).full}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
-                        {/* Guests */}
+                      )}
+                      {isAppointmentClass && (
                         <div>
-                          <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 px-1">Guests</label>
-                          <Select
-                            value={String(reservationGuests)}
-                            onValueChange={(v) => setReservationGuests(Number(v))}
-                          >
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5">Choose your time</label>
+                          <Select value={selectedSlotKey} onValueChange={setSelectedSlotKey}>
                             <SelectTrigger className="w-full">
-                              <SelectValue />
+                              <SelectValue placeholder="Select a time slot" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Array.from({ length: Math.max(1, Math.min(spotsLeft ?? 10, 10)) }, (_, i) => i + 1).map((n) => (
-                                <SelectItem key={n} value={String(n)}>{n} guest{n !== 1 ? "s" : ""}</SelectItem>
+                              {timeSlots.map((slot) => (
+                                <SelectItem key={slot.key} value={slot.key}>{slot.label}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-                    )}
-
-                    {/* ── Add-ons accordion ── */}
-                    {hasAddons && (
-                      <div className="rounded-xl overflow-hidden">
-                        <button
-                          type="button"
-                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors"
-                          onClick={() => setAddonsExpanded(!addonsExpanded)}
-                        >
-                          <div className="text-left">
-                            <p className="text-sm font-medium text-foreground">Add ons</p>
-                            <p className="text-xs text-muted-foreground">Optional convenience for families</p>
-                          </div>
-                          {addonsExpanded
-                            ? <span className="material-symbols-outlined select-none text-muted-foreground shrink-0" style={{ fontSize: 16 }} aria-hidden>expand_less</span>
-                            : <span className="material-symbols-outlined select-none text-muted-foreground shrink-0" style={{ fontSize: 16 }} aria-hidden>expand_more</span>
-                          }
-                        </button>
-
-                        {addonsExpanded && (
-                          <div className="border-t border-border p-3 space-y-2">
-
-                            {/* Early drop-off */}
-                            {!isAppointmentClass && advanced?.earlyDropoff?.enabled && advanced?.earlyDropoff?.price && (
-                              <div className={`rounded-xl border px-4 py-3 space-y-3 transition-colors ${earlyDropoffSelected ? "border-blue-300 bg-blue-50/40" : "border-border"}`}>
-                                {/* Top row */}
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex items-start gap-3">
-                                    <input
-                                      type="checkbox"
-                                      id="early-dropoff"
-                                      checked={earlyDropoffSelected}
-                                      onChange={(e) => setEarlyDropoffSelected(e.target.checked)}
-                                      className="mt-0.5 h-4 w-4 rounded border-border accent-foreground cursor-pointer"
-                                    />
-                                    <label htmlFor="early-dropoff" className="cursor-pointer">
-                                      <p className="text-sm font-semibold text-foreground">Early drop-off</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {advanced.earlyDropoff.start
-                                          ? `Starts at ${formatTimeLocal(advanced.earlyDropoff.start)}`
-                                          : "Early drop-off"}
-                                      </p>
-                                    </label>
-                                  </div>
-                                  <div className="text-right shrink-0">
-                                    <p className="text-sm text-muted-foreground">
-                                      {advanced.earlyDropoff.price ? `+ ${advanced.earlyDropoff.price}/day` : ""}
-                                    </p>
-                                    {!earlyDropoffSelected && earlyDropoffPriceCents > 0 && totalCampDays > 0 && (
-                                      <p className="text-xs text-muted-foreground/60 mt-0.5">
-                                        {formatCents(earlyDropoffPriceCents * totalCampDays)} for all {totalCampDays} days
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {earlyDropoffSelected && (
-                                  <div className="space-y-2">
-                                    {/* Segmented control + cost inline */}
-                                    <div className="flex items-center justify-between gap-3">
-                                      <div className="inline-flex rounded-lg overflow-hidden text-xs font-medium shrink-0">
-                                        <button
-                                          type="button"
-                                          onClick={() => setEarlyDropoffMode("all")}
-                                          className={`px-3 py-1.5 transition-colors ${earlyDropoffMode === "all" ? "bg-foreground text-background" : "bg-background text-foreground hover:bg-muted"}`}
-                                        >
-                                          All days
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => setEarlyDropoffMode("pick")}
-                                          className={`px-3 py-1.5 border-l border-border transition-colors ${earlyDropoffMode === "pick" ? "bg-foreground text-background" : "bg-background text-foreground hover:bg-muted"}`}
-                                        >
-                                          Pick days
-                                        </button>
-                                      </div>
-                                      {earlyDropoffPriceCents > 0 && (
-                                        <p className="text-xs text-muted-foreground text-right">
-                                          {formatCents(earlyDropoffPriceCents)}/day × {getAddonDayCount(earlyDropoffMode, earlyDropoffDays)} days = {formatCents(earlyDropoffPriceCents * getAddonDayCount(earlyDropoffMode, earlyDropoffDays))}
-                                        </p>
-                                      )}
-                                    </div>
-
-                                    {/* Summary row — only in pick mode */}
-                                    {earlyDropoffMode === "pick" && (
-                                      <div className="flex items-center justify-between rounded-lg bg-foreground/[0.06] px-3 py-2.5">
-                                        <p className="text-xs text-muted-foreground">
-                                          {earlyDropoffDays.size} of {totalCampDays} day{totalCampDays !== 1 ? "s" : ""} selected
-                                        </p>
-                                        <button
-                                          type="button"
-                                          onClick={() => openPickDays("earlyDropoff")}
-                                          className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-background hover:bg-foreground/90 transition-colors"
-                                        >
-                                          Pick days
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Extended day */}
-                            {!isAppointmentClass && advanced?.extendedDay?.enabled && advanced?.extendedDay?.price && (
-                              <div className={`rounded-xl border px-4 py-3 space-y-3 transition-colors ${extendedDaySelected ? "border-blue-300 bg-blue-50/40" : "border-border"}`}>
-                                {/* Top row */}
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex items-start gap-3">
-                                    <input
-                                      type="checkbox"
-                                      id="extended-day"
-                                      checked={extendedDaySelected}
-                                      onChange={(e) => setExtendedDaySelected(e.target.checked)}
-                                      className="mt-0.5 h-4 w-4 rounded border-border accent-foreground cursor-pointer"
-                                    />
-                                    <label htmlFor="extended-day" className="cursor-pointer">
-                                      <p className="text-sm font-semibold text-foreground">Extended day</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {advanced.extendedDay.end
-                                          ? `Ends at ${formatTimeLocal(advanced.extendedDay.end)}`
-                                          : "Extended day"}
-                                      </p>
-                                    </label>
-                                  </div>
-                                  <div className="text-right shrink-0">
-                                    <p className="text-sm text-muted-foreground">
-                                      {advanced.extendedDay.price ? `+ ${advanced.extendedDay.price}/day` : ""}
-                                    </p>
-                                    {!extendedDaySelected && extendedDayPriceCents > 0 && totalCampDays > 0 && (
-                                      <p className="text-xs text-muted-foreground/60 mt-0.5">
-                                        {formatCents(extendedDayPriceCents * totalCampDays)} for all {totalCampDays} days
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {extendedDaySelected && (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between gap-3">
-                                      <div className="inline-flex rounded-lg overflow-hidden text-xs font-medium shrink-0">
-                                        <button
-                                          type="button"
-                                          onClick={() => setExtendedDayMode("all")}
-                                          className={`px-3 py-1.5 transition-colors ${extendedDayMode === "all" ? "bg-foreground text-background" : "bg-background text-foreground hover:bg-muted"}`}
-                                        >
-                                          All days
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => setExtendedDayMode("pick")}
-                                          className={`px-3 py-1.5 border-l border-border transition-colors ${extendedDayMode === "pick" ? "bg-foreground text-background" : "bg-background text-foreground hover:bg-muted"}`}
-                                        >
-                                          Pick days
-                                        </button>
-                                      </div>
-                                      {extendedDayPriceCents > 0 && (
-                                        <p className="text-xs text-muted-foreground text-right">
-                                          {formatCents(extendedDayPriceCents)}/day × {getAddonDayCount(extendedDayMode, extendedDayDays)} days = {formatCents(extendedDayPriceCents * getAddonDayCount(extendedDayMode, extendedDayDays))}
-                                        </p>
-                                      )}
-                                    </div>
-
-                                    {extendedDayMode === "pick" && (
-                                      <div className="flex items-center justify-between rounded-lg bg-foreground/[0.06] px-3 py-2.5">
-                                        <p className="text-xs text-muted-foreground">
-                                          {extendedDayDays.size} of {totalCampDays} day{totalCampDays !== 1 ? "s" : ""} selected
-                                        </p>
-                                        <button
-                                          type="button"
-                                          onClick={() => openPickDays("extendedDay")}
-                                          className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-background hover:bg-foreground/90 transition-colors"
-                                        >
-                                          Pick days
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Sibling discount */}
-                            {advanced?.siblingDiscount?.enabled && advanced.siblingDiscount.value && (
-                              <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-muted/30">
-                                <span className="material-symbols-outlined select-none shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>percent</span>
-                                <div>
-                                  <p className="text-sm font-semibold text-foreground">Sibling discount</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {advanced.siblingDiscount.type === "percent"
-                                      ? `${advanced.siblingDiscount.value}% off`
-                                      : `$${advanced.siblingDiscount.value} off`}{" "}
-                                    for additional siblings — applied at checkout
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Running total */}
-                    {showTotal && (
-                      <div className="rounded-xl bg-muted/60 px-4 py-3 space-y-1.5">
-                        {baseCents > 0 && reservationGuests > 0 && (
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>{priceDisplay} × {reservationGuests} guest{reservationGuests !== 1 ? "s" : ""}</span>
-                            <span>{formatCents(baseCents * reservationGuests)}</span>
-                          </div>
-                        )}
-                        {earlyDropoffAddonTotal > 0 && (
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Early drop-off</span>
-                            <span>{formatCents(earlyDropoffAddonTotal)}</span>
-                          </div>
-                        )}
-                        {extendedDayAddonTotal > 0 && (
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Extended day</span>
-                            <span>{formatCents(extendedDayAddonTotal)}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1.5 mt-1">
-                          <span>Total</span>
-                          <span>{formatCents(totalCents)}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Buttons */}
-                    <div className="flex gap-3">
-                      <button
-                        disabled={isAppointmentClass && !selectedSlotKey}
-                        onClick={() => {
-                          if (!user) { setAuthReason("booking"); setAuthOpen(true); return; }
-                          const params = new URLSearchParams({ guests: String(reservationGuests) });
-                          if (selectedSessionIds.size > 0) params.set("sessions", [...selectedSessionIds].join(","));
-                          if (selectedSlotKey) params.set("slot", selectedSlotKey);
-                          router.push(`/checkout/${id}?${params.toString()}`);
-                        }}
-                        className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Reserve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSendMessage}
-                        className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
-                      >
-                        Contact host
-                      </button>
+                      )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground text-center">You won&apos;t be charged yet</p>
-                </>
+                  )}
 
-              </div>
+                  <RegistrationPanel
+                    status="available"
+                    guests={reservationGuests}
+                    maxGuests={spotsLeft ?? 10}
+                    onGuestsChange={setReservationGuests}
+                    spotsRemaining={spotsLeft}
+                    sessions={registrationSessions.length > 0 ? registrationSessions : undefined}
+                    selectedSessionIds={selectedSessionIds}
+                    onSessionToggle={toggleSession}
+                    addons={registrationAddons.length > 0 ? registrationAddons : undefined}
+                    addonStates={registrationAddonStates}
+                    onAddonToggle={handleAddonToggle}
+                    onAddonModeChange={handleAddonModeChange}
+                    onAddonEditDays={handleAddonEditDays}
+                    onReserve={handleReserve}
+                    reserveDisabled={
+                      (isAppointmentClass && !selectedSlotKey) ||
+                      (registrationSessions.length > 0 && selectedSessionIds.size === 0)
+                    }
+                  />
+                </>
+              )}
             </div>
             )}
 
@@ -1495,7 +1145,7 @@ export default function CampDetailPage() {
             {/* Highlights */}
             {!camp.external_url && Array.isArray(meta?.highlights) && (meta.highlights as string[]).filter(Boolean).length > 0 && (
               <div className="space-y-2 py-2">
-                <h2 className="text-base font-semibold text-foreground">Highlights</h2>
+                <h2 className="text-[14px] font-semibold text-foreground">Highlights</h2>
                 <ul className="space-y-3">
                   {(meta.highlights as string[]).filter(Boolean).map((h, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm" style={{ color: "rgba(0,0,0,0.8)" }}>
@@ -1581,13 +1231,37 @@ export default function CampDetailPage() {
               </div>
             )}
 
-            {/* Cancellation policy */}
+            {/* Extra sections (Please Note, Scholarships, etc.) */}
+            {metaSections.map((section, i) => (
+              <div key={i} className="space-y-2 py-2">
+                <h2 className="text-[14px] font-semibold text-foreground">{section.title}</h2>
+                <div className="space-y-3 text-sm leading-relaxed" style={{ color: "rgba(0,0,0,0.8)" }}>
+                  {section.body.split(/\n\n+/).map((para, j) => (
+                    <p key={j}>{para.trim()}</p>
+                  ))}
+                </div>
+                {section.linkLabel && section.linkUrl && (
+                  <a
+                    href={section.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-primary hover:underline"
+                  >
+                    {section.linkLabel}
+                    <span className="material-symbols-outlined select-none" style={{ fontSize: 13 }} aria-hidden>open_in_new</span>
+                  </a>
+                )}
+              </div>
+            ))}
+
+            {/* Refund policy */}
             {cancellationPolicy && (
-              <div className="flex items-start gap-3 py-2">
-                <span className="material-symbols-outlined select-none mt-0.5 shrink-0 text-muted-foreground" style={{ fontSize: 16 }} aria-hidden>calendar_month</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Cancellation policy</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{cancellationPolicy}</p>
+              <div className="space-y-2 py-2">
+                <h2 className="text-[14px] font-semibold text-foreground">Refund policy</h2>
+                <div className="space-y-3 text-sm leading-relaxed" style={{ color: "rgba(0,0,0,0.8)" }}>
+                  {cancellationPolicy.split(/\n\n+/).map((para, i) => (
+                    <p key={i}>{para.trim()}</p>
+                  ))}
                 </div>
               </div>
             )}
@@ -1654,7 +1328,7 @@ export default function CampDetailPage() {
       )}
 
       {/* ── Explore more ── */}
-      <ExploreMoreSection camps={nearbyCamps} variant="mono" />
+      <ExploreMoreSection camps={nearbyCamps} variant="mono" title="Keep exploring" />
 
       {/* ── Pick days modal ── */}
       <Dialog open={pickDaysModal !== null} onOpenChange={(open) => { if (!open) setPickDaysModal(null); }}>

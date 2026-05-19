@@ -8,6 +8,7 @@ import type { Camp } from "./CampCard";
 
 type CampVerticalCardProps = {
   camp: Camp;
+  variant?: "default" | "compact";
 };
 
 const resolvePrice = (camp: Camp): string | null => {
@@ -37,18 +38,32 @@ const resolveImage = (camp: Camp): string => {
 };
 
 const resolveDate = (camp: Camp): string | null => {
+  // Multiple sessions → "Starting [Month Day]"
+  const sessions = camp.meta?.campSessions as Array<{ startDate?: string }> | undefined;
+  if (sessions && sessions.length > 1 && sessions[0]?.startDate) {
+    const d = new Date(sessions[0].startDate + "T12:00:00");
+    return `Starting ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`;
+  }
+
+  if (typeof camp.meta?.dateLabel === "string" && camp.meta.dateLabel.trim()) {
+    const label = camp.meta.dateLabel.trim();
+    if (!/\d{4}/.test(label) && camp.start_time) {
+      const year = new Date(camp.start_time.includes("T") ? camp.start_time : camp.start_time + "T12:00:00").getFullYear();
+      return `${label}, ${year}`;
+    }
+    return label;
+  }
   const fmtDate = (iso: string) => {
     const d = new Date(iso.includes("T") ? iso : iso + "T12:00:00");
-    return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+    return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   };
   if (camp.start_time) return `Starts ${fmtDate(camp.start_time)}`;
   if (camp.session_start) return `Starts ${fmtDate(camp.session_start)}`;
-  if (typeof camp.meta?.dateLabel === "string" && camp.meta.dateLabel.trim())
-    return camp.meta.dateLabel.trim();
   return null;
 };
 
-export function CampVerticalCard({ camp }: CampVerticalCardProps) {
+export function CampVerticalCard({ camp, variant = "default" }: CampVerticalCardProps) {
+  const isCompact = variant === "compact";
   const { short_id, name } = camp;
   const image = useMemo(() => resolveImage(camp), [camp]);
   const price = useMemo(() => resolvePrice(camp), [camp]);
@@ -77,21 +92,21 @@ export function CampVerticalCard({ camp }: CampVerticalCardProps) {
         {dateStr && (
           <p
             className="text-muted-foreground truncate"
-            style={{ fontSize: 10, lineHeight: "14px" }}
+            style={{ fontSize: isCompact ? 9 : 10, lineHeight: "14px" }}
           >
             {dateStr}
           </p>
         )}
         <p
           className="font-bold text-foreground line-clamp-2"
-          style={{ fontSize: 13, lineHeight: "18px" }}
+          style={{ fontSize: isCompact ? 12 : 13, lineHeight: "18px" }}
         >
           {name}
         </p>
         {price && (
           <p
             className="text-muted-foreground"
-            style={{ fontSize: 12, lineHeight: "16px" }}
+            style={{ fontSize: isCompact ? 11 : 12, lineHeight: "16px" }}
           >
             {price} {unit}
           </p>

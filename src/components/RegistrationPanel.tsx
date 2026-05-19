@@ -166,44 +166,35 @@ function SessionPicker({ sessions, selectedSessionIds = new Set(), onSessionTogg
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: "11px 14px",
-                borderRadius: 8,
+                padding: "13px 16px",
+                borderRadius: 12,
                 border: "none",
                 cursor: isDisabled ? "default" : "pointer",
-                background: "transparent",
-                boxShadow: isChecked ? "0 0 0 2px rgba(0,0,0,0.85)" : "0 0 0 1px var(--input)",
+                background: isChecked ? "rgba(0,0,0,0.04)" : "transparent",
+                boxShadow: isChecked ? "0 0 0 2px rgba(0,0,0,0.85)" : "0 0 0 1px rgba(0,0,0,0.12)",
                 textAlign: "left",
                 opacity: isDisabled ? 0.3 : 1,
-                transition: "box-shadow 0.15s, opacity 0.15s",
+                transition: "box-shadow 0.15s, background 0.15s, opacity 0.15s",
               }}
             >
               <span
                 className="material-symbols-outlined select-none shrink-0"
-                style={{ fontSize: 20, color: "rgba(0,0,0,0.85)", fontVariationSettings: "'FILL' 1", visibility: isChecked ? "visible" : "hidden" }}
+                style={{
+                  fontSize: 20,
+                  color: isChecked ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0.2)",
+                  fontVariationSettings: isChecked ? "'FILL' 1" : "'FILL' 0",
+                  transition: "color 0.15s",
+                }}
                 aria-hidden
               >
                 check_circle
               </span>
-              <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(0,0,0,0.85)" }}>{dateRange}</span>
+              <span style={{ fontSize: 14, fontWeight: isChecked ? 600 : 500, color: "rgba(0,0,0,0.85)" }}>{dateRange}</span>
             </button>
           );
         })}
       </div>
 
-      {selectedSessions.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 4, borderTop: "1px solid rgba(0,0,0,0.07)" }}>
-          {selectedSessions.map(s => (
-            <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 2px" }}>
-              <p style={{ fontSize: 13, color: "rgba(0,0,0,0.55)" }}>
-                {[s.ageGroup, s.sessionType, s.dateRange].filter(Boolean).join(" · ")}
-              </p>
-              <button type="button" onClick={() => onSessionToggle?.(s.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, flexShrink: 0 }}>
-                <span className="material-symbols-outlined select-none" style={{ fontSize: 16, color: "rgba(0,0,0,0.35)" }}>close</span>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

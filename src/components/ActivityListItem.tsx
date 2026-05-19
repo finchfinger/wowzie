@@ -30,7 +30,7 @@ export function ActivityListItem({
         className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
         {/* Thumbnail */}
-        <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+        <div className="relative h-16 w-16 overflow-hidden bg-muted shrink-0 flex items-center justify-center" style={{ borderRadius: 4 }}>
           {heroImageUrl ? (
             <Image src={heroImageUrl} alt={title} fill sizes="44px" className="object-cover" />
           ) : (

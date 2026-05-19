@@ -16,6 +16,8 @@ type Props = {
   backLabel?: string;
   /** Badge rendered inline after the title */
   badge?: ReactNode;
+  /** Custom media element (avatar, icon, etc.) — takes precedence over mediaUrl */
+  media?: ReactNode;
   /** 40×40 hero thumbnail shown to the right of the title, before actions */
   mediaUrl?: string | null;
   /** Single action — renders as a button or link */
@@ -31,6 +33,7 @@ export function PageHeader({
   backHref,
   backLabel,
   badge,
+  media,
   mediaUrl,
   action,
   actions,
@@ -61,7 +64,7 @@ export function PageHeader({
       <div className="flex items-center justify-between gap-3">
         {/* Left: media + title + badge */}
         <div className="min-w-0 flex items-center gap-3">
-          {mediaUrl && (
+          {media ?? (mediaUrl ? (
             <div className="h-10 w-10 shrink-0 overflow-hidden rounded bg-muted">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -70,7 +73,7 @@ export function PageHeader({
                 className="h-full w-full object-cover"
               />
             </div>
-          )}
+          ) : null)}
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
           {badge}
         </div>
