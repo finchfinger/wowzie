@@ -175,10 +175,11 @@ const takeUniquePrograms = (
 };
 
 /* ── Featured camps that rotate in the hero image ── */
-const FEATURED_HERO_CAMPS: Array<{ name: string; slug: string; image: string }> = [
+const FEATURED_HERO_CAMPS: Array<{ name: string; slug: string; short_id: string | null | undefined; image: string }> = [
   {
     name: "Kids at camp having fun",
     slug: "",
+    short_id: null,
     image: "/images/home-hero-kids.jpg",
   },
 ];
