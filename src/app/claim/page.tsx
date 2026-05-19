@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,14 @@ type ClaimState =
   | { step: "done"; orgName: string };
 
 export default function ClaimPage() {
+  return (
+    <Suspense fallback={<main className="flex items-center justify-center min-h-[calc(100dvh-72px)]"><p className="text-sm text-muted-foreground animate-pulse">Loading…</p></main>}>
+      <ClaimPageInner />
+    </Suspense>
+  );
+}
+
+function ClaimPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token") ?? "";
