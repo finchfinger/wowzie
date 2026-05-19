@@ -1328,7 +1328,7 @@ export default function CampDetailPage() {
       )}
 
       {/* ── Explore more ── */}
-      <ExploreMoreSection camps={nearbyCamps} variant="mono" title="Keep exploring" />
+      <ExploreMoreSection camps={nearbyCamps} title="Keep exploring" />
 
       {/* ── Pick days modal ── */}
       <Dialog open={pickDaysModal !== null} onOpenChange={(open) => { if (!open) setPickDaysModal(null); }}>
