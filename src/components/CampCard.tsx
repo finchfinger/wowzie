@@ -49,21 +49,23 @@ const formatPrice = (price_cents?: number | null) => {
 };
 
 // Pull price from meta when price_cents column is empty (classes store price in meta.classSchedule)
-const resolvePrice = (camp: Camp): string | null => {
+const resolvePrice = (camp: Camp): { label: string; standalone: boolean } | null => {
+  const pricing = camp.meta?.pricing as Record<string, unknown> | undefined;
+  if (typeof pricing?.display === "string" && pricing.display.trim())
+    return { label: pricing.display.trim(), standalone: true };
+
   const direct = formatPrice(camp.price_cents);
-  if (direct) return direct;
+  if (direct) return { label: direct, standalone: false };
 
   const cs = camp.meta?.classSchedule as Record<string, unknown> | undefined;
   const perClass = cs?.pricePerClass ?? cs?.pricePerMeeting;
   if (perClass) {
     const n = parseFloat(String(perClass));
-    if (Number.isFinite(n) && n > 0) return `$${Math.round(n)}`;
+    if (Number.isFinite(n) && n > 0) return { label: `$${Math.round(n)}`, standalone: false };
   }
 
-  const pricing = camp.meta?.pricing as Record<string, unknown> | undefined;
-  if (typeof pricing?.price_cents === "number" && pricing.price_cents > 0) {
-    return `$${Math.round((pricing.price_cents as number) / 100)}`;
-  }
+  if (typeof pricing?.price_cents === "number" && pricing.price_cents > 0)
+    return { label: `$${Math.round((pricing.price_cents as number) / 100)}`, standalone: false };
 
   return null;
 };
@@ -199,8 +201,8 @@ export function CampCard({
           )}
           {price && (
             <div className="text-sm">
-              <span className="font-semibold">{price}</span>
-              <span className="text-muted-foreground"> {unit}</span>
+              <span className="font-semibold">{price.label}</span>
+              {!price.standalone && <span className="text-muted-foreground"> {unit}</span>}
             </div>
           )}
         </div>

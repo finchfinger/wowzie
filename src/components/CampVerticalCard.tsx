@@ -11,21 +11,25 @@ type CampVerticalCardProps = {
   variant?: "default" | "compact";
 };
 
-const resolvePrice = (camp: Camp): string | null => {
+const resolvePrice = (camp: Camp): { label: string; standalone: boolean } | null => {
   const { price_cents, meta } = camp;
+
+  const pricing = meta?.pricing as Record<string, unknown> | undefined;
+  if (typeof pricing?.display === "string" && pricing.display.trim())
+    return { label: pricing.display.trim(), standalone: true };
+
   if (typeof price_cents === "number" && price_cents > 0)
-    return `$${Math.round(price_cents / 100)}`;
+    return { label: `$${Math.round(price_cents / 100)}`, standalone: false };
 
   const cs = meta?.classSchedule as Record<string, unknown> | undefined;
   const perClass = cs?.pricePerClass ?? cs?.pricePerMeeting;
   if (perClass) {
     const n = parseFloat(String(perClass));
-    if (Number.isFinite(n) && n > 0) return `$${Math.round(n)}`;
+    if (Number.isFinite(n) && n > 0) return { label: `$${Math.round(n)}`, standalone: false };
   }
 
-  const pricing = meta?.pricing as Record<string, unknown> | undefined;
   if (typeof pricing?.price_cents === "number" && (pricing.price_cents as number) > 0)
-    return `$${Math.round((pricing.price_cents as number) / 100)}`;
+    return { label: `$${Math.round((pricing.price_cents as number) / 100)}`, standalone: false };
 
   return null;
 };
@@ -108,7 +112,7 @@ export function CampVerticalCard({ camp, variant = "default" }: CampVerticalCard
             className="text-muted-foreground"
             style={{ fontSize: isCompact ? 11 : 12, lineHeight: "16px" }}
           >
-            {price} {unit}
+            {price.standalone ? price.label : `${price.label} ${unit}`}
           </p>
         )}
       </div>
