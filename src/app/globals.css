@@ -174,15 +174,13 @@
   /* 1 ── Page container ─────────────────────── */
   .page-container {
     width: 100%;
-    max-width: 1440px;
-    padding-inline: 80px;   /* desktop: 80px margins */
+    padding-inline: 80px;   /* desktop: 80px each side */
     padding-top: 40px;
-    margin-inline: auto;
     box-sizing: border-box;
     overflow-x: hidden;
   }
 
-  /* Full-bleed header — no max-width, just matching padding breakpoints */
+  /* Full-bleed header — matching padding breakpoints */
   .header-container {
     width: 100%;
     padding-inline: 80px;
