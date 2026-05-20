@@ -164,6 +164,10 @@
    span-12-center → 12 cols — start col 3  (2 margin each side)
    span-14-center → 14 cols — start col 2  (1 margin each side)
    span-16        → 16 cols — full width
+
+   Left-anchored spans (for asymmetric layouts):
+   span-5         → cols 1–5
+   span-11        → cols 1–11   (or cols 6–16 when used as second panel)
 ───────────────────────────────────────────── */
 @layer utilities {
 
@@ -206,6 +210,11 @@
   .span-14-center { grid-column: 2 / span 14; }
   .span-12        { grid-column: 1 / -1;       }
 
+  /* Left-anchored spans for asymmetric layouts (e.g. sidebar + main) */
+  .span-5         { grid-column: 1 / span 5;  }
+  .span-11        { grid-column: 6 / span 11; }
+  .span-16        { grid-column: 1 / -1;      }
+
   /* 4 ── Tablet (≤ 1024px): 40px margins ─────── */
   @media (max-width: 1024px) {
     .page-container,
@@ -239,7 +248,10 @@
     .span-10-center,
     .span-12-center,
     .span-14-center,
-    .span-12 {
+    .span-12,
+    .span-5,
+    .span-11,
+    .span-16 {
       grid-column: 1 / -1;
     }
   }
