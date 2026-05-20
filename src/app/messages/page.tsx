@@ -961,8 +961,8 @@ function MessagesPageInner() {
       <div className="page-container py-6 lg:py-8">
         <div className="page-grid">
 
-          {/* Header — centered */}
-          <div className="span-10-center">
+          {/* Header — left-aligned with conversation list */}
+          <div className="span-16">
             <PageHeader title="Messages" />
             {error && (
               <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-2.5 text-xs text-destructive flex items-center justify-between">
@@ -1007,10 +1007,10 @@ function MessagesPageInner() {
           {!notAuthed && (loading || conversations.length > 0) && (
             <>
               {/* Desktop */}
-              <div className={`hidden lg:block span-5 ${chatHeight}`}>
+              <div className={`hidden lg:block span-4 ${chatHeight}`}>
                 {ConversationListUI}
               </div>
-              <div className={`hidden lg:block span-11 ${chatHeight}`}>
+              <div className={`hidden lg:block span-12-end ${chatHeight}`}>
                 {ThreadUI}
               </div>
 
