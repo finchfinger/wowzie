@@ -40,7 +40,7 @@ type Conversation = {
   last_message_at: string | null;
   unread_count: number;
   participant_profile_id: string | null;
-  camp_slug: string | null;
+  activity_id: string | null;
   camp_name: string | null;
 };
 
@@ -170,7 +170,7 @@ function MessagesPageInner() {
 
   const initialCParam = useRef(searchParams.get("c")).current;
   const initialToProfileId = useRef(searchParams.get("to")).current;
-  const initialCampSlug = useRef(searchParams.get("campSlug")).current;
+  const initialActivityId = useRef(searchParams.get("activityId")).current;
   const initialCampName = useRef(searchParams.get("campName")).current;
   const initialHostName = useRef(searchParams.get("hostName")).current;
 
@@ -248,7 +248,7 @@ function MessagesPageInner() {
         const { data: convData, error: convError } = await supabase
           .from("conversations")
           .select(
-            "id, participant_name, avatar_emoji, last_message_preview, last_message_at, unread_count, participant_profile_id, camp_slug, camp_name"
+            "id, participant_name, avatar_emoji, last_message_preview, last_message_at, unread_count, participant_profile_id, activity_id, camp_name"
           )
           .eq("user_id", myId)
           .order("last_message_at", { ascending: false, nullsFirst: false })
@@ -282,13 +282,13 @@ function MessagesPageInner() {
               user_id: myId,
               participant_profile_id: initialToProfileId,
               participant_name: initialHostName ?? null,
-              camp_slug: initialCampSlug ?? null,
+              activity_id: initialActivityId ?? null,
               camp_name: initialCampName ?? null,
               type: "dm",
               unread_count: 0,
             })
             .select(
-              "id, participant_name, avatar_emoji, last_message_preview, last_message_at, unread_count, participant_profile_id, camp_slug, camp_name"
+              "id, participant_name, avatar_emoji, last_message_preview, last_message_at, unread_count, participant_profile_id, activity_id, camp_name"
             )
             .single();
           if (convErr) console.error("[messages] conversation insert failed:", convErr.message, convErr.details, convErr.hint);
@@ -954,13 +954,16 @@ function MessagesPageInner() {
     </div>
   );
 
+  const chatHeight = "h-[calc(100vh-12rem)] max-h-[740px]";
+
   return (
     <main>
       <div className="page-container py-6 lg:py-8">
         <div className="page-grid">
+
+          {/* Header — centered */}
           <div className="span-10-center">
             <PageHeader title="Messages" />
-
             {error && (
               <div className="mb-4 rounded-xl bg-destructive/10 px-4 py-2.5 text-xs text-destructive flex items-center justify-between">
                 <span>{error}</span>
@@ -973,40 +976,51 @@ function MessagesPageInner() {
                 </button>
               </div>
             )}
-
-            {notAuthed ? (
-              <EmptyState
-                icon="chat"
-                iconBg="bg-blue-100"
-                iconColor="text-blue-500"
-                title="Sign in to see your messages"
-                description="Your conversations with camps and other parents will appear here."
-                action={{ label: "Sign in", href: "#signin" }}
-              />
-            ) : !loading && conversations.length === 0 ? (
-              <EmptyState
-                icon="mood"
-                iconBg="bg-rose-100"
-                iconColor="text-rose-500"
-                title="No messages yet"
-                description="When camps or other parents reach out, your conversations will appear here."
-                action={{ label: "Browse camps and classes", href: "/search" }}
-              />
-            ) : (
-              <div className="h-[calc(100vh-12rem)] max-h-[740px]">
-                {/* Desktop: side-by-side */}
-                <div className="hidden lg:grid grid-cols-[minmax(0,300px)_minmax(0,1fr)] gap-4 h-full">
-                  {ConversationListUI}
-                  {ThreadUI}
-                </div>
-
-                {/* Mobile: list or thread */}
-                <div className="lg:hidden h-full">
-                  {mobileView === "list" ? ConversationListUI : ThreadUI}
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Empty / auth states — centered */}
+          {(notAuthed || (!loading && conversations.length === 0)) && (
+            <div className="span-10-center">
+              {notAuthed ? (
+                <EmptyState
+                  icon="chat"
+                  iconBg="bg-blue-100"
+                  iconColor="text-blue-500"
+                  title="Sign in to see your messages"
+                  description="Your conversations with camps and other parents will appear here."
+                  action={{ label: "Sign in", href: "#signin" }}
+                />
+              ) : (
+                <EmptyState
+                  icon="mood"
+                  iconBg="bg-rose-100"
+                  iconColor="text-rose-500"
+                  title="No messages yet"
+                  description="When camps or other parents reach out, your conversations will appear here."
+                  action={{ label: "Browse camps and classes", href: "/search" }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Chat — full 16-col grid: 5 list + 11 thread */}
+          {!notAuthed && (loading || conversations.length > 0) && (
+            <>
+              {/* Desktop */}
+              <div className={`hidden lg:block [grid-column:1/span_5] ${chatHeight}`}>
+                {ConversationListUI}
+              </div>
+              <div className={`hidden lg:block [grid-column:6/span_11] ${chatHeight}`}>
+                {ThreadUI}
+              </div>
+
+              {/* Mobile */}
+              <div className={`lg:hidden [grid-column:1/-1] ${chatHeight}`}>
+                {mobileView === "list" ? ConversationListUI : ThreadUI}
+              </div>
+            </>
+          )}
+
         </div>
       </div>
     </main>
