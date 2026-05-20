@@ -1007,15 +1007,15 @@ function MessagesPageInner() {
           {!notAuthed && (loading || conversations.length > 0) && (
             <>
               {/* Desktop */}
-              <div className={`hidden lg:block [grid-column:1/span_5] ${chatHeight}`}>
+              <div className={`hidden lg:block ${chatHeight}`} style={{ gridColumn: "1 / span 5" }}>
                 {ConversationListUI}
               </div>
-              <div className={`hidden lg:block [grid-column:6/span_11] ${chatHeight}`}>
+              <div className={`hidden lg:block ${chatHeight}`} style={{ gridColumn: "6 / span 11" }}>
                 {ThreadUI}
               </div>
 
               {/* Mobile */}
-              <div className={`lg:hidden [grid-column:1/-1] ${chatHeight}`}>
+              <div className={`lg:hidden ${chatHeight}`} style={{ gridColumn: "1 / -1" }}>
                 {mobileView === "list" ? ConversationListUI : ThreadUI}
               </div>
             </>
