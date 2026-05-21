@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { HomePageClient, dedupeByProgram, type CampRow } from "./HomePageClient";
+import { HomePageClient } from "./HomePageClient";
+import { dedupeByProgram, type CampRow } from "@/lib/camp-utils";
 
 export const revalidate = 60;
 
