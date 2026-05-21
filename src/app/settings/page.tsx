@@ -576,7 +576,7 @@ function SettingsPageInner({
       <main>
         <div className="page-container py-8">
           <div className="page-grid">
-            <div className="span-12-center">
+            <div className="span-16">
               <div className="rounded-card bg-card shadow-sm p-8 text-center space-y-4">
                 <span className="material-symbols-outlined text-4xl text-muted-foreground">manage_accounts</span>
                 <div>
@@ -602,7 +602,7 @@ function SettingsPageInner({
       <main>
         <div className="page-container py-8 lg:py-10">
           <div className="page-grid">
-            <div className="span-12-center">
+            <div className="span-16">
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
