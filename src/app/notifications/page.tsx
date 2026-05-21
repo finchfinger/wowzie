@@ -294,10 +294,10 @@ export default function NotificationsPage() {
             />
             <ContentCard
               bordered={false}
-              bodyClassName="px-8 pb-8"
+              bodyClassName="pb-8"
             >
               {/* Filter row */}
-              <div className="flex items-center justify-between gap-3 mt-4 mb-2">
+              <div className="flex items-center justify-between gap-3 mt-4 mb-2 px-8">
                 <SegmentedControl
                   options={FILTER_OPTIONS}
                   value={filter}
@@ -309,7 +309,7 @@ export default function NotificationsPage() {
               </div>
 
               {/* Error */}
-              {error && <p className="px-5 py-3 text-sm text-destructive">{error}</p>}
+              {error && <p className="px-8 py-3 text-sm text-destructive">{error}</p>}
 
               {/* Loading skeleton */}
               {loading && (
