@@ -11,6 +11,7 @@ import {
   NotificationItem,
   type NotificationData,
 } from "@/components/notifications/NotificationItem";
+import { SegmentedControl, type SegmentOption } from "@/components/ui/SegmentedControl";
 
 /* ── Mock data ─────────────────────────────────────────── */
 
@@ -90,6 +91,11 @@ const mockNotifications: NotificationData[] = [
 /* ── Filter type ───────────────────────────────────────── */
 
 type Filter = "all" | "unread";
+
+const FILTER_OPTIONS: SegmentOption<Filter>[] = [
+  { value: "all", label: "All" },
+  { value: "unread", label: "Unread" },
+];
 
 /* ── Page ──────────────────────────────────────────────── */
 
@@ -292,22 +298,11 @@ export default function NotificationsPage() {
             >
               {/* Filter row */}
               <div className="flex items-center justify-between gap-3 mt-4 mb-2">
-                <div className="flex items-center gap-1">
-                  {(["all", "unread"] as Filter[]).map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setFilter(f)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                        filter === f
-                          ? "bg-foreground text-background"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {f === "all" ? "All" : "Unread"}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  options={FILTER_OPTIONS}
+                  value={filter}
+                  onChange={setFilter}
+                />
                 <span className="text-xs text-muted-foreground">
                   {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
                 </span>
