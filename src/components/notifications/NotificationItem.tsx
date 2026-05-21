@@ -170,9 +170,9 @@ export function NotificationItem({
       tabIndex={isClickable ? 0 : undefined}
       onClick={isClickable ? () => onNavigate(id) : undefined}
       onKeyDown={isClickable ? (e) => { if (e.key === "Enter" || e.key === " ") onNavigate(id); } : undefined}
-      className={`flex items-start gap-3 px-8 py-4 transition-colors ${
-        !isRead ? "bg-primary/[0.03]" : ""
-      } ${isClickable ? "cursor-pointer hover:bg-muted/40" : ""}`}
+      className={`flex items-start gap-3 px-8 py-4 transition-colors hover:bg-muted/40 ${
+        isClickable ? "cursor-pointer" : ""
+      }`}
     >
       {/* Avatar */}
       <div className="mt-0.5 shrink-0">
