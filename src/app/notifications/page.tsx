@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ContentCard } from "@/components/ui/ContentCard";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   NotificationItem,
   type NotificationData,
@@ -271,7 +272,7 @@ export default function NotificationsPage() {
     <main>
       <div className="page-container py-8 lg:py-10">
         <div className="page-grid">
-          <div className="span-8-center">
+          <div className="span-12-center">
             <PageHeader
               title="Notifications"
               actions={
@@ -319,7 +320,7 @@ export default function NotificationsPage() {
               {loading && (
                 <div className="divide-y divide-border">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex items-start gap-3 px-8 py-4">
+                    <div key={i} className="flex items-start gap-3 py-4">
                       <div className="h-10 w-10 rounded-full bg-muted animate-pulse shrink-0" />
                       <div className="flex-1 space-y-2 pt-1">
                         <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
@@ -332,9 +333,13 @@ export default function NotificationsPage() {
 
               {/* Empty */}
               {!loading && filteredItems.length === 0 && (
-                <p className="px-5 py-8 text-sm text-muted-foreground text-center">
-                  {filter === "unread" ? "No unread notifications." : "You're all caught up."}
-                </p>
+                <EmptyState
+                  icon="notifications"
+                  iconBg="bg-violet-100"
+                  iconColor="text-violet-500"
+                  title={filter === "unread" ? "No unread notifications" : "You're all caught up"}
+                  description="New activity, booking updates, and messages will appear here."
+                />
               )}
 
               {/* Items */}
