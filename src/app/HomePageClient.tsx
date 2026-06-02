@@ -398,7 +398,7 @@ export function HomePageClient({ initialPool }: Props) {
             {/* HERO */}
             <section className="grid gap-8 lg:gap-16 lg:grid-cols-2 lg:items-center">
               <div className="space-y-4">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-foreground text-pretty">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-foreground text-pretty">
                   Where every kid finds their thing.
                 </h1>
                 <p className="text-sm sm:text-base text-muted-foreground">
@@ -563,44 +563,20 @@ export function HomePageClient({ initialPool }: Props) {
               <div className="hidden lg:block relative">
                 <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted">
                   <Image
-                    src={heroCamps[heroIndex]?.image ?? "/images/home-hero-kids.jpg"}
-                    alt={heroCamps[heroIndex]?.name ?? "Kids at camp having fun"}
+                    src="/images/home-hero-kidsfun.jpg"
+                    alt="Kids having fun at camp"
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                     priority
                   />
-                  {heroCamps[heroIndex]?.short_id ? (
-                    <a
-                      href={`/activity/${heroCamps[heroIndex].short_id}`}
-                      className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm hover:bg-white transition-colors"
-                    >
-                      <span className="text-xs font-semibold text-foreground leading-none">{heroCamps[heroIndex].name}</span>
-                      {heroCamps.length > 1 && (
-                        <span className="flex gap-0.5 ml-1">
-                          {heroCamps.map((_, i) => (
-                            <span key={i} className="block rounded-full transition-all duration-300" style={{ width: i === heroIndex ? "12px" : "5px", height: "5px", background: i === heroIndex ? "var(--brand)" : "oklch(0.75 0 0)" }} />
-                          ))}
-                        </span>
-                      )}
-                    </a>
-                  ) : heroCamps.length > 1 ? (
-                    <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 shadow-sm">
-                      <span className="text-xs font-semibold text-foreground leading-none">{heroCamps[heroIndex]?.name}</span>
-                      <span className="flex gap-0.5 ml-1">
-                        {heroCamps.map((_, i) => (
-                          <span key={i} className="block rounded-full transition-all duration-300" style={{ width: i === heroIndex ? "12px" : "5px", height: "5px", background: i === heroIndex ? "var(--brand)" : "oklch(0.75 0 0)" }} />
-                        ))}
-                      </span>
-                    </div>
-                  ) : null}
                 </div>
               </div>
             </section>
 
             {/* GRID CONTROLS + GRID */}
             <section className="space-y-4">
-              <div className="flex items-center gap-2 sm:justify-between">
+              <div className="hidden items-center gap-2 sm:justify-between">
                 <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
                   <SelectTrigger className="w-auto rounded-full text-sm font-medium" style={{ height: "32px", padding: "0 12px 0 16px", border: "1px solid #CAC4D0", background: "transparent", color: "#49454F" }} aria-label="Sort">
                     <span>{SORT_LABELS[sortMode]}</span>
@@ -612,7 +588,7 @@ export function HomePageClient({ initialPool }: Props) {
                   </SelectContent>
                 </Select>
 
-                <div className="sm:hidden">
+                <div className="hidden">
                   <Select value={activeCategory} onValueChange={(v) => setActiveCategory(v)}>
                     <SelectTrigger className="w-auto rounded-full text-sm font-medium" style={{ height: "32px", padding: "0 12px 0 16px", border: "1px solid #CAC4D0", background: "transparent", color: "#49454F" }} aria-label="Category">
                       <span>{CATEGORY_CHIPS.find((c) => c.value === activeCategory)?.label ?? "All"}</span>
@@ -625,7 +601,7 @@ export function HomePageClient({ initialPool }: Props) {
                   </Select>
                 </div>
 
-                <div className="hidden sm:flex items-center gap-2 overflow-x-auto py-1 sm:justify-end">
+                <div className="hidden items-center gap-2 overflow-x-auto py-1 sm:justify-end">
                   {CATEGORY_CHIPS.map((chip) => {
                     const active = chip.value === activeCategory;
                     return (
@@ -651,7 +627,7 @@ export function HomePageClient({ initialPool }: Props) {
               {gridItems.length === 0 ? (
                 <p className="text-muted-foreground text-sm">No activities found yet.</p>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-6">
                   {gridItems.slice(0, LIMIT).map((camp) => (
                     <CampVerticalCard key={camp.id} camp={camp} />
                   ))}

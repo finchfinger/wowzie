@@ -152,8 +152,15 @@ export function HeaderBar({
         <div className="py-3 flex items-center justify-between gap-2">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center shrink-0" aria-label="Go to homepage">
-            <WowziLogo size={40} />
+          <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Go to homepage">
+            <WowziLogo size={26} color="var(--type-default)" />
+            <span style={{ fontFamily: "var(--font-logo)", fontSize: "40px", lineHeight: 1, letterSpacing: "0.12em", display: "inline-flex" }}>
+              <span style={{ color: "#364DF6", fontFeatureSettings: '"ss06" 1' }}>W</span>
+              <span style={{ color: "#51CE7B", fontFeatureSettings: '"ss01" 1', fontVariationSettings: '"MOV1" 100, "MOV2" 0' }}>o</span>
+              <span style={{ color: "#FFB204", fontFeatureSettings: '"ss15" 1' }}>w</span>
+              <span style={{ color: "#8D5EF7", fontFeatureSettings: '"ss05" 1', fontVariationSettings: '"MOV1" 0, "MOV2" 100' }}>z</span>
+              <span style={{ color: "#F34D23", fontFeatureSettings: '"ss15" 1' }}>i</span>
+            </span>
           </Link>
 
           {/* Search bar — desktop only, fades when hidden on homepage */}

@@ -69,6 +69,7 @@
   /* Spacing rhythm */
   --space-field: 1rem;    /* 16px = space-y-4 — between fields */
   --space-section: 1.5rem; /* 24px = space-y-6 — between cards */
+  --type-default: rgba(0, 0, 0, 0.8);
   --brand: #7B5CBF;
   --gold: #F5C840;
   --background: #F1EDF6;
