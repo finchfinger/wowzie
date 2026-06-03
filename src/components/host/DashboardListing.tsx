@@ -64,52 +64,51 @@ export function DashboardListing({ listing, actions = [], onClick }: Props) {
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(); } : undefined}
-      className={`group flex items-center gap-3 py-3 transition-colors ${onClick ? "cursor-pointer hover:bg-muted/50 focus:outline-none" : ""}`}
+      className={`group flex items-center gap-4 py-3 transition-colors ${onClick ? "cursor-pointer hover:bg-muted/50 focus:outline-none" : ""}`}
     >
-      {/* Thumbnail */}
-      <div className="shrink-0 overflow-hidden rounded-sm bg-muted" style={{ width: 64, height: 64 }}>
-        {listing.thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={listing.thumbnailUrl} alt={listing.name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full bg-muted" />
-        )}
-      </div>
-
-      {/* Name + schedule — always visible */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold text-foreground truncate">{listing.name}</p>
-          {listing.startBadge && (
-            <span className="shrink-0 text-[11px] font-medium text-violet-600">{listing.startBadge}</span>
+      {/* Col 1: Thumbnail + name */}
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="shrink-0 overflow-hidden rounded-sm bg-muted" style={{ width: 56, height: 56 }}>
+          {listing.thumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={listing.thumbnailUrl} alt={listing.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-muted" />
           )}
         </div>
-        {listing.scheduleLabel && (
-          <p className="mt-0.5 text-xs text-muted-foreground truncate">{listing.scheduleLabel}</p>
-        )}
-
-        {/* Enrollment + status — visible on mobile only */}
-        <div className="mt-1.5 flex items-center gap-2 sm:hidden">
-          <StatusBadge status={listing.status} />
-          {listing.enrollmentLabel && (
-            <span className={`text-xs font-medium ${listing.isFull ? "text-destructive" : "text-muted-foreground"}`}>
-              {listing.enrollmentLabel}
-            </span>
-          )}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-foreground truncate">{listing.name}</p>
+            {listing.startBadge && (
+              <span className="shrink-0 text-[11px] font-medium text-violet-600">{listing.startBadge}</span>
+            )}
+          </div>
+          {/* Enrollment + status — mobile only */}
+          <div className="mt-1 flex items-center gap-2 sm:hidden">
+            <StatusBadge status={listing.status} />
+            {listing.enrollmentLabel && (
+              <span className={`text-xs ${listing.isFull ? "font-medium text-destructive" : "text-muted-foreground"}`}>
+                {listing.enrollmentLabel}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Enrollment — desktop only */}
-      {listing.enrollmentLabel && (
-        <div className="hidden sm:block w-36 shrink-0">
-          <p className={`text-sm ${listing.isFull ? "font-medium text-destructive" : "text-muted-foreground"}`}>
-            {listing.enrollmentLabel}
-          </p>
-        </div>
-      )}
+      {/* Col 2: Dates — desktop only */}
+      <div className="hidden sm:block w-48 shrink-0">
+        <p className="text-sm text-muted-foreground truncate">{listing.scheduleLabel ?? "—"}</p>
+      </div>
 
-      {/* Status badge — desktop only */}
-      <div className="hidden sm:flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
+      {/* Col 3: Enrollment — desktop only */}
+      <div className="hidden sm:block w-36 shrink-0">
+        <p className={`text-sm ${listing.isFull ? "font-medium text-destructive" : "text-muted-foreground"}`}>
+          {listing.enrollmentLabel ?? "—"}
+        </p>
+      </div>
+
+      {/* Col 4: Status — desktop only */}
+      <div className="hidden sm:flex w-28 shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
         <StatusBadge status={listing.status} />
       </div>
 

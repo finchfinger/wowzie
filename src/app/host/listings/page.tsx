@@ -313,8 +313,25 @@ export default function HostListingsPage() {
             <SortDropdown options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />
           </div>
 
+          {/* Column headers — desktop only */}
+          <div className="mt-6 hidden sm:flex items-center gap-4 pb-2 border-b border-border">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-muted-foreground">Listing</p>
+            </div>
+            <div className="w-48 shrink-0">
+              <p className="text-xs font-semibold text-muted-foreground">Dates</p>
+            </div>
+            <div className="w-36 shrink-0">
+              <p className="text-xs font-semibold text-muted-foreground">Enrollment</p>
+            </div>
+            <div className="w-28 shrink-0">
+              <p className="text-xs font-semibold text-muted-foreground">Status</p>
+            </div>
+            <div className="w-8 shrink-0" />
+          </div>
+
           {/* Listing rows */}
-          <div className="mt-6 divide-y divide-border/50">
+          <div className="divide-y divide-border/50">
             {filtered.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 No listings match &ldquo;{search}&rdquo;
