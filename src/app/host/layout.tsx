@@ -139,10 +139,11 @@ export default function HostLayout({
     { id: "home",      label: "Overview",   href: "/host/home" },
     { id: "listings",  label: "Listings",   href: "/host/listings" },
     { id: "guests",    label: "Guests",     href: "/host/guests" },
-    { id: "analytics", label: "Analytics",  href: "/host/analytics" },
     { id: "financials",label: "Financials", href: "/host/financials" },
     { id: "marketing", label: "Marketing",  href: "/host/marketing" },
+    { id: "analytics", label: "Insights",   href: "/host/analytics" },
     { id: "settings",  label: "Settings",   href: "/host/settings" },
+    { id: "team",      label: "Team",       href: "/host/team" },
   ];
 
   const activeTabId = hostTabs.find((t) => pathname.startsWith(t.href))?.id ?? "home";
@@ -151,18 +152,13 @@ export default function HostLayout({
     <main className="flex-1">
       <div className="page-container py-6 sm:py-8 pb-16">
         <div className="page-grid">
-          <div className="span-8-center">
+          <div className="span-14-center">
             {/* Header row */}
             <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
-                  Host Basecamp
-                </h1>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Manage your activities, families, and payouts.
-                </p>
-              </div>
-              <Button asChild size="sm" className="shrink-0">
+              <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
+                Host Dashboard
+              </h1>
+              <Button asChild size="sm" variant="tonal" className="shrink-0">
                 <Link href="/host/activities/new">
                   <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>add</span>
                   Create listing

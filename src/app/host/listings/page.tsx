@@ -6,12 +6,68 @@ import Link from "next/link";
 import { SortDropdown } from "@/components/ui/SortDropdown";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { HostListItem, type HostListItemData } from "@/components/host/HostListItem";
+import { type HostListItemData } from "@/components/host/HostListItem";
+import { DashboardListing, type DashboardListingStatus } from "@/components/host/DashboardListing";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ListingSkeletons } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+
+/* ── Mapping helpers ────────────────────────────────────── */
+
+function fmtTime(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}${m ? `:${String(m).padStart(2, "0")}` : ""}${ampm}`;
+}
+
+function fmtDate(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function getScheduleLabel(l: HostListItemData): string | null {
+  const fs = l.meta?.fixedSchedule;
+  if (fs?.startDate) {
+    let s = fmtDate(fs.startDate);
+    if (fs.endDate && fs.endDate !== fs.startDate) s += `–${fmtDate(fs.endDate)}`;
+    if (fs.startTime && fs.endTime) s += ` from ${fmtTime(fs.startTime)}–${fmtTime(fs.endTime)}`;
+    return s;
+  }
+  const sessions: any[] = l.meta?.campSessions ?? [];
+  if (sessions.length > 0 && sessions[0]?.startDate) {
+    const first = sessions[0], last = sessions[sessions.length - 1];
+    let s = `Mon–Fri, ${fmtDate(first.startDate)}`;
+    if (last?.endDate && last.endDate !== first.startDate) s += `–${fmtDate(last.endDate)}`;
+    if (first.startTime && first.endTime) s += ` from ${fmtTime(first.startTime)}–${fmtTime(first.endTime)}`;
+    return s;
+  }
+  if (l.start_time) return new Date(l.start_time).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return null;
+}
+
+function getStartBadge(l: HostListItemData): string | null {
+  let dateStr: string | null = null;
+  const sessions: any[] = l.meta?.campSessions ?? [];
+  if (sessions.length > 0 && sessions[0]?.startDate) dateStr = sessions[0].startDate;
+  else if (l.meta?.fixedSchedule?.startDate) dateStr = l.meta.fixedSchedule.startDate;
+  else if (l.start_time) dateStr = l.start_time.split("T")[0];
+  if (!dateStr) return null;
+  const days = Math.round((new Date(`${dateStr}T00:00:00`).getTime() - new Date().setHours(0,0,0,0)) / 86400000);
+  if (days < 0) return null;
+  if (days === 0) return "Starts today";
+  if (days <= 30) return `Starts in ${days} day${days !== 1 ? "s" : ""}`;
+  return null;
+}
+
+function deriveStatus(l: HostListItemData): DashboardListingStatus {
+  if (l.approval_status === "pending_review") return "in_review";
+  if (l.approval_status === "rejected") return "rejected";
+  if (l.is_published === false) return "draft";
+  if (l.status === "active") return "live";
+  return "paused";
+}
 
 /* ── Sort options ───────────────────────────────────────── */
 
@@ -264,15 +320,44 @@ export default function HostListingsPage() {
                 No listings match &ldquo;{search}&rdquo;
               </p>
             ) : (
-              filtered.map((listing) => (
-                <HostListItem
-                  key={listing.id}
-                  listing={listing}
-                  onStatusChange={handleStatusChange}
-                  onDelete={handleDeleteRequest}
-                  onDuplicate={handleDuplicate}
-                />
-              ))
+              filtered.map((listing) => {
+                const totalCapacity = listing.capacity ?? (() => {
+                  const sessions: any[] = listing.meta?.campSessions ?? [];
+                  const nums = sessions.map((s) => parseInt(s.capacity, 10)).filter((n) => !isNaN(n));
+                  return nums.length ? nums.reduce((a, b) => a + b, 0) : null;
+                })();
+                const spotsLeft = totalCapacity != null ? Math.max(0, totalCapacity - listing.bookingCount) : null;
+                const isFull = spotsLeft === 0 && totalCapacity != null;
+                const status = deriveStatus(listing);
+
+                return (
+                  <DashboardListing
+                    key={listing.id}
+                    listing={{
+                      id: listing.id,
+                      name: listing.name,
+                      thumbnailUrl: listing.hero_image_url || listing.image_url,
+                      scheduleLabel: getScheduleLabel(listing),
+                      enrollmentLabel: totalCapacity != null
+                        ? isFull ? "Full" : `${spotsLeft} of ${totalCapacity} spots left`
+                        : null,
+                      isFull: isFull ?? false,
+                      startBadge: getStartBadge(listing),
+                      status,
+                    }}
+                    onClick={() => router.push(`/host/activities/${listing.id}`)}
+                    actions={[
+                      { label: "Go to listing", onSelect: () => { if (listing.short_id) router.push(`/activity/${listing.short_id}`); else if (listing.slug) router.push(`/camp/${listing.slug}`); } },
+                      { label: "Message guests", onSelect: () => router.push(`/messages?camp=${listing.id}`) },
+                      { label: "Share listing", onSelect: () => { const path = listing.short_id ? `/activity/${listing.short_id}` : listing.slug ? `/camp/${listing.slug}` : null; if (path) navigator.clipboard.writeText(`${window.location.origin}${path}`).catch(() => {}); } },
+                      { label: "Duplicate listing", onSelect: () => handleDuplicate(listing.id) },
+                      ...(status === "live" ? [{ label: "Pause listing", onSelect: () => handleStatusChange(listing.id, "inactive") }] : []),
+                      ...(status === "paused" ? [{ label: "Go live", onSelect: () => handleStatusChange(listing.id, "active") }] : []),
+                      { label: "Delete activity", tone: "destructive" as const, separator: true, onSelect: () => handleDeleteRequest(listing.id) },
+                    ]}
+                  />
+                );
+              })
             )}
           </div>
         </CardContent>
