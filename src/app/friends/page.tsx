@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ShareCalendarModal } from "@/components/ShareCalendarModal";
 import { FriendListItem, type FriendKid } from "@/components/FriendListItem";
+import { MessageOverlay } from "@/components/MessageOverlay";
 
 /* ── Types ──────────────────────────────────────────────── */
 
@@ -83,6 +84,7 @@ export default function FriendsPage() {
   const [error, setError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [messageTarget, setMessageTarget] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -248,7 +250,7 @@ export default function FriendsPage() {
                   kids={f.kids}
                   onClick={() => router.push(`/friends/${encodeURIComponent(f.senderId)}`)}
                   onSeeDetails={() => router.push(`/friends/${encodeURIComponent(f.senderId)}`)}
-                  onSendMessage={() => router.push(`/messages?user=${f.senderId}`)}
+                  onSendMessage={() => setMessageTarget({ id: f.senderId, name: displayName(f.profile) })}
                   onRemove={async () => {
                     await supabase.from("calendar_shares").delete().eq("id", f.shareId);
                     setFriends((prev) => prev.filter((x) => x.shareId !== f.shareId));
@@ -271,6 +273,12 @@ export default function FriendsPage() {
           </div>
         </div>
       </div>
+      <MessageOverlay
+        open={!!messageTarget}
+        recipientId={messageTarget?.id ?? ""}
+        recipientName={messageTarget?.name ?? ""}
+        onClose={() => setMessageTarget(null)}
+      />
     </main>
   );
 }
