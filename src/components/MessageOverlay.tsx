@@ -135,6 +135,11 @@ export function MessageOverlay({
       setMessages((prev) =>
         prev.map((m) => (m.id === optimistic.id ? (sent as Message) : m))
       );
+      // Update conversation preview so the sidebar stays in sync
+      await supabase.from("conversations").update({
+        last_message_preview: optimistic.body,
+        last_message_at: sent.created_at,
+      }).eq("id", convId);
     }
     setSending(false);
   }
