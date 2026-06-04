@@ -314,7 +314,7 @@ export default function ActivitiesPage() {
               name: campRow.name,
               slug: campRow.slug ?? null,
               location: campRow.location,
-              image_url: campRow.image_url,
+              image_url: campRow.hero_image_url || campRow.image_url,
               meta: campRow.meta,
             }
           : { id: row.camp_id, name: "Unknown camp" };
