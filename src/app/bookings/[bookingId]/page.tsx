@@ -359,9 +359,9 @@ export default function BookingDetailPage() {
             <ChevronRight />
           </button>
         )}
-        {camp.slug && (
+        {(camp.short_id || camp.slug) && (
           <Link
-            href={`/activity/${camp.short_id}`}
+            href={camp.short_id ? `/activity/${camp.short_id}` : `/camp/${camp.slug}`}
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-muted/50 transition-colors">
             <div className="flex items-center gap-2.5 text-sm text-foreground">
               <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
