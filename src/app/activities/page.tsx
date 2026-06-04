@@ -34,69 +34,6 @@ const FullCalendarView = dynamic(
   }
 );
 
-/* ── mock popular camps (fallback when DB has no published camps) ── */
-const MOCK_POPULAR_CAMPS: Camp[] = [
-  {
-    id: "mock-art",
-    slug: "junior-artists-workshop",
-    name: "Junior Artists Workshop",
-    description: "Painting, drawing & mixed media for young creatives ages 6–12.",
-    image_url: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&q=80",
-    hero_image_url: null,
-    price_cents: 24900,
-    price_unit: "week",
-    listing_type: "camp",
-    meta: { pricing: { display: "$249 / week" }, location: "San Francisco, CA" },
-  },
-  {
-    id: "mock-coding",
-    slug: "code-explorers-camp",
-    name: "Code Explorers Camp",
-    description: "Scratch, Python & game dev for kids who love computers.",
-    image_url: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&q=80",
-    hero_image_url: null,
-    price_cents: 29900,
-    price_unit: "week",
-    listing_type: "camp",
-    meta: { pricing: { display: "$299 / week" }, location: "Oakland, CA" },
-  },
-  {
-    id: "mock-soccer",
-    slug: "summer-soccer-academy",
-    name: "Summer Soccer Academy",
-    description: "Skills, drills & match play for ages 5–14. All levels welcome.",
-    image_url: "https://images.unsplash.com/photo-1551958219-acbc58b6e019?w=400&q=80",
-    hero_image_url: null,
-    price_cents: 19900,
-    price_unit: "week",
-    listing_type: "camp",
-    meta: { pricing: { display: "$199 / week" }, location: "Berkeley, CA" },
-  },
-  {
-    id: "mock-music",
-    slug: "rockstar-music-camp",
-    name: "Rockstar Music Camp",
-    description: "Guitar, drums, keys & vocals. End the week with a live performance.",
-    image_url: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80",
-    hero_image_url: null,
-    price_cents: 32500,
-    price_unit: "week",
-    listing_type: "camp",
-    meta: { pricing: { display: "$325 / week" }, location: "San Francisco, CA" },
-  },
-  {
-    id: "mock-science",
-    slug: "mad-scientists-lab",
-    name: "Mad Scientists Lab",
-    description: "Experiments, rockets & robotics for curious minds ages 7–13.",
-    image_url: "https://images.unsplash.com/photo-1603354350317-6f7aaa5911c5?w=400&q=80",
-    hero_image_url: null,
-    price_cents: 27500,
-    price_unit: "week",
-    listing_type: "camp",
-    meta: { pricing: { display: "$275 / week" }, location: "Palo Alto, CA" },
-  },
-];
 
 /* ── types ──────────────────────────────────────────── */
 
@@ -539,13 +476,10 @@ export default function ActivitiesPage() {
         const { data: campRows } = await supabase
           .from("camps")
           .select("id, slug, short_id, name, description, image_url, hero_image_url, price_cents, price_unit, listing_type, meta")
-          .eq("status", "published")
-          .limit(6);
+          .eq("is_published", true)
+          .limit(5);
         if (campRows && campRows.length > 0) {
           setSuggestedCamps(campRows as Camp[]);
-        } else {
-          // Fallback mock suggestions so the section is never empty
-          setSuggestedCamps(MOCK_POPULAR_CAMPS);
         }
       }
     };
