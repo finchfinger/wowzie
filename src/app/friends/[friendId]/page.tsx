@@ -200,7 +200,7 @@ export default function FriendActivitiesPage() {
   const [error, setError] = useState<string | null>(null);
 
   /* view state */
-  const [viewMode, setViewMode] = useState<ViewMode>("calendar");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [calendarTab, setCalendarTab] = useState<CalendarTab>("month");
   const [viewMonth, setViewMonth] = useState<Date>(() => monthStart(new Date()));
 
@@ -388,7 +388,7 @@ export default function FriendActivitiesPage() {
     <main>
       <div className="page-container py-4 sm:py-6 lg:py-8">
         <div className="page-grid">
-          <div className="span-10-center">
+          <div className="span-16">
       {/* ── Back link ── */}
       <div className="mb-3">
         <Link
