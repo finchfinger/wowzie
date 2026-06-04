@@ -20,7 +20,7 @@ export type ActivityRowData = {
   enrollmentLabel?: string | null;
   isFull?: boolean;
   startBadge?: string | null;
-  status: ActivityRowStatus;
+  status?: ActivityRowStatus | null;
 };
 
 export type ActivityRowAction = {
@@ -85,7 +85,7 @@ export function ActivityRow({ listing, actions = [], onClick }: Props) {
           </div>
           {/* Enrollment + status — mobile only */}
           <div className="mt-1 flex items-center gap-2 sm:hidden">
-            <StatusBadge status={listing.status} />
+            {listing.status && <StatusBadge status={listing.status} />}
             {listing.enrollmentLabel && (
               <span className={`text-xs ${listing.isFull ? "font-medium text-destructive" : "text-muted-foreground"}`}>
                 {listing.enrollmentLabel}
@@ -108,9 +108,11 @@ export function ActivityRow({ listing, actions = [], onClick }: Props) {
       </div>
 
       {/* Col 4: Status — desktop only */}
-      <div className="hidden sm:flex w-28 shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
-        <StatusBadge status={listing.status} />
-      </div>
+      {listing.status && (
+        <div className="hidden sm:flex w-28 shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+          <StatusBadge status={listing.status} />
+        </div>
+      )}
 
       {/* Actions menu */}
       {actions.length > 0 && (

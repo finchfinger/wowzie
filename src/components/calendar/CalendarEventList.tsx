@@ -93,9 +93,6 @@ export function CalendarEventRow({ ev, variant = "card" }: { ev: CalendarEvent; 
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
-        {ev.camp.location && (
-          <p className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{ev.camp.location}</p>
-        )}
       </div>
 
       {/* Chevron */}

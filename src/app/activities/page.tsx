@@ -14,6 +14,7 @@ import { CalendarSidebar } from "@/components/calendar/CalendarSidebar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { type Camp } from "@/components/CampCard";
 import { CampVerticalCard } from "@/components/CampVerticalCard";
+import { ActivityRow } from "@/components/ActivityRow";
 
 import type { CalendarEvent, CalendarCamp } from "@/hooks/useMyCalendar";
 
@@ -843,12 +844,20 @@ export default function ActivitiesPage() {
                           {activitySearch ? `No activities match "${activitySearch}"` : "No upcoming activities."}
                         </p>
                       ) : (
-                        <CalendarEventList
-                          events={filteredListEvents}
-                          loading={false}
-                          error={null}
-                          mode="list"
-                        />
+                        <div className="divide-y divide-border/50">
+                          {filteredListEvents.map((ev) => (
+                            <ActivityRow
+                              key={ev.id}
+                              listing={{
+                                id: ev.id,
+                                name: ev.camp.name,
+                                thumbnailUrl: ev.camp.image_url,
+                                scheduleLabel: ev.recurrenceLabel ?? new Date(ev.start_at).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+                              }}
+                              onClick={() => router.push(`/bookings/${ev.bookingId ?? ev.id}`)}
+                            />
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
