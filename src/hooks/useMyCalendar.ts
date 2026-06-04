@@ -9,6 +9,7 @@ export type CalendarCamp = {
   slug?: string | null;
   location?: string | null;
   image_url?: string | null;
+  hero_image_url?: string | null;
   meta?: any | null;
 };
 
@@ -120,7 +121,7 @@ export function useMyCalendar(forUserId?: string | null): UseMyCalendarResult {
 
       const { data, error: qErr } = await supabase
         .from("bookings")
-        .select(`id, camp_id, status, guests_count, camps:camp_id (id, name, location, image_url, start_time, end_time, meta)`)
+        .select(`id, camp_id, status, guests_count, camps:camp_id (id, name, location, image_url, hero_image_url, start_time, end_time, meta)`)
         .eq("user_id", userId)
         .in("status", ["confirmed"])
         .order("created_at", { ascending: false });
@@ -139,7 +140,7 @@ export function useMyCalendar(forUserId?: string | null): UseMyCalendarResult {
       for (const row of (data || []) as any[]) {
         const campRow = row.camps;
         const camp: CalendarCamp = campRow
-          ? { id: campRow.id, name: campRow.name, location: campRow.location, image_url: campRow.image_url, meta: campRow.meta }
+          ? { id: campRow.id, name: campRow.name, location: campRow.location, image_url: campRow.hero_image_url || campRow.image_url, meta: campRow.meta }
           : { id: row.camp_id, name: "Unknown camp", location: "", image_url: "", meta: null };
 
         let startAt: string | null = campRow?.start_time ?? null;
@@ -181,7 +182,7 @@ export function useMyCalendar(forUserId?: string | null): UseMyCalendarResult {
       }
       const { data } = await supabase
         .from("bookings")
-        .select(`id, camp_id, status, guests_count, camps:camp_id (id, name, location, image_url, start_time, end_time, meta)`)
+        .select(`id, camp_id, status, guests_count, camps:camp_id (id, name, location, image_url, hero_image_url, start_time, end_time, meta)`)
         .eq("user_id", userId)
         .in("status", ["confirmed"])
         .order("created_at", { ascending: false });
@@ -191,7 +192,7 @@ export function useMyCalendar(forUserId?: string | null): UseMyCalendarResult {
       for (const row of data as any[]) {
         const campRow = row.camps;
         const camp: CalendarCamp = campRow
-          ? { id: campRow.id, name: campRow.name, location: campRow.location, image_url: campRow.image_url, meta: campRow.meta }
+          ? { id: campRow.id, name: campRow.name, location: campRow.location, image_url: campRow.hero_image_url || campRow.image_url, meta: campRow.meta }
           : { id: row.camp_id, name: "Unknown camp", location: "", image_url: "", meta: null };
         let startAt: string | null = campRow?.start_time ?? null;
         let endAt: string | null = campRow?.end_time ?? null;

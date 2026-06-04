@@ -100,12 +100,14 @@ export function ActivityRow({ listing, actions = [], onClick }: Props) {
         <p className="text-sm text-muted-foreground truncate">{listing.scheduleLabel ?? "—"}</p>
       </div>
 
-      {/* Col 3: Enrollment — desktop only */}
-      <div className="hidden sm:block w-36 shrink-0">
-        <p className={`text-sm ${listing.isFull ? "font-medium text-destructive" : "text-muted-foreground"}`}>
-          {listing.enrollmentLabel ?? "—"}
-        </p>
-      </div>
+      {/* Col 3: Enrollment — desktop only, hidden if not provided */}
+      {listing.enrollmentLabel != null && (
+        <div className="hidden sm:block w-36 shrink-0">
+          <p className={`text-sm ${listing.isFull ? "font-medium text-destructive" : "text-muted-foreground"}`}>
+            {listing.enrollmentLabel}
+          </p>
+        </div>
+      )}
 
       {/* Col 4: Status — desktop only */}
       {listing.status && (
