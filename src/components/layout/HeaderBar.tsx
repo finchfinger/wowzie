@@ -206,13 +206,16 @@ export function HeaderBar({
             {isLoggedIn && <AskScoutButton onClick={onScoutClick} />}
 
             {/* Host button — desktop only */}
-            {isApprovedHost ? (
-              <Button
-                onClick={onHostClick}
-                className="hidden md:inline-flex h-11 px-5 rounded-full"
-              >
-                Host Basecamp
-              </Button>
+            {isLoggedIn ? (
+              isApprovedHost ? (
+                <Button asChild className="hidden md:inline-flex h-11 px-5 rounded-full">
+                  <Link href="/host/listings">Host Basecamp</Link>
+                </Button>
+              ) : (
+                <Button asChild variant="outline" className="hidden md:inline-flex h-11 px-5 rounded-full border-foreground text-foreground">
+                  <Link href="/host">Become a Host</Link>
+                </Button>
+              )
             ) : (
               <Button
                 variant="outline"
