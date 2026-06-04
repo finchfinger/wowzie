@@ -172,7 +172,7 @@ export default function FriendsPage() {
     <main>
       <div className="page-container py-8 lg:py-10">
         <div className="page-grid">
-          <div className="span-8-center">
+          <div className="span-12-center">
       <PageHeader
         title="My Friends"
         subtitle="Parents who have shared their calendars with you"
@@ -247,8 +247,11 @@ export default function FriendsPage() {
                   name={displayName(f.profile)}
                   kids={f.kids}
                   onClick={() => router.push(`/friends/${encodeURIComponent(f.senderId)}`)}
-                  onMenuClick={(e) => {
-                    e.stopPropagation();
+                  onSeeDetails={() => router.push(`/friends/${encodeURIComponent(f.senderId)}`)}
+                  onSendMessage={() => router.push(`/messages?user=${f.senderId}`)}
+                  onRemove={async () => {
+                    await supabase.from("calendar_shares").delete().eq("id", f.shareId);
+                    setFriends((prev) => prev.filter((x) => x.shareId !== f.shareId));
                   }}
                 />
               ))}

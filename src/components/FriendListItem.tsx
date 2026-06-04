@@ -1,6 +1,7 @@
 "use client";
 
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { ActionsMenu } from "@/components/ui/ActionsMenu";
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -18,8 +19,9 @@ export type FriendListItemProps = {
   kids?: FriendKid[];
   /** Called when the row itself is clicked */
   onClick?: () => void;
-  /** Called when the ⋮ menu button is clicked */
-  onMenuClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onSeeDetails?: () => void;
+  onSendMessage?: () => void;
+  onRemove?: () => void;
 };
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -41,7 +43,9 @@ export function FriendListItem({
   avatarUrl,
   kids = [],
   onClick,
-  onMenuClick,
+  onSeeDetails,
+  onSendMessage,
+  onRemove,
 }: FriendListItemProps) {
   const kidsLine = formatKids(kids);
 
@@ -62,15 +66,13 @@ export function FriendListItem({
         </div>
       </button>
 
-      {/* ⋮ menu — separate click target, doesn't bubble to row */}
-      <button
-        type="button"
-        onClick={onMenuClick}
-        className="shrink-0 h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
-        aria-label="More options"
-      >
-        <span className="material-symbols-outlined select-none" style={{ fontSize: 16 }} aria-hidden>more_vert</span>
-      </button>
+      <ActionsMenu
+        items={[
+          { label: "See details", onSelect: () => onSeeDetails?.() },
+          { label: "Send a message", onSelect: () => onSendMessage?.() },
+          { label: "Remove friend", tone: "destructive", separator: true, onSelect: () => onRemove?.() },
+        ]}
+      />
     </div>
   );
 }
