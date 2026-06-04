@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { CampGrid } from "@/components/CampGrid";
+import { CampVerticalCard } from "@/components/CampVerticalCard";
 import { CampCardSkeleton } from "@/components/ui/skeleton";
 import type { Camp } from "@/components/CampCard";
 
@@ -60,8 +60,8 @@ export default function WishlistPage() {
     <main>
       <div className="page-container py-6 lg:py-8">
         <div className="page-grid">
-          <div className="span-10-center">
-      <PageHeader title="Wishlist" subtitle="Activities you've saved for later." />
+          <div className="span-16">
+      <PageHeader title="Wishlist" />
 
       {/* Not signed in */}
       {!user && !loading && (
@@ -84,7 +84,7 @@ export default function WishlistPage() {
 
       {/* Loading skeleton */}
       {loading && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <CampCardSkeleton key={i} />
           ))}
@@ -112,12 +112,11 @@ export default function WishlistPage() {
 
       {/* Results */}
       {!loading && camps.length > 0 && (
-        <>
-          <p className="mb-4 text-sm text-muted-foreground">
-            {camps.length} saved {camps.length === 1 ? "activity" : "activities"}
-          </p>
-          <CampGrid camps={camps} />
-        </>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-6">
+          {camps.map((camp) => (
+            <CampVerticalCard key={camp.id} camp={camp} />
+          ))}
+        </div>
       )}
           </div>
         </div>
