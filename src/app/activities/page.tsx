@@ -13,7 +13,8 @@ import { CalendarEventList } from "@/components/calendar/CalendarEventList";
 import { ShareCalendarModal } from "@/components/ShareCalendarModal";
 import { CalendarSidebar } from "@/components/calendar/CalendarSidebar";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { CampCard, type Camp } from "@/components/CampCard";
+import { type Camp } from "@/components/CampCard";
+import { CampVerticalCard } from "@/components/CampVerticalCard";
 
 import type { CalendarEvent, CalendarCamp } from "@/hooks/useMyCalendar";
 
@@ -681,7 +682,7 @@ export default function ActivitiesPage() {
     <main>
       <div className="page-container py-4 sm:py-6 lg:py-8">
         <div className="page-grid">
-          <div className="span-8-center">
+          <div className="span-16">
       <PageHeader
         title="My Activities"
         actions={!loading && allEvents.length > 0 ? (
@@ -883,26 +884,9 @@ export default function ActivitiesPage() {
                   iconBg="bg-amber-100"
                   iconColor="text-amber-600"
                   title="No activities yet"
-                  description="Browse camps and classes near you — once you book something it'll show up here."
-                  action={{ label: "Find an activity", href: "/search" }}
+                  description="Browse camps and activities to get started."
+                  action={{ label: "Explore activities", href: "/search" }}
                 />
-
-                {/* Popular suggestions */}
-                {suggestedCamps.length > 0 && (
-                  <div className="mt-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-sm font-semibold text-foreground">Popular activities near you</h2>
-                      <Link href="/search" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                        Explore all
-                      </Link>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                      {suggestedCamps.slice(0, 5).map((camp) => (
-                        <CampCard key={camp.id} camp={camp} />
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <>
@@ -1032,6 +1016,25 @@ export default function ActivitiesPage() {
           </div>
         </div>
       </div>
+
+      {/* Popular suggestions — full width white section */}
+      {allEvents.length === 0 && !loading && suggestedCamps.length > 0 && (
+        <div className="bg-white mt-8 py-10">
+          <div className="page-container">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-base font-semibold text-foreground">Popular activities near you</h2>
+              <Link href="/search" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Explore all
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-6">
+              {suggestedCamps.slice(0, 5).map((camp) => (
+                <CampVerticalCard key={camp.id} camp={camp} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
