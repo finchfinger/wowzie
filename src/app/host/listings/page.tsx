@@ -314,7 +314,7 @@ export default function HostListingsPage() {
           </div>
 
           {/* Column headers — desktop only */}
-          <div className="mt-6 hidden sm:flex items-center gap-4 pb-2 border-b border-border">
+          <div className="mt-6 hidden sm:flex items-center gap-4 pb-2">
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-muted-foreground">Listing</p>
             </div>
@@ -359,7 +359,7 @@ export default function HostListingsPage() {
                         ? isFull ? "Full" : `${spotsLeft} of ${totalCapacity} spots left`
                         : null,
                       isFull: isFull ?? false,
-                      startBadge: getStartBadge(listing),
+                      startBadge: null,
                       status,
                     }}
                     onClick={() => router.push(`/host/activities/${listing.id}`)}
