@@ -7,7 +7,6 @@ import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CalendarEventList } from "@/components/calendar/CalendarEventList";
 import { ShareCalendarModal } from "@/components/ShareCalendarModal";
@@ -826,37 +825,33 @@ export default function ActivitiesPage() {
               <>
                 {/* List view */}
                 {viewMode === "list" && (
-                  <Card className="py-0">
-                    <CardHeader className="px-6 pt-6 pb-4">
-                      <CardTitle>My activities</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-6">
-                      <div className="relative">
-                        <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
-                        <Input
-                          type="text"
-                          value={activitySearch}
-                          onChange={(e) => setActivitySearch(e.target.value)}
-                          placeholder="Search"
-                          className="h-9 pl-8"
+                  <div className="rounded-card bg-card p-8">
+                    <h2 className="text-base font-semibold text-foreground mb-4">My activities</h2>
+                    <div className="relative">
+                      <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none" style={{ fontSize: 16 }}>search</span>
+                      <Input
+                        type="text"
+                        value={activitySearch}
+                        onChange={(e) => setActivitySearch(e.target.value)}
+                        placeholder="Search"
+                        className="h-9 pl-8"
+                      />
+                    </div>
+                    <div className="mt-4 divide-y divide-border/50">
+                      {filteredListEvents.length === 0 ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground">
+                          {activitySearch ? `No activities match "${activitySearch}"` : "No upcoming activities."}
+                        </p>
+                      ) : (
+                        <CalendarEventList
+                          events={filteredListEvents}
+                          loading={false}
+                          error={null}
+                          mode="list"
                         />
-                      </div>
-                      <div className="mt-4 divide-y divide-border/50">
-                        {filteredListEvents.length === 0 ? (
-                          <p className="py-8 text-center text-sm text-muted-foreground">
-                            {activitySearch ? `No activities match "${activitySearch}"` : "No upcoming activities."}
-                          </p>
-                        ) : (
-                          <CalendarEventList
-                            events={filteredListEvents}
-                            loading={false}
-                            error={null}
-                            mode="list"
-                          />
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 {/* Calendar agenda (schedule) */}

@@ -8,7 +8,6 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { type HostListItemData } from "@/components/host/HostListItem";
 import { ActivityRow, type ActivityRowStatus } from "@/components/ActivityRow";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ListingSkeletons } from "@/components/ui/skeleton";
@@ -262,14 +261,10 @@ export default function HostListingsPage() {
   /* ── loading skeleton ── */
   if (loading) {
     return (
-      <Card className="py-0">
-        <CardHeader className="px-8 pt-8 pb-4">
-          <CardTitle>My Listings</CardTitle>
-        </CardHeader>
-        <CardContent className="px-8 pb-8">
-          <ListingSkeletons count={3} className="mt-4" />
-        </CardContent>
-      </Card>
+      <div className="rounded-card bg-card p-8">
+        <h2 className="text-base font-semibold text-foreground mb-4">My Listings</h2>
+        <ListingSkeletons count={3} className="mt-4" />
+      </div>
     );
   }
 
@@ -293,11 +288,8 @@ export default function HostListingsPage() {
 
   return (
     <>
-      <Card className="py-0">
-        <CardHeader className="px-8 pt-8 pb-4">
-          <CardTitle>My Listings</CardTitle>
-        </CardHeader>
-        <CardContent className="px-8 pb-8">
+      <div className="rounded-card bg-card p-8">
+        <h2 className="text-base font-semibold text-foreground mb-4">My Listings</h2>
           {/* Search + sort row */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
@@ -377,8 +369,7 @@ export default function HostListingsPage() {
               })
             )}
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {deleteTarget && (
         <ConfirmDialog
