@@ -616,7 +616,7 @@ export default function ActivitiesPage() {
     <main>
       <div className="page-container py-4 sm:py-6 lg:py-8">
         <div className="page-grid">
-          <div className="span-16">
+          <div className="span-14-center">
       <PageHeader
         title="My Activities"
         actions={!loading && allEvents.length > 0 ? (

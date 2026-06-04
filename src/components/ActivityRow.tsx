@@ -4,14 +4,14 @@ import { ActionsMenu } from "@/components/ui/ActionsMenu";
 
 /* ── Types ─────────────────────────────────────────────── */
 
-export type DashboardListingStatus =
+export type ActivityRowStatus =
   | "live"
   | "paused"
   | "draft"
   | "in_review"
   | "rejected";
 
-export type DashboardListingData = {
+export type ActivityRowData = {
   id: string;
   name: string;
   thumbnailUrl?: string | null;
@@ -20,10 +20,10 @@ export type DashboardListingData = {
   enrollmentLabel?: string | null;
   isFull?: boolean;
   startBadge?: string | null;
-  status: DashboardListingStatus;
+  status: ActivityRowStatus;
 };
 
-export type DashboardListingAction = {
+export type ActivityRowAction = {
   label: string;
   tone?: "destructive";
   separator?: boolean;
@@ -31,15 +31,15 @@ export type DashboardListingAction = {
 };
 
 type Props = {
-  listing: DashboardListingData;
-  actions?: DashboardListingAction[];
+  listing: ActivityRowData;
+  actions?: ActivityRowAction[];
   onClick?: () => void;
 };
 
 /* ── StatusBadge ───────────────────────────────────────── */
 
-function StatusBadge({ status }: { status: DashboardListingStatus }) {
-  const map: Record<DashboardListingStatus, { label: string; className: string; dotClass: string }> = {
+function StatusBadge({ status }: { status: ActivityRowStatus }) {
+  const map: Record<ActivityRowStatus, { label: string; className: string; dotClass: string }> = {
     live:      { label: "Live",      className: "border-emerald-200 bg-emerald-50 text-emerald-700",   dotClass: "bg-emerald-500" },
     paused:    { label: "Paused",    className: "border-amber-200 bg-amber-50 text-amber-700",         dotClass: "bg-amber-500" },
     draft:     { label: "Draft",     className: "border-border bg-muted text-muted-foreground",        dotClass: "bg-muted-foreground/50" },
@@ -55,9 +55,9 @@ function StatusBadge({ status }: { status: DashboardListingStatus }) {
   );
 }
 
-/* ── DashboardListing ──────────────────────────────────── */
+/* ── ActivityRow ──────────────────────────────────── */
 
-export function DashboardListing({ listing, actions = [], onClick }: Props) {
+export function ActivityRow({ listing, actions = [], onClick }: Props) {
   return (
     <div
       role={onClick ? "button" : undefined}

@@ -7,7 +7,7 @@ import { SortDropdown } from "@/components/ui/SortDropdown";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { type HostListItemData } from "@/components/host/HostListItem";
-import { DashboardListing, type DashboardListingStatus } from "@/components/host/DashboardListing";
+import { ActivityRow, type ActivityRowStatus } from "@/components/ActivityRow";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -61,7 +61,7 @@ function getStartBadge(l: HostListItemData): string | null {
   return null;
 }
 
-function deriveStatus(l: HostListItemData): DashboardListingStatus {
+function deriveStatus(l: HostListItemData): ActivityRowStatus {
   if (l.approval_status === "pending_review") return "in_review";
   if (l.approval_status === "rejected") return "rejected";
   if (l.is_published === false) return "draft";
@@ -348,7 +348,7 @@ export default function HostListingsPage() {
                 const status = deriveStatus(listing);
 
                 return (
-                  <DashboardListing
+                  <ActivityRow
                     key={listing.id}
                     listing={{
                       id: listing.id,
