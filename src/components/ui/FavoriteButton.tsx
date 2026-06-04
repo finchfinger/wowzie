@@ -47,7 +47,13 @@ export function FavoriteButton({
         className
       )}
     >
-      {isFavorite ? "❤️" : "🤍"}
+      <span
+        className="material-symbols-outlined select-none"
+        style={{ fontSize: 14, fontVariationSettings: isFavorite ? "'FILL' 1" : "'FILL' 0", color: isFavorite ? "#ef4444" : "currentColor" }}
+        aria-hidden
+      >
+        favorite
+      </span>
     </button>
   );
 }

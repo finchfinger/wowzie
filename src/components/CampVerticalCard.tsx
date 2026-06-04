@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getPriceUnit } from "@/lib/pricing";
 import type { Camp } from "./CampCard";
+import { FavoriteButton } from "@/components/ui/FavoriteButton";
 
 type CampVerticalCardProps = {
   camp: Camp;
@@ -88,6 +89,10 @@ export function CampVerticalCard({ camp, variant = "default" }: CampVerticalCard
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        />
+        <FavoriteButton
+          campId={camp.id}
+          className="absolute top-2 left-2 h-6 w-6 rounded text-sm"
         />
       </div>
 
