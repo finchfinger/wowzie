@@ -83,6 +83,10 @@ export function ActivityRow({ listing, actions = [], onClick }: Props) {
               <span className="shrink-0 text-[11px] font-medium text-violet-600">{listing.startBadge}</span>
             )}
           </div>
+          {/* Schedule — shown below name when no columns (no status/enrollment) */}
+          {listing.scheduleLabel && !listing.status && listing.enrollmentLabel == null && (
+            <p className="mt-0.5 text-xs text-muted-foreground truncate">{listing.scheduleLabel}</p>
+          )}
           {/* Enrollment + status — mobile only */}
           <div className="mt-1 flex items-center gap-2 sm:hidden">
             {listing.status && <StatusBadge status={listing.status} />}
@@ -95,10 +99,12 @@ export function ActivityRow({ listing, actions = [], onClick }: Props) {
         </div>
       </div>
 
-      {/* Col 2: Dates — desktop only */}
-      <div className="hidden sm:block w-48 shrink-0">
-        <p className="text-sm text-muted-foreground truncate">{listing.scheduleLabel ?? "—"}</p>
-      </div>
+      {/* Col 2: Dates — desktop only, shown when there are other columns */}
+      {(listing.status || listing.enrollmentLabel != null) && (
+        <div className="hidden sm:block w-48 shrink-0">
+          <p className="text-sm text-muted-foreground truncate">{listing.scheduleLabel ?? "—"}</p>
+        </div>
+      )}
 
       {/* Col 3: Enrollment — desktop only, hidden if not provided */}
       {listing.enrollmentLabel != null && (
