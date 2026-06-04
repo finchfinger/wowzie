@@ -52,7 +52,7 @@ function formatTime(iso: string) {
 }
 
 /* ── ActivityRow ── extracted so it's easy to tweak independently ── */
-export function ActivityRow({ ev, variant = "card" }: { ev: CalendarEvent; variant?: "card" | "row" }) {
+export function CalendarEventRow({ ev, variant = "card" }: { ev: CalendarEvent; variant?: "card" | "row" }) {
   const router = useRouter();
   const badge = getStatusBadge(ev);
 
@@ -122,7 +122,7 @@ export function CalendarEventList({ events, loading, error, mode = "agenda" }: P
   if (mode === "list") {
     return (
       <div>
-        {events.map((ev) => <ActivityRow key={ev.id} ev={ev} variant="row" />)}
+        {events.map((ev) => <CalendarEventRow key={ev.id} ev={ev} variant="row" />)}
       </div>
     );
   }
@@ -153,7 +153,7 @@ export function CalendarEventList({ events, loading, error, mode = "agenda" }: P
               </span>
             </div>
             <div className="space-y-2">
-              {dayEvents.map((ev) => <ActivityRow key={ev.id} ev={ev} />)}
+              {dayEvents.map((ev) => <CalendarEventRow key={ev.id} ev={ev} />)}
             </div>
           </section>
         );
