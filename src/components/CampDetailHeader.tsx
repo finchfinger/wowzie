@@ -10,6 +10,8 @@ type CampDetailHeaderProps = {
   activityKind?: string | null;
   chipLabel?: string | null;
   seasonLabel?: string | null;
+  /** When false, chips are hidden from the header (e.g. rendered separately under images) */
+  showChips?: boolean;
   isFavorite?: boolean;
   favoriteDisabled?: boolean;
   onFavorite?: () => void;
@@ -108,6 +110,7 @@ export function CampDetailHeader({
   activityKind,
   chipLabel,
   seasonLabel,
+  showChips = true,
   isFavorite,
   favoriteDisabled,
   onFavorite,
@@ -125,16 +128,18 @@ export function CampDetailHeader({
 }: CampDetailHeaderProps) {
   return (
     <div className="space-y-6">
-      {/* Top row: badge + actions */}
+      {/* Top row: chips (optional) + actions */}
       <div className="flex items-center justify-between gap-4">
-        {/* Chips */}
-        <div className="flex items-center gap-1">
-          {seasonLabel && <Tag label={seasonLabel} />}
-          {isFeatured
-            ? <Tag label="Featured" />
-            : (activityKind ?? chipLabel) && <Tag label={activityKind ?? chipLabel!} />
-          }
-        </div>
+        {/* Chips — hidden when rendered separately under images */}
+        {showChips ? (
+          <div className="flex items-center gap-1">
+            {seasonLabel && <Tag label={seasonLabel} />}
+            {isFeatured
+              ? <Tag label="Featured" />
+              : (activityKind ?? chipLabel) && <Tag label={activityKind ?? chipLabel!} />
+            }
+          </div>
+        ) : <div />}
 
         {/* M3 Expressive icon buttons */}
         <IconButtonGroup>
