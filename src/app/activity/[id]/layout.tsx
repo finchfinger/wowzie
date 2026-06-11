@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!camp) {
     return {
-      title: "Camp not found | Wowzi",
+      title: "Camp not found",
       description: "Find and book kids' camps and classes on Wowzi.",
     };
   }
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!description) description = `Book ${name} on Wowzi — the easiest way to find kids' camps and classes.`;
 
   const image = (camp.hero_image_url as string | null) || (camp.image_url as string | null);
-  const title = `${name} | Wowzi`;
+  const title = name;
   const canonical = `${base}/activity/${id}`;
 
   return {
