@@ -866,37 +866,22 @@ export default function CampDetailPage() {
           <div className="span-12-center">
 
 
-        <div className="grid grid-cols-12 gap-gutter gap-y-6 items-start">
+        {/* Mobile: flex-col stack. Desktop: 5/7 two-column grid.
+            Mobile order: images → right col → host → friends
+            Desktop order: images (left) | right col (right), then host + friends below images */}
+        <div className="flex flex-col gap-5 md:grid md:grid-cols-12 md:gap-gutter md:gap-y-6 md:items-start">
 
-          {/* ── LEFT COLUMN ── */}
-          <div className="col-span-5 space-y-4">
-
-            {/* Image grid */}
+          {/* ── IMAGES — mobile: 1st, desktop: left col top ── */}
+          <div className="md:col-span-5">
             <ActivityImageGrid
               images={images}
               alt={name}
               onImageClick={(i) => { setLightboxIdx(i); setLightboxOpen(true); }}
             />
-
-            {/* Host item */}
-            <HostedItem
-              hostName={hostName}
-              hostAvatarUrl={hostAvatarUrl}
-              hostProfileHref={host_id ? `/profile/${host_id}` : "#"}
-              onContact={handleSendMessage}
-            />
-
-            {/* Friends going */}
-            <AttendanceCard
-              friends={friendsGoing}
-              totalGoing={friendsGoingTotal}
-            />
-
-
           </div>
 
-          {/* ── RIGHT COLUMN ── */}
-          <div className="col-span-7 flex flex-col gap-5">
+          {/* ── RIGHT COLUMN — mobile: 2nd, desktop: right col ── */}
+          <div className="md:col-span-7 flex flex-col gap-5">
 
             {/* Header — always on top */}
             <div>
@@ -1299,6 +1284,21 @@ export default function CampDetailPage() {
             </div>{/* end description group (non-external) */}
 
           </div>{/* end right column */}
+
+          {/* ── HOST + FRIENDS — mobile: 3rd, desktop: left col bottom ── */}
+          <div className="md:col-start-1 md:col-span-5 space-y-4">
+            <HostedItem
+              hostName={hostName}
+              hostAvatarUrl={hostAvatarUrl}
+              hostProfileHref={host_id ? `/profile/${host_id}` : "#"}
+              onContact={handleSendMessage}
+            />
+            <AttendanceCard
+              friends={friendsGoing}
+              totalGoing={friendsGoingTotal}
+            />
+          </div>
+
         </div>
           </div>
         </div>
