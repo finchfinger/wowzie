@@ -530,10 +530,13 @@ export default function CampDetailPage() {
 
   // Location
   const isVirtual = meta?.isVirtual as boolean | undefined;
-  const locationVenueName = (meta?.locationName as string | undefined) || null;
+  const locationVenueName = (meta?.locationName as string | undefined)
+    || (meta?.location_name as string | undefined)
+    || null;
   const locationCityState = [location_neighborhood, location_city].filter(Boolean).join(", ")
     || (camp as any).location as string | null
     || (meta?.locationName2 as string | undefined)
+    || (meta?.location_address as string | undefined)
     || null;
   const locationLine = isVirtual ? "Online event" : locationCityState;
 
