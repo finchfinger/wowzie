@@ -495,7 +495,18 @@ export default function CampDetailPage() {
   // Dates
   const startDate = start_time ? formatDate(start_time) : null;
   const rawDateLabel = meta?.dateLabel as string | undefined;
-  const dateLabel = rawDateLabel
+  // For multi-session camps, derive the date label from the full session range
+  const sessionDateLabel = (() => {
+    const sessions = meta?.campSessions as Array<{ startDate?: string; endDate?: string }> | undefined;
+    if (!sessions || sessions.length === 0) return null;
+    const starts = sessions.map(s => s.startDate).filter(Boolean).sort() as string[];
+    const ends = sessions.map(s => s.endDate || s.startDate).filter(Boolean).sort() as string[];
+    if (!starts.length) return null;
+    return formatDateRange(starts[0], ends[ends.length - 1]);
+  })();
+  const dateLabel = sessionDateLabel
+    ? sessionDateLabel
+    : rawDateLabel
     ? (!/\d{4}/.test(rawDateLabel) && start_time
       ? `${rawDateLabel}, ${new Date(start_time.includes("T") ? start_time : start_time + "T12:00:00").getFullYear()}`
       : rawDateLabel)
@@ -803,7 +814,7 @@ export default function CampDetailPage() {
   // ── RegistrationPanel props ──
 
   const registrationSessions: RegistrationSession[] = campSessions?.map((s, idx) => ({
-    id: s.id,
+    id: s.id ?? String(idx),
     name: s.label?.trim() || `Session ${idx + 1}`,
     ageGroup: s.ageGroup,
     sessionType: s.sessionType,
@@ -882,8 +893,10 @@ export default function CampDetailPage() {
           </div>
 
           {/* ── RIGHT COLUMN ── */}
-          <div className="col-span-7 space-y-5">
+          <div className="col-span-7 flex flex-col gap-5">
 
+            {/* Header — always on top */}
+            <div>
             <CampDetailHeader
               name={name}
               isFeatured={!!camp.featured}
@@ -908,6 +921,10 @@ export default function CampDetailPage() {
               priceLabel={priceDisplay ?? undefined}
               priceDescription={priceDescription}
             />
+            </div>
+
+            {/* ── Description group: on mobile shows BEFORE booking ── */}
+            <div className="order-2 md:order-3 flex flex-col gap-5">
 
             {/* ── External partner CTA ── */}
             {camp.external_url && (
@@ -946,6 +963,11 @@ export default function CampDetailPage() {
                 )}
               </>
             )}
+
+            </div>{/* end description group (external) */}
+
+            {/* ── Booking group: on mobile shows AFTER description ── */}
+            <div className="order-3 md:order-2 flex flex-col gap-5">
 
             {/* ── Reservation card: status states → RegistrationPanel ── */}
             {!camp.external_url && statusVariant !== null && (
@@ -1112,6 +1134,11 @@ export default function CampDetailPage() {
               </div>
             )}
 
+            </div>{/* end booking group */}
+
+            {/* ── Description group (non-external): on mobile shows BEFORE booking ── */}
+            <div className="order-2 md:order-3 flex flex-col gap-5">
+
             {/* Activities */}
             {campActivities && campActivities.length > 0 && (
               <div className="space-y-3 py-2">
@@ -1266,7 +1293,9 @@ export default function CampDetailPage() {
               </div>
             )}
 
-          </div>
+            </div>{/* end description group (non-external) */}
+
+          </div>{/* end right column */}
         </div>
           </div>
         </div>

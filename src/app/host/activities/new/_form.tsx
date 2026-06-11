@@ -1660,6 +1660,7 @@ export default function CreateActivityPage({
                 }];
             return {
               ...s,
+              id: s.id ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`,
               scheduleOptions,
               price_cents: s.price_cents ?? null,
               priceText: s.price_cents != null ? formatCentsToMoneyText(s.price_cents) : "",
