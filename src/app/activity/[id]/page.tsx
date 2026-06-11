@@ -23,7 +23,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
-import { Tag } from "@/components/ui/Tag";
 import type { RegistrationStatus, RegistrationSession, RegistrationAddon, AddonState } from "@/components/RegistrationPanel";
 import { FlexibleBookingPanel } from "@/components/FlexibleBookingPanel";
 import type { TimeOption, FlexPricing, FlexRange } from "@/components/FlexibleBookingPanel";
@@ -879,18 +878,6 @@ export default function CampDetailPage() {
               alt={name}
               onImageClick={(i) => { setLightboxIdx(i); setLightboxOpen(true); }}
             />
-            {/* Chips — shown under images, actions stay with title in right col */}
-            {(seasonLabel || camp.featured || activityKind || category || camp.listing_type) && (
-              <div className="flex items-center gap-1 mt-3">
-                {seasonLabel && <Tag label={seasonLabel} />}
-                {camp.featured
-                  ? <Tag label="Featured" />
-                  : (activityKind ?? category ?? camp.listing_type) && (
-                      <Tag label={activityKind ?? category ?? camp.listing_type!} />
-                    )
-                }
-              </div>
-            )}
           </div>
 
           {/* ── RIGHT COLUMN — mobile: 2nd, desktop: right col ── */}
@@ -904,7 +891,6 @@ export default function CampDetailPage() {
               activityKind={activityKind}
               chipLabel={category ?? camp.listing_type ?? undefined}
               seasonLabel={seasonLabel}
-              showChips={false}
               isFavorite={isFavorite}
               favoriteDisabled={favoriteLoading}
               onFavorite={() => {
